@@ -1,0 +1,10 @@
+﻿<MathScript>
+  <Input>
+    <Force />
+    <Area />
+  </Input>
+
+  <Output>
+    Force/Area
+  </Output>
+</MathScript>

@@ -1,0 +1,50 @@
+<AppLanguage>
+  <EnglishName>Swedish</EnglishName>
+  <LocalName>Svenska</LocalName>
+
+  <Entries>
+    <!--Toolbar/File-->
+    <Entry Key="Toolbar/File">Arkiv</Entry>
+    <Entry Key="Toolbar/File/New">Ny</Entry>
+    <Entry Key="Toolbar/File/Open">Öppna</Entry>
+    <Entry Key="Toolbar/File/Save">Spara</Entry>
+    <Entry Key="Toolbar/File/Exit">Stäng</Entry>
+    
+    <!--Toolbar/Edit-->
+    <Entry Key="Toolbar/Edit">Redigera</Entry>
+
+    <!--Toolbar/Tools-->
+    <Entry Key="Toolbar/Tools">Verktyg</Entry>
+    <Entry Key="Toolbar/Tools/SpecialSymbols">Specialtecken</Entry>
+
+    <!--Toolbar/Settings-->
+    <Entry Key="Toolbar/Settings">Inställningar</Entry>
+
+    <!--ActionButtons-->
+    <Entry Key="ActionButton/AddNewField">Lägg till nytt fält</Entry>
+    <Entry Key="ActionButton/AddNewFunctionField">Lägg till nytt funktionsfält</Entry>
+
+    <!--Function/Force-->
+    <Entry Key="Function/Force">Kraft</Entry>
+    <Entry Key="Function/Force/Solidity">Hållfasthet</Entry>
+
+    <!--Function/Force/Solidity/Tension-->
+    <Entry Key="Function/Force/Solidity/Tension">Spänning</Entry>
+    <Entry Key="Function/Force/Solidity/Tension/Drag">Drag</Entry>
+    <Entry Key="Function/Force/Solidity/Tension/Shear">Skjuv</Entry>
+    <Entry Key="Function/Force/Solidity/Tension/Edge">Hålkant</Entry>
+
+    <!--Function/Chemistry-->
+    <Entry Key="Function/Chemistry">Kemi</Entry>
+    <Entry Key="Function/Chemistry/Molecule">Molekyl</Entry>
+
+    <!--Function/Chemistry/Molecule-->
+    <Entry Key="Function/Chemistry/Molecule/Mass">Massa</Entry>
+    
+    <!--Function/Other-->
+    <Entry Key="Function/Other">Annat</Entry>
+
+    <!--Other-->
+    <Entry Key="Other/Loading/InternalScripts">Laddar interna skript...</Entry>
+  </Entries>
+</AppLanguage>

@@ -1,0 +1,21 @@
+﻿<Application x:Class="Miniräknare.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Miniräknare">
+    
+    <Application.Resources>
+        <ResourceDictionary>
+            <Style TargetType="Image">
+                <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
+            </Style>
+            
+            <l:AppLanguageProvider x:Key="LanguageProvider" />
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Xaml/IconList.xaml" />
+                <ResourceDictionary Source="Xaml/Templates/ExpressionField.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

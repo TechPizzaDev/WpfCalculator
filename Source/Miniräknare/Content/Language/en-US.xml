@@ -1,0 +1,50 @@
+<AppLanguage>
+  <EnglishName>English (US)</EnglishName>
+  <LocalName>English (US)</LocalName>
+
+  <Entries>
+    <!--Toolbar/File-->
+    <Entry Key="Toolbar/File">File</Entry>
+    <Entry Key="Toolbar/File/New">New</Entry>
+    <Entry Key="Toolbar/File/Open">Open</Entry>
+    <Entry Key="Toolbar/File/Save">Save</Entry>
+    <Entry Key="Toolbar/File/Exit">Exit</Entry>
+    
+    <!--Toolbar/Edit-->
+    <Entry Key="Toolbar/Edit">Edit</Entry>
+
+    <!--Toolbar/Tools-->
+    <Entry Key="Toolbar/Tools">Tools</Entry>
+    <Entry Key="Toolbar/Tools/SpecialSymbols">Special symbols</Entry>
+
+    <!--Toolbar/Settings-->
+    <Entry Key="Toolbar/Settings">Settings</Entry>
+
+    <!--ActionButtons-->
+    <Entry Key="ActionButton/AddNewField">Add new field</Entry>
+    <Entry Key="ActionButton/AddNewFunctionField">Add new function field</Entry>
+
+    <!--Function/Force-->
+    <Entry Key="Function/Force">Force</Entry>
+    <Entry Key="Function/Force/Solidity">Strength of materials</Entry>
+
+    <!--Function/Force/Solidity/Tension-->
+    <Entry Key="Function/Force/Solidity/Tension">Tension</Entry>
+    <Entry Key="Function/Force/Solidity/Tension/Drag">Drag</Entry>
+    <Entry Key="Function/Force/Solidity/Tension/Shear">Shear</Entry>
+    <Entry Key="Function/Force/Solidity/Tension/Edge">Edge</Entry>
+
+    <!--Function/Chemistry-->
+    <Entry Key="Function/Chemistry">Chemistry</Entry>
+    <Entry Key="Function/Chemistry/Molecule">Molucule</Entry>
+
+    <!--Function/Chemistry/Molecule-->
+    <Entry Key="Function/Chemistry/Molecule/Mass">Mass</Entry>
+    
+    <!--Function/Other-->
+    <Entry Key="Function/Other">Other</Entry>
+
+    <!--Other-->
+    <Entry Key="Other/Loading/InternalScripts">Loading internal scripts...</Entry>
+  </Entries>
+</AppLanguage>

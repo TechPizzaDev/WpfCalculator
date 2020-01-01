@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon />
+    <StartupObject />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DragDropManager\**" />
+    <EmbeddedResource Remove="DragDropManager\**" />
+    
+    <None Remove="Content\Language\**" />
+    <None Remove="DragDropManager\**" />
+    
+    <Page Remove="Content\Language\**" />
+    <Page Remove="DragDropManager\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Content\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.5.0-beta1-final" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Extra\MathLib\MathLib.csproj" />
+  </ItemGroup>
+</Project>

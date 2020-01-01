@@ -1,0 +1,15 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--#region Icons/Field-->
+    
+    <BitmapImage x:Key="Icon_ResultArrow" UriSource="/Content/Icons/Field/ResultArrow.png" />
+
+    <BitmapImage x:Key="Icon_CyclicReferences" UriSource="/Content/Icons/Field/CyclicReferences.png" />
+
+    <BitmapImage x:Key="Icon_UnknownWords" UriSource="/Content/Icons/Field/UnknownWords.png" />
+    <BitmapImage x:Key="Icon_UnknownWordsNested" UriSource="/Content/Icons/Field/UnknownWordsNested.png" />
+    
+    <!--#endregion-->
+    
+</ResourceDictionary>
