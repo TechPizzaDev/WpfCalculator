@@ -3,9 +3,7 @@ using MathLib.Space;
 
 namespace MathLib.Strengths
 {
-    /// <summary>
-    /// 
-    /// </summary>
+    [MathValue]
     public readonly struct Tension
     {
         public Length Length { get; }
@@ -14,9 +12,6 @@ namespace MathLib.Strengths
 
         public Length StretchedLength => Length + Extension;
 
-        /// <summary>
-        /// 
-        /// </summary>
         public double Value => Extension / Length;
 
         public Tension(Length length, Length extension)
@@ -26,8 +21,10 @@ namespace MathLib.Strengths
         }
 
         public static Tension FromLengthExtension(
-            Length original, Length extension) =>
-            new Tension(original, extension);
+            Length original, Length extension)
+        {
+            return new Tension(original, extension);
+        }
 
         public static Tension FromLengths(Length original, Length streched)
         {

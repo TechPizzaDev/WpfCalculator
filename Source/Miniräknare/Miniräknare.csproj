@@ -24,7 +24,29 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.5.0-beta1-final" />
+    <Compile Remove="Core\MathScriptActionBase.cs" />
+    <Compile Remove="Core\MathScriptFactory.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %2810%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %2811%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %2812%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %2813%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %2814%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %2815%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %282%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %283%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %284%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %285%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %286%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %287%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %288%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia %289%29.xml" />
+    <Resource Remove="Content\Scripts\Force\Solidity\Tension\Drag - kopia.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>

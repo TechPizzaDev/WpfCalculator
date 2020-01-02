@@ -1,10 +1,12 @@
 ﻿<MathScript>
   <Input>
-    <Force />
-    <Area />
+    <Force/>
+    <Area/>
   </Input>
 
   <Output>
-    Force/Area
+    <Force/>
+    <Op>/</Op>
+    <Area/>
   </Output>
 </MathScript>

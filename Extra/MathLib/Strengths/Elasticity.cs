@@ -2,6 +2,7 @@
 
 namespace MathLib.Strengths
 {
+    [MathValue]
     public readonly struct Elasticity
     {
         public const string Unit = "N/mm^2";

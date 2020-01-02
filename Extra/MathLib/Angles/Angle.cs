@@ -2,6 +2,7 @@
 
 namespace MathLib.Angles
 {
+    [MathValue]
     public readonly struct Angle
     {
         public static double FromPythagoras(double a, double b)

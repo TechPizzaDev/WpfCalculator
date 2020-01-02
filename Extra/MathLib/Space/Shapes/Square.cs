@@ -1,6 +1,7 @@
 ﻿
 namespace MathLib.Space.Shapes
 {
+    [MathValue]
     public readonly struct Square
     {
         public Length SideLength { get; }

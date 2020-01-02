@@ -1,22 +1,19 @@
-﻿
-using System;
+﻿using System;
+using MathLib.Systems;
 
 namespace MathLib.Space
 {
-    /// <summary>
-    /// Length in meters.
-    /// </summary>
-    public readonly struct Length
+    [Serializable]
+    [MathValue]
+    public readonly struct Length : IBaseUnit
     {
-        public double Meters { get; }
-        public double Milli => Meters * (1000);
+        double IBaseUnit.Value => Meters;
 
+        public double Meters { get; }
+        public double Milli => Meters * (1_000);
         public double Micro => Meters * (1000_000_000);
 
-        public Length(double meters)
-        {
-            Meters = meters;
-        }
+        public Length(double meters) => Meters = meters;
 
         #region From
 

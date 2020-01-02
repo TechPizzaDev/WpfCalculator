@@ -1,8 +1,9 @@
-﻿
-using System;
+﻿using System;
 
 namespace MathLib.Strengths
 {
+    [Serializable]
+    [MathValue]
     public readonly struct Force
     {
         public const string Unit = "Newton";
@@ -19,7 +20,7 @@ namespace MathLib.Strengths
 
         public override string ToString()
         {
-            return System.Math.Round(Newtons, 2) + " " + Unit;
+            return Math.Round(Newtons, 2) + " " + Unit;
         }
     }
 }

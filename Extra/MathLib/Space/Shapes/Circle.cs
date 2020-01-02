@@ -2,6 +2,7 @@
 
 namespace MathLib.Space.Shapes
 {
+    [MathValue]
     public readonly struct Circle
     {
         public Length Radius { get; }

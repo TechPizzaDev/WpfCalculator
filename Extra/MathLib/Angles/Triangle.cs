@@ -2,6 +2,7 @@
 
 namespace MathLib.Angles
 {
+    [MathValue]
     public readonly struct Triangle
     {
         public double A { get; }

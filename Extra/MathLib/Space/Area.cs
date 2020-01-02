@@ -1,7 +1,10 @@
 ﻿using System;
+using MathLib.Systems;
 
 namespace MathLib.Space
 {
+    [Serializable]
+    [DerivedUnit]
     public readonly struct Area
     {
         public double Meters { get; }
@@ -45,15 +48,16 @@ namespace MathLib.Space
 
         public override string ToString()
         {
-            double log = Math.Log(Meters, 1000);
-            if(log > 0)
-            {
-
-            }
-            else
-            {
-
-            }
+            // TODO: 
+            //double log = Math.Log(Meters, 1000);
+            //if(log > 0)
+            //{
+            //
+            //}
+            //else
+            //{
+            //
+            //}
 
             if (Meters < 0.1)
                 return MilliMeters + " millimeters";

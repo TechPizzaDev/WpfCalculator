@@ -18,12 +18,6 @@ namespace Miniräknare
         public string EnglishName { get; set; }
         public string LocalName { get; set; }
 
-        [XmlIgnore]
-        public string ResourceKey { get; set; }
-
-        [XmlIgnore]
-        public string CultureKey { get; set; }
-
         public Entry[] Entries
         {
             get => _entries;
@@ -41,7 +35,13 @@ namespace Miniräknare
         }
 
         [XmlIgnore]
-        public ReadOnlyDictionary<string, Entry> EntryMap { get;  }
+        public string ResourceKey { get; set; }
+
+        [XmlIgnore]
+        public string CultureKey { get; set; }
+
+        [XmlIgnore]
+        public ReadOnlyDictionary<string, Entry> EntryMap { get; }
 
         public AppLanguage()
         {
@@ -66,7 +66,7 @@ namespace Miniräknare
         public static IEnumerable<KeyValuePair<string, Stream>> GetEmbeddedLanguages(
             Assembly resourceAssembly)
         {
-            using var reader = ResourceHelper.GetResourceReader(resourceAssembly); 
+            using var reader = ResourceHelper.GetResourceReader(resourceAssembly);
             var enumerator = reader.GetEnumerator();
             while (enumerator.MoveNext())
             {

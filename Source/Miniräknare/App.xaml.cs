@@ -40,9 +40,6 @@ namespace Miniräknare
             Task.Run(() =>
             {
                 InitializeLanguageProvider();
-                _splashScreen.DispatchProgress(5);
-
-                MathScriptFactory.Initialize();
                 _splashScreen.DispatchProgress(10);
 
                 _splashScreen.DispatchProgressTip(_languageProvider.GetValue("Other/Loading/InternalScripts"));
@@ -90,7 +87,8 @@ namespace Miniräknare
                     var pair = pairs[i];
                     var stream = pair.Value;
 
-                    //var scriptData = MathScriptData.Load(stream);
+                    var scriptData = MathScriptData.Load(stream);
+                    var script = new MathScript(scriptData);
                     //var script = scriptData.Compile(tmpStringBuilder, generateSymbols: false);
                     
                     //var stringWrtier = new StringWriter();

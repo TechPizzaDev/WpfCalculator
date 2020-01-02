@@ -1,6 +1,7 @@
 ﻿
 namespace MathLib.Space.Shapes
 {
+    [MathValue]
     public readonly struct Rectangle
     {
         public Length Width { get; }
