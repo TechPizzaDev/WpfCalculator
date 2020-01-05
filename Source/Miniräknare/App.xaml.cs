@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Miniräknare.Expressions;
 using Newtonsoft.Json;
 
 namespace Miniräknare
@@ -38,16 +39,16 @@ namespace Miniräknare
 
 
             var tokens = new List<ExpressionTokenizer.Token>();
-            void Print(List<ExpressionTokenizer.Token> tt)
+            static void Print(List<ExpressionTokenizer.Token> tt)
             {
                 string x = "";
                 foreach (var r in tt)
-                    x += r.Value;
+                    x += r.ToString();
                 Console.WriteLine(x);
             }
 
-            ExpressionTokenizer.TokenizeInput("2__5__5 + yo_u +1_0  - 5_99.1 + xD  () + wat(nou; 25; omg(45; a))".AsMemory(), tokens);
-            //ExpressionParser.TokenizeInput("naaaou".AsMemory(), tokens);
+            //ExpressionTokenizer.TokenizeInput("2__5__5 + yo_u +1_0  - 5_99.1 + xD  () + wat(nou; 25; omg(45; a))".AsMemory(), tokens);
+            ExpressionTokenizer.TokenizeInput("a(b(c()))".AsMemory(), tokens);
             Print(tokens);
 
             var result = ExpressionSanitizer.SanitizeTokens(tokens);
@@ -56,10 +57,10 @@ namespace Miniräknare
 
             if (result.Code == ExpressionSanitizer.ResultCode.Ok)
             {
-                Print(result.Tokens);
-                var parseResult = ExpressionParser.ParseTokens(result.Tokens);
+                Print(tokens);
+                var parseResult = ExpressionParser.ParseTokens(tokens);
 
-
+                Print(tokens);
             }
 
             Console.WriteLine();

@@ -1,27 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using static Miniräknare.ExpressionTokenizer;
+using static Miniräknare.Expressions.ExpressionTokenizer;
 
-namespace Miniräknare
+namespace Miniräknare.Expressions
 {
     public partial class ExpressionSanitizer
     {
-        public static SanitizeResult SanitizeTokens(IReadOnlyList<Token> tokens)
+        public static SanitizeResult SanitizeTokens(IList<Token> tokens)
         {
             var result = RemoveSpacesInGroups(tokens);
             if (result.Code != ResultCode.Ok)
                 return result;
 
-            MergeGroups(result.Tokens);
-            RemoveWhiteSpaces(result.Tokens);
+            MergeGroups(tokens);
+            RemoveWhiteSpaces(tokens);
 
             return result;
         }
 
-        private static SanitizeResult RemoveSpacesInGroups(IReadOnlyList<Token> tokens)
+        private static SanitizeResult RemoveSpacesInGroups(IList<Token> tokens)
         {
-            var output = new List<Token>();
             var lastType = TokenType.Unknown;
             int charPosition = 0;
 
@@ -51,15 +50,13 @@ namespace Miniräknare
                     return new SanitizeResult(ResultCode.WhiteSpaceInName, i, charPosition);
 
                 // Only number literals have spaces that can be removed.
-                if (IncludeInGroup(TokenType.NumberLiteral, TokenType.Space))
-                {
-                    output.Add(currentToken);
-                }
+                if (!IncludeInGroup(TokenType.NumberLiteral, TokenType.Space))
+                    tokens.RemoveAt(i--);
 
                 lastType = currentType;
                 charPosition += currentToken.Value.Length;
             }
-            return new SanitizeResult(output);
+            return new SanitizeResult(ResultCode.Ok, null, null);
         }
 
         private static void MergeGroups(IList<Token> tokens)
@@ -129,7 +126,6 @@ namespace Miniräknare
         public readonly struct SanitizeResult
         {
             public ResultCode Code { get; }
-            public List<Token> Tokens { get; }
             public int? ErrorTokenPosition { get; }
             public int? ErrorCharPosition { get; }
 
@@ -137,14 +133,8 @@ namespace Miniräknare
                 ResultCode code, int? errorTokenPosition, int? errorCharPosition)
             {
                 Code = code;
-                Tokens = null;
                 ErrorTokenPosition = errorTokenPosition;
                 ErrorCharPosition = errorCharPosition;
-            }
-
-            public SanitizeResult(List<Token> tokens) : this(ResultCode.Ok, null, null)
-            {
-                Tokens = tokens;
             }
         }
 

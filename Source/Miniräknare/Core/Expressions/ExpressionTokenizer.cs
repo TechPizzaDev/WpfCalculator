@@ -1,34 +1,38 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Miniräknare
+namespace Miniräknare.Expressions
 {
     public partial class ExpressionTokenizer
     {
         private static TokenDefinition[] _tokenDefinitions;
 
+        public const char SpaceChar = '_';
+        public const char ListStartChar = '(';
+        public const char ListEndChar = ')';
+        public const char ListSeparatorChar = ';';
+
         static ExpressionTokenizer()
         {
-            var tokenDefinitions = new List<TokenDefinition>();
-
-            void Add(TokenType type, Func<char, bool> predicate, bool isSingular = false)
+            static TokenDefinition NewDef(TokenType type, Func<char, bool> predicate, bool isSingular = false)
             {
-                tokenDefinitions.Add(new TokenDefinition(type, predicate, isSingular));
+                return new TokenDefinition(type, predicate, isSingular);
             }
 
-            Add(TokenType.Operator, IsOperator);
-            Add(TokenType.Name, IsName);
-            Add(TokenType.NumberLiteral, IsNumberLiteral);
-            Add(TokenType.WhiteSpace, char.IsWhiteSpace);
-            Add(TokenType.Space, c => c == '_');
-            Add(TokenType.ListStart, c => c == '(', true);
-            Add(TokenType.ListEnd, c => c == ')', true);
-            Add(TokenType.ListSeparator, c => c == ';', true);
-
-            _tokenDefinitions = tokenDefinitions.ToArray();
+            _tokenDefinitions = new[]
+            {
+                NewDef(TokenType.Operator, IsOperator),
+                NewDef(TokenType.Name, IsName),
+                NewDef(TokenType.NumberLiteral, IsNumberLiteral),
+                NewDef(TokenType.WhiteSpace, char.IsWhiteSpace),
+                NewDef(TokenType.Space, c => c == SpaceChar),
+                NewDef(TokenType.ListStart, c => c == ListStartChar, true),
+                NewDef(TokenType.ListEnd, c => c == ListEndChar, true),
+                NewDef(TokenType.ListSeparator, c => c == ListSeparatorChar, true)
+            };
         }
 
-        private readonly struct TokenDefinition
+        private class TokenDefinition
         {
             public TokenType Type { get; }
             public Func<char, bool> Predicate { get; }
@@ -63,17 +67,18 @@ namespace Miniräknare
             {
                 char c = span[offset];
 
-                TokenDefinition definition = default;
+                TokenDefinition definition = null;
                 for (int j = 0; j < _tokenDefinitions.Length; j++)
                 {
-                    definition = _tokenDefinitions[j];
-                    if (definition.Predicate(c))
+                    var d = _tokenDefinitions[j];
+                    if (d.Predicate(c))
+                    {
+                        definition = d;
                         break;
-                    definition = default;
+                    }
                 }
 
-                // "definition" will be 'default' if none was found.
-                var nextType = definition.Predicate == null ? TokenType.Unknown : definition.Type;
+                var nextType = definition == null ? TokenType.Unknown : definition.Type;
                 if (nextType != currentType || definition.IsSingular)
                 {
                     FinishToken();

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Miniräknare
+namespace Miniräknare.Expressions
 {
     public partial class ExpressionTokenizer
     {
@@ -11,15 +11,17 @@ namespace Miniräknare
             Name,
             Operator,
             ListSeparator,
-            Function,
             ListStart,
             ListEnd,
             WhiteSpace,
-            Space
+            Space,
+
+            Function,
+            List,
         }
 
         [System.Diagnostics.DebuggerDisplay("{Type}: {Value}")]
-        public readonly struct Token
+        public class Token
         {
             public TokenType Type { get; }
             public ReadOnlyMemory<char> Value { get; }
