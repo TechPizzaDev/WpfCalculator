@@ -1,17 +1,17 @@
 ﻿using System;
 using MathLib.Systems;
 
-namespace MathLib.BaseUnits
+namespace MathLib
 {
     [MathValue]
-    public readonly struct Time : IBaseUnit
+    public class Time : BaseUnit
     {
-        double IBaseUnit.Value => Value.TotalSeconds;
+        private TimeSpan _value;
 
-        public TimeSpan Value { get; }
+        public override double Value => Seconds;
 
-        public double Seconds => Value.TotalSeconds;
+        public double Seconds => _value.TotalSeconds;
 
-        public Time(TimeSpan value) => Value = value;
+        public Time(TimeSpan value) => _value = value;
     }
 }

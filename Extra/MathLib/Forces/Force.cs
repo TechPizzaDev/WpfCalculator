@@ -1,20 +1,28 @@
 ﻿using System;
+using System.Xml.Serialization;
 
-namespace MathLib.Strengths
+namespace MathLib.Forces
 {
     [Serializable]
     [MathValue]
-    public readonly struct Force
+    public class Force
     {
         public const string Unit = "Newton";
 
-        public double Newtons { get; }
+        [XmlText]
+        public double Newtons { get; protected set; }
+
+        protected Force()
+        {
+        }
 
         public Force(double newtons) => Newtons = newtons;
 
         public static implicit operator double(Force force) => force.Newtons;
 
+        [MathValueConstructor]
         public static Force FromNewtons(double newtons) => new Force(newtons);
+
         public static Force FromKiloNewtons(double kiloNewtons) => new Force(kiloNewtons * 1000);
         public static Force FromNewtonsPow(double value, double exponent) => new Force(Math.Pow(value, exponent));
 

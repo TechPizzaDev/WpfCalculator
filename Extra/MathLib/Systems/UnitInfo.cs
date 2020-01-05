@@ -15,9 +15,11 @@ namespace MathLib
             Quantities = quantities ?? throw new ArgumentNullException(nameof(quantities));
 
             if (Quantities.Length == 0)
-                throw new ArgumentException("May not be empty.", nameof(quantities));
+                throw new ArgumentException("Collection may not be empty.", nameof(quantities));
         }
 
         // TODO: add static functions that describe different units and types
+
+
     }
 }

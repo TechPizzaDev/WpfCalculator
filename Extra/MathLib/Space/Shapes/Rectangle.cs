@@ -2,7 +2,7 @@
 namespace MathLib.Space.Shapes
 {
     [MathValue]
-    public readonly struct Rectangle
+    public readonly struct Rectangle : IShape
     {
         public Length Width { get; }
         public Length Height { get; }
@@ -16,6 +16,7 @@ namespace MathLib.Space.Shapes
             Height = height;
         }
 
+        [MathValueConstructor]
         public static Rectangle FromSides(Length width, Length height) => 
             new Rectangle(width, height);
     }

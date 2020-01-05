@@ -1,0 +1,84 @@
+{
+	"englishName": "Swedish",
+	"localName": "Svenska",
+
+	"entries": {
+		"Toolbar": {
+			"_names": {
+				"File": "Arkiv",
+				"Edit": "Redigera",
+				"Tools": "Verktyg",
+				"Settings": "Inställningar"
+			},
+
+			"File": {
+				"New": "Ny",
+				"Open": "Öppna",
+				"Save": "Spara",
+				"Exit": "Stäng"
+			},
+
+			"Edit": {
+			},
+
+			"Tools": {
+				"SpecialSymbols": "Specialtecken"
+			},
+
+			"Settings": {
+			}
+		},
+
+		"ActionButtons": {
+			"Hover": {
+				"AddNewField": "Lägg till nytt fält",
+				"AddNewFunctionField": "Lägg till nytt funktionsfält"
+			}
+		},
+
+		"Fornulas": {
+			"_names": {
+				"Force": "Kraft",
+				"Chemistry": "Kemi",
+				"Other": "Annat"
+			},
+
+			"Force": {
+				"_names": {
+					"Solidity": "Hållfasthet"
+				},
+
+				"Solidity": {
+					"_names": {
+						"Tension": "Spänning"
+					},
+
+					"Tension": {
+						"Drag": "Drag",
+						"Shear": "Skjuv",
+						"Edge": "Hålkant"
+					}
+				}
+			},
+
+			"Chemistry": {
+				"_names": {
+					"Molecule": "Molekyl"
+				},
+
+				"Molecule": {
+					"Mass": "Massa"
+				}
+			},
+
+			"Other": {
+			}
+		},
+
+		"Other": {
+			"Loading": {
+				"InternalFormulas": "Laddar interna formler..."
+			}
+		}
+	}
+}

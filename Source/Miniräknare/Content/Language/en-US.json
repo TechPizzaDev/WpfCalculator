@@ -1,0 +1,84 @@
+{
+	"englishName": "English (US)",
+	"localName": "English (US)",
+
+	"entries": {
+		"Toolbar": {
+			"_names": {
+				"File": "File",
+				"Edit": "Edit",
+				"Tools": "Tools",
+				"Settings": "Settings"
+			},
+
+			"File": {
+				"New": "New",
+				"Open": "Open",
+				"Save": "Save",
+				"Exit": "Exit"
+			},
+
+			"Edit": {
+			},
+
+			"Tools": {
+				"SpecialSymbols": "Special symbols"
+			},
+
+			"Settings": {
+			}
+		},
+
+		"ActionButtons": {
+			"Hover": {
+				"AddNewField": "Add new field",
+				"AddNewFunctionField": "Add new function field"
+			}
+		},
+
+		"Formulas": {
+			"_names": {
+				"Force": "Force",
+				"Chemistry": "Chemistry",
+				"Other": "Other"
+			},
+
+			"Force": {
+				"_names": {
+					"Solidity": "Strength of materials"
+				},
+
+				"Solidity": {
+					"_names": {
+						"Tension": "Tension"
+					},
+
+					"Tension": {
+						"Drag": "Drag",
+						"Shear": "Shear",
+						"Edge": "Edge"
+					}
+				}
+			},
+
+			"Chemistry": {
+				"_names": {
+					"Molecule": "Molecule"
+				},
+
+				"Molecule": {
+					"Mass": "Mass"
+				}
+			},
+
+			"Other": {
+			}
+		},
+
+		"Other": {
+			"Loading": {
+				"InternalFormulas": "Loading internal formulas..."
+			}
+		}
+	}
+}

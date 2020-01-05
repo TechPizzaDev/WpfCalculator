@@ -1,11 +1,11 @@
 ﻿using MathLib.Systems;
 
-namespace MathLib.BaseUnits
+namespace MathLib
 {
     [MathValue]
-    public readonly struct Temperature : IBaseUnit
+    public class Temperature : BaseUnit
     {
-        double IBaseUnit.Value => Kelvin;
+        public override double Value => Kelvin;
 
         public double Kelvin { get; }
         public double Celcius => Kelvin - 273.15;

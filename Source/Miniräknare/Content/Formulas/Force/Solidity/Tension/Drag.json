@@ -1,0 +1,11 @@
+﻿{
+  "inputs": [
+    "Force",
+    "Area"
+  ],
+  "outputs": [
+    "Force",
+    "/",
+    "Area"
+  ]
+}

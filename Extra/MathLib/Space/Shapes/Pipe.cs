@@ -2,7 +2,7 @@
 namespace MathLib.Space.Shapes
 {
     [MathValue]
-    public readonly struct Pipe
+    public readonly struct Pipe : IShape
     {
         public Circle Inner { get; }
         public Circle Outer { get; }

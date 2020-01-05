@@ -1,55 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
-using System.Xml;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Miniräknare
 {
-    public class AppLanguage
+    [JsonObject]
+    public partial class AppLanguage
     {
-        public static XmlSerializer Serializer { get; } = new XmlSerializer(typeof(AppLanguage));
-
-        private Entry[] _entries;
-        private Dictionary<string, Entry> _entryMap;
+        public const string FileExtension = ".json";
 
         public string EnglishName { get; set; }
         public string LocalName { get; set; }
+        public EntryList Entries { get; }
 
-        public Entry[] Entries
-        {
-            get => _entries;
-            set
-            {
-                if (_entries == value)
-                    return;
-                _entries = value;
-
-                _entryMap.Clear();
-                if (_entries != null)
-                    foreach (var entry in _entries)
-                        _entryMap.Add(entry.Key, entry);
-            }
-        }
-
-        [XmlIgnore]
+        [JsonIgnore]
         public string ResourceKey { get; set; }
 
-        [XmlIgnore]
+        [JsonIgnore]
         public string CultureKey { get; set; }
 
-        [XmlIgnore]
-        public ReadOnlyDictionary<string, Entry> EntryMap { get; }
-
-        public AppLanguage()
+        [JsonConstructor]
+        public AppLanguage(string englishName, string localName, EntryList entries)
         {
-            _entryMap = new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
-            EntryMap = new ReadOnlyDictionary<string, Entry>(_entryMap);
+            EnglishName = englishName ?? throw new ArgumentNullException(nameof(englishName));
+            LocalName = localName ?? throw new ArgumentNullException(nameof(localName));
+            Entries = entries ?? throw new ArgumentNullException(nameof(entries));
         }
 
-        protected virtual void SetBaseValues(string key)
+        protected virtual void SetKeys(string key)
         {
             ResourceKey = key;
             CultureKey = Path.GetFileNameWithoutExtension(key);
@@ -58,8 +39,19 @@ namespace Miniräknare
         public static AppLanguage Load(string key, Stream stream)
         {
             stream.Seek(0, SeekOrigin.Begin);
-            var language = Serializer.Deserialize(stream) as AppLanguage;
-            language.SetBaseValues(key);
+            var languageObject = App.Serializer.Deserialize<JObject>(stream);
+
+            JToken entries = languageObject[nameof(entries)];
+            var entryList = new EntryList(nameof(entries));
+
+            var language = new AppLanguage(
+                languageObject["englishName"].ToObject<string>(),
+                languageObject["localName"].ToObject<string>(),
+                entryList);
+
+            PopulateEntryList(entries, entryList);
+
+            language.SetKeys(key);
             return language;
         }
 
@@ -72,21 +64,13 @@ namespace Miniräknare
             {
                 var entry = enumerator.Entry;
                 if (entry.Key is string key &&
-                    key.StartsWith(App.LanguagePath, StringComparison.OrdinalIgnoreCase))
+                    key.StartsWith(App.LanguagePath, StringComparison.OrdinalIgnoreCase) &&
+                    key.EndsWith(FileExtension))
                 {
                     var stream = entry.Value as Stream;
                     yield return new KeyValuePair<string, Stream>(key, stream);
                 }
             }
-        }
-
-        public class Entry
-        {
-            [XmlAttribute]
-            public string Key { get; set; }
-
-            [XmlText]
-            public string Value { get; set; }
         }
     }
 }

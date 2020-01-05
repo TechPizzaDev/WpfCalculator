@@ -8,15 +8,13 @@ namespace MathLib.Space
     public readonly struct Area
     {
         public double Meters { get; }
-        public double MilliMeters => Meters * (1000 * 1000);
+        public double Milli => Meters * (1000 * 1000);
 
-        public Area(double meters)
-        {
-            Meters = meters;
-        }
+        public Area(double meters) => Meters = meters;
 
         #region From
 
+        [MathValueConstructor]
         public static Area FromMeters(double meters) =>
             new Area(meters);
 
@@ -60,7 +58,7 @@ namespace MathLib.Space
             //}
 
             if (Meters < 0.1)
-                return MilliMeters + " millimeters";
+                return Milli + " millimeters";
             return Meters + " meters";
         }
     }

@@ -9,16 +9,14 @@ namespace Miniräknare
 
         public string Key { get; }
         public Stream Stream { get; }
+        public bool IsVisible { get; set; }
 
         public AppLanguage Language => GetLanguage();
-
-        public bool IsVisible { get; set; }
 
         public AppLanguageEntry(string key, Stream stream)
         {
             Key = key ?? throw new ArgumentNullException(nameof(key));
             Stream = stream ?? throw new ArgumentNullException(nameof(stream));
-
             IsVisible = true;
 
             _languageRef = new WeakReference<AppLanguage>(null);
@@ -36,7 +34,7 @@ namespace Miniräknare
 
         public void UnloadLanguage()
         {
-            _languageRef = null;
+            _languageRef.SetTarget(null);
         }
     }
 }

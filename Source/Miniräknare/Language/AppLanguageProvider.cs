@@ -35,9 +35,9 @@ namespace Miniräknare
             }
         }
 
-        public string GetValue(string key)
+        public string GetValue(ResourceUri uri)
         {
-            static int GetValue(AppLanguage language, string key, out string value)
+            static int GetValue(AppLanguage language, ResourceUri uri, out string value)
             {
                 if (language == null)
                 {
@@ -45,27 +45,33 @@ namespace Miniräknare
                     return -1;
                 }
 
-                if (!language.EntryMap.TryGetValue(key, out var entry))
+                if (!language.Entries.TryGet(uri, out var entry))
                 {
-                    value = $"[Missing '{key}']";
+                    value = $"[Missing '{uri}']";
                     return -2;
                 }
 
-                if (entry.Value == null ||
-                    (entry.Value is string text && string.IsNullOrWhiteSpace(text)))
+                if (!(entry is AppLanguage.EntryValue entryValue))
                 {
-                    value = $"['{key}']";
+                    value = $"['{uri}' is invalid]";
                     return -3;
                 }
 
-                value = entry.Value;
+                if (entryValue.Value == null ||
+                    (entryValue.Value is string text && string.IsNullOrWhiteSpace(text)))
+                {
+                    value = $"['{uri}']";
+                    return -3;
+                }
+
+                value = (string)entryValue.Value;
                 return 0;
             }
 
-            int valueCode = GetValue(Language, key, out string value);
+            int valueCode = GetValue(Language, uri, out string value);
             if (valueCode < 0)
             {
-                int fallbackValueCode = GetValue(FallbackLanguage, key, out string fallbackValue);
+                int fallbackValueCode = GetValue(FallbackLanguage, uri, out string fallbackValue);
                 if (valueCode == -1 || fallbackValueCode == 0)
                     value = fallbackValue;
             }

@@ -5,9 +5,9 @@ namespace MathLib.Space
 {
     [Serializable]
     [MathValue]
-    public readonly struct Length : IBaseUnit
+    public class Length : BaseUnit
     {
-        double IBaseUnit.Value => Meters;
+        public override double Value => Meters;
 
         public double Meters { get; }
         public double Milli => Meters * (1_000);
@@ -17,8 +17,7 @@ namespace MathLib.Space
 
         #region From
 
-        public static Length FromMeters(double meters) =>
-            new Length(meters);
+        public static Length FromMeters(double meters) => new Length(meters);
 
         public static Length FromMilli(double milliMeters) =>
             new Length(milliMeters / (1000));

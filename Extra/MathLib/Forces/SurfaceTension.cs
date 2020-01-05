@@ -2,7 +2,7 @@
 using MathLib.Space;
 using MathLib.Systems;
 
-namespace MathLib.Strengths
+namespace MathLib.Forces
 {
     [DerivedUnit]
     public readonly struct SurfaceTension
@@ -18,7 +18,7 @@ namespace MathLib.Strengths
         /// Shearing tension is denoted by Tao (τ).
         /// </para>
         /// </summary>
-        public double Value => Force / Area.MilliMeters;
+        public double Value => Force / Area.Milli;
 
         public SurfaceTension(Force force, Area area)
         {
@@ -37,7 +37,7 @@ namespace MathLib.Strengths
             new SurfaceTension(force, Area.FromMilliMeters(force / drag));
 
         public static SurfaceTension FromDragArea(double drag, Area area) =>
-            new SurfaceTension(Force.FromNewtons(drag * area.MilliMeters), area);
+            new SurfaceTension(Force.FromNewtons(drag * area.Milli), area);
 
         #endregion
         

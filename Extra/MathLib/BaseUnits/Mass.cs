@@ -1,11 +1,11 @@
 ﻿using MathLib.Systems;
 
-namespace MathLib.BaseUnits
+namespace MathLib.Forces
 {
     [MathValue]
-    public readonly struct Mass : IBaseUnit
+    public class Mass : BaseUnit
     {
-        double IBaseUnit.Value => Kilo;
+        public override double Value => Kilo;
 
         public double Grams => Kilo / 1000;
         public double Kilo { get; }

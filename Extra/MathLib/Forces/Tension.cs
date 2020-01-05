@@ -1,7 +1,7 @@
 ﻿using System;
 using MathLib.Space;
 
-namespace MathLib.Strengths
+namespace MathLib.Forces
 {
     [MathValue]
     public readonly struct Tension

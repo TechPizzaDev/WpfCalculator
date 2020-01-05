@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -10,13 +12,12 @@ namespace Miniräknare
 {
     // TODO: settings:
     // smooth scroll in field list
-    // show result values with base10 exponent or just a lot of zeroes
+    // show result values with base10 exponent (default) or just a lot of zeroes (+ max decimal count)
 
     public partial class MainWindow : Window
     {
-        public static BindingList<ListViewItem> FieldListItems { get; private set; }
-
-        private BindingList<ListViewItem> _fieldListItems;
+        public static BindingList<ListViewItem> FieldList { get; } = new BindingList<ListViewItem>();
+        public static Dictionary<string, ExpressionField> Fields { get; } = new Dictionary<string, ExpressionField>();
 
         private LanguageWindow _languageWindow;
 
@@ -24,16 +25,17 @@ namespace Miniräknare
         {
             InitializeComponent();
 
-            _fieldListItems = new BindingList<ListViewItem>();
-            FieldList.ItemsSource = _fieldListItems;
-
-            FieldListItems = _fieldListItems;
+            FieldListView.ItemsSource = FieldList;
 
             //InitializeDragDropManager();
         }
 
         private string GetNewFieldName()
         {
+            foreach(var field in Fields.Keys)
+            {
+
+            }
             char[] omegalul = "qwertyuiopåasdfghjklöäzxcvbnm".ToCharArray();
             return omegalul[new Random().Next(omegalul.Length)].ToString();
         }
@@ -83,7 +85,8 @@ namespace Miniräknare
                 Content = field
             };
 
-            _fieldListItems.Add(listItem);
+            FieldList.Add(listItem);
+            Fields.Add(field.Name, field);
         }
 
         private void AddNewFunctionField_Click(object sender, RoutedEventArgs e)

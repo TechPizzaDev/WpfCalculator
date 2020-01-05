@@ -1,26 +1,32 @@
-﻿using System.Windows;
-using System.Linq;
-using System;
-using System.IO;
-using System.Threading.Tasks;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using Newtonsoft.Json;
 
 namespace Miniräknare
 {
     public partial class App : Application
     {
         public const string LanguageProviderKey = "LanguageProvider";
-        public const string FallbackLanguage = "en-US.xml";
+        public const string FallbackLanguage = "en-US.json";
+        public static readonly ResourceUri LoadingFormulasMessage = new ResourceUri("Other/Loading/InternalFormulas");
 
-        public const string ScriptPath = "Content/Scripts";
+        public const string FormulasPath = "Content/Formulas";
         public const string LanguagePath = "Content/Language";
 
         private SplashScreenWindow _splashScreen;
-
         private AppLanguageProvider _languageProvider;
 
         public static App Instance { get; private set; }
+
+        public static JsonSerializer Serializer { get; } = new JsonSerializer()
+        {
+            Formatting = Formatting.Indented
+        };
 
         public App()
         {
@@ -29,6 +35,34 @@ namespace Miniräknare
             _splashScreen = new SplashScreenWindow();
             MainWindow = _splashScreen;
             _splashScreen.Show();
+
+
+            var tokens = new List<ExpressionTokenizer.Token>();
+            void Print(List<ExpressionTokenizer.Token> tt)
+            {
+                string x = "";
+                foreach (var r in tt)
+                    x += r.Value;
+                Console.WriteLine(x);
+            }
+
+            ExpressionTokenizer.TokenizeInput("2__5__5 + yo_u +1_0  - 5_99.1 + xD  () + wat(nou; 25; omg(45; a))".AsMemory(), tokens);
+            //ExpressionParser.TokenizeInput("naaaou".AsMemory(), tokens);
+            Print(tokens);
+
+            var result = ExpressionSanitizer.SanitizeTokens(tokens);
+            int index = result.ErrorCharPosition ?? -1;
+            Console.WriteLine("SanitizeTokens code: " + result.Code + " at index " + index);
+
+            if (result.Code == ExpressionSanitizer.ResultCode.Ok)
+            {
+                Print(result.Tokens);
+                var parseResult = ExpressionParser.ParseTokens(result.Tokens);
+
+
+            }
+
+            Console.WriteLine();
         }
 
         #region Startup
@@ -39,31 +73,42 @@ namespace Miniräknare
 
             Task.Run(() =>
             {
-                InitializeLanguageProvider();
-                _splashScreen.DispatchProgress(10);
-
-                _splashScreen.DispatchProgressTip(_languageProvider.GetValue("Other/Loading/InternalScripts"));
-                LoadScripts((x) => _splashScreen.DispatchProgress(10 + x * 90));
-
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
-
-                Dispatcher.Invoke(() =>
+                try
                 {
-                    _splashScreen.ProgressTip = null;
+                    InitializeLanguageProvider();
+                    _splashScreen.DispatchProgress(10);
 
-                    var mainWindow = new MainWindow();
-                    MainWindow = mainWindow;
-                    mainWindow.Show();
-                    _splashScreen.Close();
-                });
+                    _splashScreen.DispatchProgressTip(_languageProvider.GetValue(LoadingFormulasMessage));
+                    LoadFormulas((x) => _splashScreen.DispatchProgress(10 + x * 90));
+
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        _splashScreen.ProgressTip = null;
+
+                        var mainWindow = new MainWindow();
+                        MainWindow = mainWindow;
+                        mainWindow.Show();
+                        _splashScreen.Close();
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    Dispatcher.Invoke(() =>
+                    {
+                        Shutdown(-1);
+                    });
+                }
             });
         }
 
         #endregion
 
-        #region Scripts
+        #region Formulas
 
-        private void LoadScripts(Action<double> onProgress)
+        private void LoadFormulas(Action<double> onProgress)
         {
             using var resourceReader = ResourceHelper.GetResourceReader(ResourceAssembly);
             var enumerator = resourceReader.GetEnumerator();
@@ -72,7 +117,7 @@ namespace Miniräknare
             {
                 var entry = enumerator.Entry;
                 if (entry.Key is string key &&
-                    key.StartsWith(ScriptPath, StringComparison.OrdinalIgnoreCase) &&
+                    key.StartsWith(FormulasPath, StringComparison.OrdinalIgnoreCase) &&
                     entry.Value is Stream stream)
                 {
                     pairs.Add(new KeyValuePair<string, Stream>(key, stream));
@@ -87,15 +132,12 @@ namespace Miniräknare
                     var pair = pairs[i];
                     var stream = pair.Value;
 
-                    var scriptData = MathScriptData.Load(stream);
-                    var script = new MathScript(scriptData);
-                    //var script = scriptData.Compile(tmpStringBuilder, generateSymbols: false);
-                    
-                    //var stringWrtier = new StringWriter();
-                    //MathScriptData.Serializer.Serialize(stringWrtier, scriptData);
-                    //Console.WriteLine(stringWrtier.ToString());
+                    var formulaData = MathFormulaData.Load(stream);
+                    var formula = new MathFormula(formulaData);
+
+
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex);
                 }
@@ -119,7 +161,7 @@ namespace Miniräknare
                 (pair) => pair.Key.EndsWith(FallbackLanguage, StringComparison.OrdinalIgnoreCase)).First();
 
             var langEntry = languages.Where(
-                (pair) => pair.Key.EndsWith("sv-SE.xml", StringComparison.OrdinalIgnoreCase)).First();
+                (pair) => pair.Key.EndsWith("sv-SE.json", StringComparison.OrdinalIgnoreCase)).First();
 
             // TODO: load main language based on settings file
 

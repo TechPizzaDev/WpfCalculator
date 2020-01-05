@@ -20,12 +20,14 @@ namespace Miniräknare
         public PropertyPath Key
         {
             get => _keyProperty;
-            set => _keyProperty = value;
+            set
+            {
+                _keyProperty = value;
+                Uri = new ResourceUri(_keyProperty.Path);
+            }
         }
 
-        public LanguageBinding() : base()
-        {
-        }
+        public ResourceUri Uri { get; private set; }
 
         public override object ProvideValue(IServiceProvider serviceProvider)
         {
@@ -43,12 +45,15 @@ namespace Miniräknare
             if (!(root.TryFindResource(App.LanguageProviderKey) is AppLanguageProvider langProvider))
                 return _value = "[No Language Provider]";
 
+            langProvider.PropertyChanged += LanguageData_PropertyChange;
+            Refresh(langProvider);
+
             // TODO: add options for turning this on/off
             if (DesignerProperties.GetIsInDesignMode(_targetObject))
             {
                 var block = new TextBlock();
 
-                Run AddRun(string text, System.Windows.Media.Color color)
+                Run AddRun(string text, Color color)
                 {
                     var run = new Run(text)
                     {
@@ -58,26 +63,26 @@ namespace Miniräknare
                     return run;
                 }
 
-                string entryKey = Key.Path;
-                int lastSeparatorIndex = entryKey.LastIndexOf('/');
-                string keyRoot = entryKey.Substring(0, lastSeparatorIndex + 1);
-                string keyValue = entryKey.Substring(lastSeparatorIndex + 1);
-                AddRun(keyRoot, Colors.Gray).FontSize *= 0.75;
-                AddRun(keyValue, Colors.Black);
+                if (Uri.Segments.Length == 1)
+                {
+                    AddRun(Uri.Segments[0], Colors.Black);
+                }
+                else
+                {
+                    AddRun(Uri.Segments[^2] + ResourceUri.PathSeparator, Colors.Gray).FontSize *= 0.75;
+                    AddRun(Uri.Segments[^1], Colors.Black);
+                }
 
                 _value = block;
                 return _value;
             }
-
-            langProvider.PropertyChanged += LanguageData_PropertyChange;
-            Refresh(langProvider);
 
             return _value;
         }
 
         private void LanguageData_PropertyChange(object sender, EventArgs e)
         {
-            var langProvider = sender as AppLanguageProvider;
+            var langProvider = (AppLanguageProvider)sender;
             Refresh(langProvider);
 
             if (_targetObject != null)
@@ -86,21 +91,14 @@ namespace Miniräknare
 
         private void Refresh(AppLanguageProvider languageProvider)
         {
-            if (languageProvider == null)
+            try
             {
-                _value = "[No Language Provider]";
+                _value = languageProvider.GetValue(Uri);
             }
-            else
+            catch (Exception e)
             {
-                try
-                {
-                    _value = languageProvider.GetValue(Key.Path);
-                }
-                catch(Exception e)
-                {
-                    Console.WriteLine(e);
-                    _value = "[Invalid Key]";
-                }
+                Console.WriteLine(e);
+                _value = "[Invalid Key]";
             }
         }
     }

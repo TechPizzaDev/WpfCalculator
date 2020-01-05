@@ -54,38 +54,38 @@
             <Grid Grid.Column="0">
                 <StackPanel Orientation="Vertical">
                     <Button Click="AddNewField_Click" VerticalAlignment="Top" Margin="3,3,3,0"
-                            ToolTip="{l:LanguageBinding Key='ActionButton/AddNewField'}">
+                            ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewField'}">
                         <Image Source="/Content/Icons/Action/AddNewField.png" />
                     </Button>
 
                     <Button Click="AddNewFunctionField_Click" VerticalAlignment="Top" Margin="3,3,3,0"
-                            ToolTip="{l:LanguageBinding Key='ActionButton/AddNewFunctionField'}">
+                            ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewFunctionField'}">
                         <Image Source="/Content/Icons/Action/AddNewFunctionField.png" />
 
                         <Button.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="{l:LanguageBinding Key='Function/Force'}" IsEnabled="False"/>
+                                <MenuItem Header="{l:LanguageBinding Key='Formulas/Force'}" IsEnabled="False"/>
                                 <!--#region Krafter-->
-                                <MenuItem Header="{l:LanguageBinding Key='Function/Force/Solidity'}">
+                                <MenuItem Header="{l:LanguageBinding Key='Formulas/Force/Solidity'}">
                                     <MenuItem.Icon>
                                         <Grid>
                                         </Grid>
                                     </MenuItem.Icon>
 
-                                    <MenuItem Header="{l:LanguageBinding Key='Function/Force/Solidity/Tension'}">
-                                        <MenuItem Header="{l:LanguageBinding Key='Function/Force/Solidity/Tension/Drag'}" />
-                                        <MenuItem Header="{l:LanguageBinding Key='Function/Force/Solidity/Tension/Shear'}" />
-                                        <MenuItem Header="{l:LanguageBinding Key='Function/Force/Solidity/Tension/Edge'}" />
+                                    <MenuItem Header="{l:LanguageBinding Key='Scripts/Force/Solidity/Tension'}">
+                                        <MenuItem Header="{l:LanguageBinding Key='Scripts/Force/Solidity/Tension/Drag'}" />
+                                        <MenuItem Header="{l:LanguageBinding Key='Scripts/Force/Solidity/Tension/Shear'}" />
+                                        <MenuItem Header="{l:LanguageBinding Key='Scripts/Force/Solidity/Tension/Edge'}" />
                                     </MenuItem>
                                 </MenuItem>
                                 <!--#endregion-->
 
                                 <Separator/>
 
-                                <MenuItem Header="{l:LanguageBinding Key='Function/Chemistry'}" IsEnabled="False" />
+                                <MenuItem Header="{l:LanguageBinding Key='Scripts/Chemistry'}" IsEnabled="False" />
                                 <!--#region Kemi-->
-                                <MenuItem Header="{l:LanguageBinding Key='Function/Chemistry/Molecule'}">
-                                    <MenuItem Header="{l:LanguageBinding Key='Function/Chemistry/Molecule/Mass'}" />
+                                <MenuItem Header="{l:LanguageBinding Key='Scripts/Chemistry/Molecule'}">
+                                    <MenuItem Header="{l:LanguageBinding Key='Scripts/Chemistry/Molecule/Mass'}" />
                                 </MenuItem>
                                 <!--#endregion-->
 
@@ -99,7 +99,7 @@
 
             <!--#region Field List-->
             <Grid Grid.Column="1">
-                <ListView x:Name="FieldList" MouseDown="FieldList_MouseDown" 
+                <ListView x:Name="FieldListView" MouseDown="FieldList_MouseDown" 
                           Background="Transparent" HorizontalContentAlignment="Stretch" />
             </Grid>
             <!--#endregion-->

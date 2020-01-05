@@ -1,25 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Windows;
+using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace Miniräknare
 {
     public partial class ExpressionField : INotifyPropertyChanged
     {
         private HashSet<ExpressionField> _references;
-        
+
         private string _textValue;
         private FieldState _state;
         private string _name;
         private object _resultValue;
         private bool _isHitTestVisible;
-        
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         public int TabIndex { get; set; }
@@ -58,27 +58,6 @@ namespace Miniräknare
             }
         }
 
-        public string Name
-        {
-            get => _name;
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                    return;
-
-                value = ValidateName(value);
-                if (_name != value)
-                {
-                    _name = value;
-                    OnPropertyChanged();
-
-                    foreach (var item in MainWindow.FieldListItems)
-                        if (item.Content is ExpressionField field)
-                            field.Update();
-                }
-            }
-        }
-
         public object ResultValue
         {
             get => _resultValue;
@@ -105,6 +84,24 @@ namespace Miniräknare
             }
         }
 
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (_name != value && ValidateName(value, out value))
+                {
+                    //string oldName = _name;
+                    _name = value;
+
+                    OnPropertyChanged();
+
+                    foreach (var field in MainWindow.Fields.Values)
+                        field.Update();
+                }
+            }
+        }
+
         #endregion
 
         public ExpressionField()
@@ -117,15 +114,24 @@ namespace Miniräknare
 
         public void Update()
         {
-            ClearReferences();
-
             var currentState = FieldState.Ok;
 
             // TODO: put parsing of TextValue into seperate function,
             // so it isn't re-parsed everytime we want to update the ResultValue
 
             double sum = 0;
-            string[] parts = TextValue.Split('+', StringSplitOptions.RemoveEmptyEntries);
+            var parts = TextValue.Split('+', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToList();
+
+            var newReferences = new HashSet<ExpressionField>(parts.Where(x => !double.TryParse(x, out _)).Select(x => MainWindow.Fields[x]));
+
+            foreach (var reference in _references)
+            {
+                if (newReferences.Contains(reference))
+                    continue;
+
+                reference.PropertyChanged -= ReferenceChanged;
+                _references.Remove(reference);
+            }
 
             foreach (string rawPart in parts)
             {
@@ -138,16 +144,13 @@ namespace Miniräknare
                 {
                     bool hasFoundItem = false;
 
-                    foreach (var fieldListItem in MainWindow.FieldListItems)
+                    foreach (var referenceField in MainWindow.Fields.Values)
                     {
-                        if (!(fieldListItem.Content is ExpressionField referenceField))
-                            continue;
-
                         if (referenceField.Name != part)
                             continue;
                         hasFoundItem = true;
 
-                        if (fieldListItem.Content == this)
+                        if (referenceField == this)
                         {
                             currentState = FieldState.CyclicReferences;
                             break;
@@ -155,7 +158,7 @@ namespace Miniräknare
 
                         // Add reference even if there are state errors;
                         // we can then track errored fields and show error messages.
-                        if (_references.Add(referenceField))
+                        if (newReferences.Add(referenceField))
                             referenceField.PropertyChanged += ReferenceChanged;
 
                         // Only change current state if it's Ok,
@@ -195,7 +198,7 @@ namespace Miniräknare
                 return;
             }
 
-            if (CheckForCyclicReferences(Name, _references))
+            if (CheckForCyclicReferences(Name, newReferences))
             {
                 State = FieldState.CyclicReferences;
                 return;
@@ -222,18 +225,13 @@ namespace Miniräknare
             return false;
         }
 
-        private void ClearReferences()
-        {
-            foreach (var reference in _references)
-                reference.PropertyChanged -= ReferenceChanged;
-            _references.Clear();
-        }
-
         private void ReferenceChanged(object sender, PropertyChangedEventArgs args)
         {
             if (args.PropertyName == nameof(ResultValue) ||
                 args.PropertyName == nameof(State))
+            {
                 Update();
+            }
         }
 
         protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
@@ -245,17 +243,28 @@ namespace Miniräknare
             }
         }
 
-        public string ValidateName(string name)
+        public bool ValidateName(string newName, out string validatedName)
         {
-            return name.Trim();
+            validatedName = newName.Trim();
+
+            if (string.IsNullOrWhiteSpace(validatedName))
+                return false;
+
+            foreach (var field in MainWindow.Fields.Values)
+                if (field.Name == validatedName)
+                    return false;
+
+            return true;
         }
 
         private void NameBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter && sender is TextBox textBox)
             {
+                // Unfocus the text box and call it's binding.
+
                 Keyboard.ClearFocus();
-                
+
                 var binding = BindingOperations.GetBindingExpression(textBox, TextBox.TextProperty);
                 binding?.UpdateSource();
             }

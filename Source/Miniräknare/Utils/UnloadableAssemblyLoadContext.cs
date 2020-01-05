@@ -5,7 +5,7 @@ namespace Miniräknare
 {
     public class UnloadableAssemblyLoadContext : AssemblyLoadContext
     {
-        public UnloadableAssemblyLoadContext() : base(true)
+        public UnloadableAssemblyLoadContext() : base(isCollectible: true)
         {
         }
 

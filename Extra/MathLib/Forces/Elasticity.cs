@@ -1,6 +1,6 @@
 ﻿using MathLib.Space;
 
-namespace MathLib.Strengths
+namespace MathLib.Forces
 {
     [MathValue]
     public readonly struct Elasticity
