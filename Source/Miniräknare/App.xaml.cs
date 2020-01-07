@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using Miniräknare.Expressions;
+using Miniräknare.Expressions.Tokens;
 using Newtonsoft.Json;
 
 namespace Miniräknare
@@ -38,8 +39,8 @@ namespace Miniräknare
             _splashScreen.Show();
 
 
-            var tokens = new List<ExpressionTokenizer.Token>();
-            static void Print(List<ExpressionTokenizer.Token> tt)
+
+            static void Print(IEnumerable<Token> tt)
             {
                 string x = "";
                 foreach (var r in tt)
@@ -47,20 +48,21 @@ namespace Miniräknare
                 Console.WriteLine(x);
             }
 
-            //ExpressionTokenizer.TokenizeInput("2__5__5 + yo_u +1_0  - 5_99.1 + xD  () + wat(nou; 25; omg(45; a))".AsMemory(), tokens);
-            ExpressionTokenizer.TokenizeInput("a(b(c()))".AsMemory(), tokens);
-            Print(tokens);
+            var tree = new ExpressionTree();
+            ExpressionTokenizer.TokenizeInput(".2__5__5 + yo_u +1_0  - 5_99.1 + xD  () + wat(nou; 25; omg(45; a))".AsMemory(), tree.Tokens);
+            //ExpressionTokenizer.TokenizeInput("a(b(c(11)))".AsMemory(), tree.Tokens);
+            Print(tree.Tokens);
 
-            var result = ExpressionSanitizer.SanitizeTokens(tokens);
-            int index = result.ErrorCharPosition ?? -1;
+            var result = ExpressionSanitizer.SanitizeTokens(tree.Tokens);
+            int index = result.ErrorTokenPosition ?? -1;
             Console.WriteLine("SanitizeTokens code: " + result.Code + " at index " + index);
 
             if (result.Code == ExpressionSanitizer.ResultCode.Ok)
             {
-                Print(tokens);
-                var parseResult = ExpressionParser.ParseTokens(tokens);
+                Print(tree.Tokens);
+                var parseResult = ExpressionParser.ParseTokens(tree.Tokens);
 
-                Print(tokens);
+                Print(tree.Tokens);
             }
 
             Console.WriteLine();

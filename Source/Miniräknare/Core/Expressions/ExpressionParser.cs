@@ -1,26 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using static Miniräknare.Expressions.ExpressionTokenizer;
+using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare.Expressions
 {
     public partial class ExpressionParser
     {
-        public static int TokenIndexToCharIndex(IReadOnlyList<Token> tokens, int tokenIndex)
-        {
-            int charIndex = 0;
-            for (int i = 0; i < tokenIndex; i++)
-                charIndex += tokens[i].Value.Length;
-            return charIndex;
-        }
-
         public enum ResultCode
         {
             Ok = 0,
             MissingListEnd,
             ListEndWithoutStart,
             OperatorMissingLeftValue,
-            OperatorMissingRightValue
+            OperatorMissingRightValue,
+            InvalidTokenBeforeList
         }
 
         public static ResultCode ParseTokens(IList<Token> tokens)
@@ -33,15 +26,7 @@ namespace Miniräknare.Expressions
             return code;
         }
 
-        //private static int IndexOf(IList<Token> tokens, int offset, TokenType type)
-        //{
-        //    for (; offset < tokens.Count; offset++)
-        //    {
-        //        if (tokens[offset].Type == type)
-        //            return offset;
-        //    }
-        //    return -1;
-        //}
+        #region MakeLists
 
         private static ResultCode MakeLists(IList<Token> tokens)
         {
@@ -95,18 +80,52 @@ namespace Miniräknare.Expressions
                     }
                 }
             }
-            
+
             if (ListDepth() > -1)
                 return ResultCode.MissingListEnd;
 
             return ResultCode.Ok;
         }
 
+        #endregion
+
+        #region MakeFunctions
+
         private static ResultCode MakeFunctions(IList<Token> tokens)
         {
+            // Loop from the end so we can call "MakeFunctions" recursively.
+            for (int i = tokens.Count; i-- > 0;)
+            {
+                var currentToken = tokens[i];
+                if (currentToken.Type == TokenType.List)
+                {
+                    var listToken = (ListToken)currentToken;
+                    ResultCode code;
+                    if ((code = MakeFunctions(listToken.Children)) != ResultCode.Ok)
+                        return code;
 
+                    if (i - 1 < 0)
+                        continue; // We reached the list's beginning.
+
+                    var leftToken = tokens[i - 1];
+                    if (leftToken.Type != TokenType.Name)
+                    {
+                        if (leftToken.Type == TokenType.Operator)
+                            continue;
+                        return ResultCode.InvalidTokenBeforeList;
+                    }
+
+                    var nameToken = (ValueToken)leftToken;
+                    var funcToken = new FunctionToken(nameToken, listToken);
+
+                    tokens[i - 1] = funcToken;
+                    tokens.RemoveAt(i);
+                }
+            }
             return ResultCode.Ok;
         }
+
+        #endregion
 
         private static ResultCode MakeOperations(IList<Token> tokens)
         {
@@ -115,9 +134,11 @@ namespace Miniräknare.Expressions
                 var currentToken = tokens[i];
                 if (currentToken.Type == TokenType.Operator)
                 {
+                    var operatorToken = (ValueToken)currentToken;
+
                     // '+' and '-' don't error when missing left value
-                    if (!currentToken.ValueEqualTo('+') &&
-                        !currentToken.ValueEqualTo('-'))
+                    if (!operatorToken.ValueEqualTo('+') &&
+                        !operatorToken.ValueEqualTo('-'))
                     {
                         if (i - 1 < 0)
                             return ResultCode.OperatorMissingLeftValue;
@@ -129,7 +150,7 @@ namespace Miniräknare.Expressions
                     var leftToken = tokens[i - 1];
                     var rightToken = tokens[i + 1];
 
-                    Console.WriteLine(leftToken + currentToken.Value.ToString() + rightToken);
+                    Console.WriteLine(leftToken + operatorToken.Value.ToString() + rightToken);
                 }
             }
 

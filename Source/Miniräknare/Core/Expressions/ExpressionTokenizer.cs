@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare.Expressions
 {
@@ -12,6 +14,8 @@ namespace Miniräknare.Expressions
         public const char ListEndChar = ')';
         public const char ListSeparatorChar = ';';
 
+        #region Static Constructor
+
         static ExpressionTokenizer()
         {
             static TokenDefinition NewDef(TokenType type, Func<char, bool> predicate, bool isSingular = false)
@@ -19,11 +23,16 @@ namespace Miniräknare.Expressions
                 return new TokenDefinition(type, predicate, isSingular);
             }
 
+            var decimalNumberDef = NewDef(TokenType.DecimalNumber,
+                c => CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.OtherNumber);
+
             _tokenDefinitions = new[]
             {
                 NewDef(TokenType.Operator, IsOperator),
                 NewDef(TokenType.Name, IsName),
-                NewDef(TokenType.NumberLiteral, IsNumberLiteral),
+                NewDef(TokenType.DecimalSeparator, c => c == '.' || c == ',', true),
+                NewDef(TokenType.DecimalDigit, char.IsDigit),
+                decimalNumberDef,
                 NewDef(TokenType.WhiteSpace, char.IsWhiteSpace),
                 NewDef(TokenType.Space, c => c == SpaceChar),
                 NewDef(TokenType.ListStart, c => c == ListStartChar, true),
@@ -32,18 +41,17 @@ namespace Miniräknare.Expressions
             };
         }
 
-        private class TokenDefinition
-        {
-            public TokenType Type { get; }
-            public Func<char, bool> Predicate { get; }
-            public bool IsSingular { get; }
+        #endregion
 
-            public TokenDefinition(TokenType type, Func<char, bool> predicate, bool isSingular)
+        public static TokenDefinition GetDefinition(char c)
+        {
+            for (int j = 0; j < _tokenDefinitions.Length; j++)
             {
-                Type = type;
-                Predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
-                IsSingular = isSingular;
+                var def = _tokenDefinitions[j];
+                if (def.Predicate(c))
+                    return def;
             }
+            return null;
         }
 
         public static void TokenizeInput(ReadOnlyMemory<char> inputText, ICollection<Token> output)
@@ -58,7 +66,7 @@ namespace Miniräknare.Expressions
                 if (length > 0)
                 {
                     var slice = inputText.Slice(lastOffset, length);
-                    output.Add(new Token(currentType, slice));
+                    output.Add(new ValueToken(currentType, slice));
                 }
             }
 
@@ -66,17 +74,7 @@ namespace Miniräknare.Expressions
             while (offset < inputText.Length)
             {
                 char c = span[offset];
-
-                TokenDefinition definition = null;
-                for (int j = 0; j < _tokenDefinitions.Length; j++)
-                {
-                    var d = _tokenDefinitions[j];
-                    if (d.Predicate(c))
-                    {
-                        definition = d;
-                        break;
-                    }
-                }
+                TokenDefinition definition = GetDefinition(c);
 
                 var nextType = definition == null ? TokenType.Unknown : definition.Type;
                 if (nextType != currentType || definition.IsSingular)
@@ -90,6 +88,30 @@ namespace Miniräknare.Expressions
             }
 
             FinishToken();
+        }
+
+        private static bool IsOperator(char c)
+        {
+            switch (c)
+            {
+                case '+':
+                case '-':
+                case '/':
+                case '*':
+                case '%':
+                case '^':
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsName(char c)
+        {
+            if (char.IsLetter(c))
+                return true;
+            return false;
         }
     }
 }
