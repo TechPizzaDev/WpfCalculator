@@ -182,12 +182,13 @@ namespace Miniräknare.Expressions
                     resultList.Add(operatorToken);
                     resultList.Add(rightToken);
 
+                    // TODO: check if this yields correct behavior
+
                     var resultToken = new ListToken(resultList);
                     int firstIndex = i - (resultList.Count - 2);
                     tokens.RemoveRange(firstIndex + 1, resultList.Count - 1);
                     tokens[firstIndex] = resultToken; // insert result token
                     i--; // go back and check for next operator
-                    // TODO: FIX THIS BROKEN MESS
                 }
             }
 
