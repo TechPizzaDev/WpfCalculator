@@ -31,7 +31,7 @@ namespace Miniräknare.Expressions
                 NewDef(TokenType.Operator, IsOperator),
                 NewDef(TokenType.Name, IsName),
                 NewDef(TokenType.DecimalSeparator, c => c == '.' || c == ',', true),
-                NewDef(TokenType.DecimalDigit, char.IsDigit),
+                NewDef(TokenType.DecimalDigit, char.IsDigit, true),
                 decimalNumberDef,
                 NewDef(TokenType.WhiteSpace, char.IsWhiteSpace),
                 NewDef(TokenType.Space, c => c == SpaceChar),

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare.Expressions
@@ -16,7 +15,7 @@ namespace Miniräknare.Expressions
             InvalidTokenBeforeList
         }
 
-        public static ResultCode ParseTokens(IList<Token> tokens)
+        public static ResultCode ParseTokens(List<Token> tokens)
         {
             ResultCode code;
             if ((code = MakeLists(tokens)) != ResultCode.Ok ||
@@ -118,8 +117,8 @@ namespace Miniräknare.Expressions
                     var nameToken = (ValueToken)leftToken;
                     var funcToken = new FunctionToken(nameToken, listToken);
 
-                    tokens[i - 1] = funcToken;
-                    tokens.RemoveAt(i);
+                    tokens[i - 1] = funcToken; // replace left token
+                    tokens.RemoveAt(i); // remove current token
                 }
             }
             return ResultCode.Ok;
@@ -127,7 +126,9 @@ namespace Miniräknare.Expressions
 
         #endregion
 
-        private static ResultCode MakeOperations(IList<Token> tokens)
+        #region MakeOperations
+
+        private static ResultCode MakeOperations(List<Token> tokens)
         {
             for (int i = 0; i < tokens.Count; i++)
             {
@@ -150,11 +151,20 @@ namespace Miniräknare.Expressions
                     var leftToken = tokens[i - 1];
                     var rightToken = tokens[i + 1];
 
-                    Console.WriteLine(leftToken + operatorToken.Value.ToString() + rightToken);
+                    var list = new List<Token>(3);
+                    list.Add(leftToken);
+                    list.Add(currentToken);
+                    list.Add(rightToken);
+
+                    var operationToken = new ListToken(list);
+                    tokens[i - 1] = operationToken; // replace left token with resulting token
+                    tokens.RemoveRange(i, 2); // remove the current and right tokens
                 }
             }
 
             return ResultCode.Ok;
         }
+
+        #endregion
     }
 }

@@ -7,6 +7,8 @@ namespace Miniräknare.Expressions
 {
     public partial class ExpressionSanitizer
     {
+        public const char DecimalSeparator = '.';
+
         public enum ResultCode
         {
             Ok = 0,
@@ -18,7 +20,9 @@ namespace Miniräknare.Expressions
             DecimalNumberInDigit,
             TrailingDecimalSeparator,
             InvalidDecimalSeparator,
-            MultipleDecimalSeparators
+            MultipleDecimalSeparators,
+            NegativeSignMissingValue,
+            UnexpectedListSeparator
         }
 
         public readonly struct SanitizeResult
@@ -50,6 +54,10 @@ namespace Miniräknare.Expressions
                 return result;
 
             result = MergeGroupsOfMultipleTypes(builder, tokens);
+            if (result.Code != ResultCode.Ok)
+                return result;
+
+            result = ValidateFunctionParameters(tokens);
             if (result.Code != ResultCode.Ok)
                 return result;
 
@@ -139,59 +147,44 @@ namespace Miniräknare.Expressions
 
         private static SanitizeResult MergeGroupsOfSingleType(StringBuilder builder, List<Token> tokens)
         {
-            var lastType = TokenType.Unknown;
-            int lastGroupIndex = 0;
-
             for (int i = 0; i < tokens.Count; i++)
             {
                 #region MergeGroup helpers
 
-                int groupLength = i - lastGroupIndex;
-
-                bool CanMergeGroup(TokenType expectedType)
+                bool CanMergeGroup(TokenType expectedType, out int length)
                 {
-                    if (lastType != expectedType ||
-                        groupLength <= 1)
-                        return false;
-                    return true;
+                    // TODO: cache predicate
+                    int end = AsLongAsMatch(tokens, i, t => t.Type == expectedType);
+                    length = end - i;
+                    if (length > 1)
+                        return true;
+                    return false;
                 }
 
-                bool MergeGroupAndInsert(TokenType expectedType)
+                void MergeGroupAndInsert(TokenType expectedType, TokenType resultType)
                 {
-                    if (!CanMergeGroup(expectedType))
-                        return false;
+                    if (!CanMergeGroup(expectedType, out int length))
+                        return;
 
-                    if (!MergeGroup(builder, tokens, lastGroupIndex, groupLength, true, expectedType, out var mergedToken))
-                        // should never throw as we check the length with CanMergeGroup()
+                    if (!MergeGroup(builder, tokens, i, length, true, resultType, out var mergedToken))
+                        // Should never be thrown as we check the length with CanMergeGroup()
                         throw new Exception("Unknown state.");
 
-                    tokens.Insert(lastGroupIndex, mergedToken);
-                    return true;
+                    tokens.Insert(i, mergedToken);
                 }
 
                 #endregion
 
-                var currentType = tokens[i].Type;
-                if (currentType != lastType)
-                {
-                    if (CanMergeGroup(TokenType.DecimalNumber))
-                        return new SanitizeResult(ResultCode.RepeatingDecimalNumbers, i);
+                if (CanMergeGroup(TokenType.DecimalNumber, out _))
+                    return new SanitizeResult(ResultCode.RepeatingDecimalNumbers, i);
 
-                    if (CanMergeGroup(TokenType.DecimalSeparator))
-                        return new SanitizeResult(ResultCode.RepeatingDecimalSeparators, i);
+                if (CanMergeGroup(TokenType.DecimalSeparator, out _))
+                    return new SanitizeResult(ResultCode.RepeatingDecimalSeparators, i);
 
-                    if (CanMergeGroup(TokenType.ListSeparator))
-                        return new SanitizeResult(ResultCode.RepeatingListSeparators, i);
+                if (CanMergeGroup(TokenType.ListSeparator, out _))
+                    return new SanitizeResult(ResultCode.RepeatingListSeparators, i);
 
-                    if (MergeGroupAndInsert(TokenType.DecimalDigit))
-                    {
-                        // We removed tokens so wind back "i".
-                        i = lastGroupIndex + 1; // "+ 1" as we inserted a new token.
-                    }
-
-                    lastGroupIndex = i;
-                    lastType = currentType;
-                }
+                MergeGroupAndInsert(TokenType.DecimalDigit, TokenType.DecimalNumber);
             }
             return SanitizeResult.Ok;
         }
@@ -215,7 +208,7 @@ namespace Miniräknare.Expressions
                 {
                     static bool IsNameOrSpace(Token t) => t.Type == TokenType.Name || t.Type == TokenType.Space;
                     int end = AsLongAsMatch(tokens, i, IsNameOrSpace);
-                    int length = end - i + 1;
+                    int length = end - i;
 
                     if (MergeGroup(builder, tokens, i, length, true, TokenType.Name, out var resultToken))
                         tokens.Insert(i, resultToken);
@@ -239,7 +232,7 @@ namespace Miniräknare.Expressions
                         return false;
                     }
                     int end = AsLongAsMatch(tokens, i, IsDigitOrDigitNumber);
-                    int length = end - i + 1;
+                    int length = end - i;
 
                     // Check if multiple tokens contain a decimal separator.
                     if (length > 1)
@@ -292,10 +285,78 @@ namespace Miniräknare.Expressions
                     goto End;
                 }
 
+                #endregion
+
+                #region Move negative sign to following token
+
+                if (currentToken.Type == TokenType.Operator &&
+                    currentToken is ValueToken valueToken &&
+                    valueToken.Value.Length == 2)
+                {
+                    if (valueToken.Value.Span[1] == '-')
+                    {
+                        var secondToken = GetNextToken(tokens, i);
+                        if (secondToken == null)
+                            return new SanitizeResult(ResultCode.NegativeSignMissingValue, i);
+
+                        var firstToken = new ValueToken(TokenType.Operator, valueToken.Value.Slice(0, 1));
+                        var negativeOp = new ValueToken(TokenType.Operator, valueToken.Value.Slice(1, 1));
+                        var negativeToken = new ListToken(new List<Token>(2)
+                        {
+                            negativeOp,
+                            secondToken
+                        });
+                        tokens[i] = firstToken;
+                        tokens[i + 1] = negativeToken;
+                    }
+                }
+
             #endregion
 
             End:
                 lastToken = currentToken;
+            }
+            return SanitizeResult.Ok;
+        }
+
+        #endregion
+
+        #region ValidateFunctionParameters
+
+        private static SanitizeResult ValidateFunctionParameters(List<Token> tokens)
+        {
+            static SanitizeResult ValidateFunction(FunctionToken function)
+            {
+                TokenType? lastParamType = null;
+                for (int i = 0; i < function.Parameters.Count; i++)
+                {
+                    var param = function.Parameters[i];
+                    if (param.Type == TokenType.ListSeparator)
+                    {
+                        if (!lastParamType.HasValue || lastParamType == TokenType.ListSeparator)
+                            return new SanitizeResult(ResultCode.UnexpectedListSeparator, 0);
+
+                        function.Parameters.RemoveAt(i--);
+                    }
+                    lastParamType = param.Type;
+                }
+                return SanitizeResult.Ok;
+            }
+
+            SanitizeResult result;
+            for (int i = 0; i < tokens.Count; i++)
+            {
+                var currentToken = tokens[i];
+                if (currentToken is FunctionToken function)
+                {
+                    if ((result = ValidateFunction(function)).Code != ResultCode.Ok)
+                        return result;
+                }
+
+                // This works on functions and lists.
+                if (currentToken is CollectionToken collection)
+                    if ((result = ValidateFunctionParameters(collection.Children)).Code != ResultCode.Ok)
+                        return result;
             }
             return SanitizeResult.Ok;
         }
@@ -353,9 +414,9 @@ namespace Miniräknare.Expressions
         public static int AsLongAsMatch(
             IList<Token> tokens, int offset, Predicate<Token> predicate)
         {
-            for (; offset + 1 < tokens.Count; offset++)
+            for (; offset < tokens.Count; offset++)
             {
-                if (!predicate.Invoke(tokens[offset + 1]))
+                if (!predicate.Invoke(tokens[offset]))
                     break;
             }
             return offset;
@@ -374,7 +435,10 @@ namespace Miniräknare.Expressions
                     if (!(groupToken is ValueToken groupValueToken))
                         throw new Exception("Groups may only consist out of value tokens.");
 
-                    builder.Append(groupValueToken.Value);
+                    if (groupValueToken.Type == TokenType.DecimalSeparator)
+                        builder.Append(DecimalSeparator);
+                    else
+                        builder.Append(groupValueToken.Value);
 
                     if (!removeTokens)
                         offset++;

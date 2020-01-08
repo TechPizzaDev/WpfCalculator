@@ -49,23 +49,62 @@ namespace Miniräknare
             }
 
             var tree = new ExpressionTree();
-            ExpressionTokenizer.TokenizeInput(".2__5__5 + yo_u +1_0  - 5_99.1 + xD  () + wat(nou; 25; omg(45; a))".AsMemory(), tree.Tokens);
-            //ExpressionTokenizer.TokenizeInput("a(b(c(11)))".AsMemory(), tree.Tokens);
-            Print(tree.Tokens);
-
-            var result = ExpressionSanitizer.SanitizeTokens(tree.Tokens);
-            int index = result.ErrorTokenPosition ?? -1;
-            Console.WriteLine("SanitizeTokens code: " + result.Code + " at index " + index);
-
-            if (result.Code == ExpressionSanitizer.ResultCode.Ok)
+            while (true)
             {
-                Print(tree.Tokens);
-                var parseResult = ExpressionParser.ParseTokens(tree.Tokens);
+                string input = Console.ReadLine();
 
-                Print(tree.Tokens);
+                tree.Tokens.Clear();
+                //ExpressionTokenizer.TokenizeInput(".2__5__5 + yo_u +1_0  - 5_99.1 + xD  () + wat(nou; 25; omg(45; a))".AsMemory(), tree.Tokens);
+                ExpressionTokenizer.TokenizeInput(input.AsMemory(), tree.Tokens);
+                //Print(tree.Tokens);
+
+                var result = ExpressionSanitizer.SanitizeTokens(tree.Tokens);
+                int index = result.ErrorTokenPosition ?? -1;
+                Console.WriteLine("SanitizeTokens code: " + result.Code + " at index " + index);
+
+                if (result.Code == ExpressionSanitizer.ResultCode.Ok)
+                {
+                    //Print(tree.Tokens);
+                    var parseResult = ExpressionParser.ParseTokens(tree.Tokens);
+
+                    //Print(tree.Tokens);
+                    var evalResult = new ExpressionEvaluator(
+                        ResolveReference,
+                        ResolveOperator,
+                        ResolveFunction).Evaluate(tree);
+
+                    Console.WriteLine("Eval: " + evalResult);
+                }
             }
-
             Console.WriteLine();
+        }
+
+
+        public static object ResolveReference(ReadOnlyMemory<char> name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static object ResolveOperator(ReadOnlyMemory<char> name, object left, object right)
+        {
+            if(name.Length < 1 || name.Length > 2)
+                throw new NotImplementedException();
+
+            switch (name.Span[0])
+            {
+                case '+': return (double)left + (double)right;
+                case '-': return (double)left - (double)right;
+                case '*': return (double)left * (double)right;
+                case '/': return (double)left / (double)right;
+
+                default:
+                    return new NotSupportedException();
+            }
+        }
+
+        public static object ResolveFunction(ReadOnlyMemory<char> name, IEnumerable<object> arguments)
+        {
+            throw new NotImplementedException();
         }
 
         #region Startup
