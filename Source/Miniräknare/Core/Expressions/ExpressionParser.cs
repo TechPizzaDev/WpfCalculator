@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare.Expressions
@@ -128,8 +129,27 @@ namespace Miniräknare.Expressions
 
         #region MakeOperations
 
+        public class OperatorDefinition
+        {
+            public ReadOnlyMemory<char> Name { get; }
+            public bool RequiresBothSides { get; }
+            public int Priority { get; }
+
+            public OperatorDefinition(ReadOnlyMemory<char> name, bool requiresBothSides, int priority)
+            {
+                if (name.IsEmpty)
+                    throw new ArgumentException(nameof(name));
+
+                Name = name;
+                RequiresBothSides = requiresBothSides;
+                Priority = priority;
+            }
+        }
+
         private static ResultCode MakeOperations(List<Token> tokens)
         {
+            // TODO: implement operator priority
+
             for (int i = 0; i < tokens.Count; i++)
             {
                 var currentToken = tokens[i];
@@ -137,9 +157,14 @@ namespace Miniräknare.Expressions
                 {
                     var operatorToken = (ValueToken)currentToken;
 
+                    var operatorDef = (OperatorDefinition)null; // get defs
+
                     // '+' and '-' don't error when missing left value
-                    if (!operatorToken.ValueEqualTo('+') &&
-                        !operatorToken.ValueEqualTo('-'))
+                    // !operatorToken.ValueEqualTo('+') &&
+                    // !operatorToken.ValueEqualTo('-')
+                    
+                    if (operatorDef != null &&
+                        operatorDef.RequiresBothSides)
                     {
                         if (i - 1 < 0)
                             return ResultCode.OperatorMissingLeftValue;
@@ -148,17 +173,21 @@ namespace Miniräknare.Expressions
                     if (i + 1 >= tokens.Count)
                         return ResultCode.OperatorMissingRightValue;
 
-                    var leftToken = tokens[i - 1];
+                    var leftToken = i - 1 < 0 ? null : tokens[i - 1];
                     var rightToken = tokens[i + 1];
 
-                    var list = new List<Token>(3);
-                    list.Add(leftToken);
-                    list.Add(currentToken);
-                    list.Add(rightToken);
+                    var resultList = new List<Token>(leftToken == null ? 2 : 3);
+                    if (leftToken != null)
+                        resultList.Add(leftToken);
+                    resultList.Add(operatorToken);
+                    resultList.Add(rightToken);
 
-                    var operationToken = new ListToken(list);
-                    tokens[i - 1] = operationToken; // replace left token with resulting token
-                    tokens.RemoveRange(i, 2); // remove the current and right tokens
+                    var resultToken = new ListToken(resultList);
+                    int firstIndex = i - (resultList.Count - 2);
+                    tokens.RemoveRange(firstIndex + 1, resultList.Count - 1);
+                    tokens[firstIndex] = resultToken; // insert result token
+                    i--; // go back and check for next operator
+                    // TODO: FIX THIS BROKEN MESS
                 }
             }
 

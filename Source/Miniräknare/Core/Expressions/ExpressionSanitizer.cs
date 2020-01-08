@@ -7,6 +7,9 @@ namespace Miniräknare.Expressions
 {
     public partial class ExpressionSanitizer
     {
+        private static TokenType[] DecimalSeparatorTypes = new [] { TokenType.DecimalSeparator };
+        private static TokenType[] DecimalNumberComponents = new[] { TokenType.DecimalDigit, TokenType.DecimalSeparator };
+
         public const char DecimalSeparator = '.';
 
         public enum ResultCode
@@ -57,7 +60,7 @@ namespace Miniräknare.Expressions
             if (result.Code != ResultCode.Ok)
                 return result;
 
-            result = ValidateFunctionParameters(tokens);
+            result = ValidateFunctionArguments(tokens);
             if (result.Code != ResultCode.Ok)
                 return result;
 
@@ -197,6 +200,8 @@ namespace Miniräknare.Expressions
         {
             Token lastToken = null;
 
+            // TODO: clean up this function
+
             for (int i = 0; i < tokens.Count; i++)
             {
                 var currentToken = tokens[i];
@@ -227,8 +232,7 @@ namespace Miniräknare.Expressions
                         if (t.Type == TokenType.DecimalDigit)
                             return true;
                         if (t.Type == TokenType.DecimalNumber)
-                            return MatchesTypes(((ValueToken)t).Value.Span,
-                                TokenType.DecimalDigit, TokenType.DecimalSeparator);
+                            return MatchesTypes(((ValueToken)t).Value.Span, DecimalNumberComponents);
                         return false;
                     }
                     int end = AsLongAsMatch(tokens, i, IsDigitOrDigitNumber);
@@ -242,7 +246,7 @@ namespace Miniräknare.Expressions
                         {
                             if (tokens[j] is ValueToken vt)
                             {
-                                bool hasSeparator = HasType(vt.Value.Span, TokenType.DecimalSeparator);
+                                bool hasSeparator = HasType(vt.Value.Span, DecimalSeparatorTypes);
                                 if (hasSeparator && separatorEncountered)
                                     return new SanitizeResult(ResultCode.MultipleDecimalSeparators, i);
                                 separatorEncountered |= hasSeparator;
@@ -321,24 +325,24 @@ namespace Miniräknare.Expressions
 
         #endregion
 
-        #region ValidateFunctionParameters
+        #region ValidateFunctionArguments
 
-        private static SanitizeResult ValidateFunctionParameters(List<Token> tokens)
+        private static SanitizeResult ValidateFunctionArguments(List<Token> tokens)
         {
             static SanitizeResult ValidateFunction(FunctionToken function)
             {
-                TokenType? lastParamType = null;
-                for (int i = 0; i < function.Parameters.Count; i++)
+                TokenType? lastArgType = null;
+                for (int i = 0; i < function.Arguments.Count; i++)
                 {
-                    var param = function.Parameters[i];
-                    if (param.Type == TokenType.ListSeparator)
+                    var arg = function.Arguments[i];
+                    if (arg.Type == TokenType.ListSeparator)
                     {
-                        if (!lastParamType.HasValue || lastParamType == TokenType.ListSeparator)
+                        if (!lastArgType.HasValue || lastArgType == TokenType.ListSeparator)
                             return new SanitizeResult(ResultCode.UnexpectedListSeparator, 0);
 
-                        function.Parameters.RemoveAt(i--);
+                        function.Arguments.RemoveAt(i--);
                     }
-                    lastParamType = param.Type;
+                    lastArgType = arg.Type;
                 }
                 return SanitizeResult.Ok;
             }
@@ -355,7 +359,7 @@ namespace Miniräknare.Expressions
 
                 // This works on functions and lists.
                 if (currentToken is CollectionToken collection)
-                    if ((result = ValidateFunctionParameters(collection.Children)).Code != ResultCode.Ok)
+                    if ((result = ValidateFunctionArguments(collection.Children)).Code != ResultCode.Ok)
                         return result;
             }
             return SanitizeResult.Ok;
@@ -365,7 +369,7 @@ namespace Miniräknare.Expressions
 
         #region Helpers
 
-        public static bool MatchesTypes(ReadOnlySpan<char> chars, params TokenType[] types)
+        public static bool MatchesTypes(ReadOnlySpan<char> chars, ReadOnlySpan<TokenType> types)
         {
             if (types.Length == 0)
                 throw new ArgumentException(nameof(types));
@@ -373,8 +377,8 @@ namespace Miniräknare.Expressions
             for (int i = 0; i < chars.Length; i++)
             {
                 var def = ExpressionTokenizer.GetDefinition(chars[i]);
-                bool match = false;
 
+                bool match = false;
                 for (int j = 0; j < types.Length; j++)
                 {
                     if (def.Type == types[j])
@@ -389,7 +393,7 @@ namespace Miniräknare.Expressions
             return true;
         }
 
-        public static bool HasType(ReadOnlySpan<char> chars, params TokenType[] types)
+        public static bool HasType(ReadOnlySpan<char> chars, ReadOnlySpan<TokenType> types)
         {
             if (types.Length == 0)
                 throw new ArgumentException(nameof(types));

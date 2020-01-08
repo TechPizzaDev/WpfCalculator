@@ -6,7 +6,7 @@ namespace Miniräknare.Expressions.Tokens
     public class FunctionToken : CollectionToken
     {
         public ValueToken Name { get; }
-        public ListToken Parameters { get; }
+        public ListToken Arguments { get; }
 
         public FunctionToken(ValueToken name, ListToken parameters) : base(TokenType.Function, parameters.Children)
         {
@@ -14,7 +14,7 @@ namespace Miniräknare.Expressions.Tokens
             if (name.Type != TokenType.Name)
                 throw new ArgumentException("Invalid token type.", nameof(name));
 
-            Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
+            Arguments = parameters ?? throw new ArgumentNullException(nameof(parameters));
         }
 
         protected override StringBuilder ToStringCore()

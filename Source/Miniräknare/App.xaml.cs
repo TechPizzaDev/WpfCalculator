@@ -68,41 +68,47 @@ namespace Miniräknare
                     var parseResult = ExpressionParser.ParseTokens(tree.Tokens);
 
                     //Print(tree.Tokens);
-                    var evalResult = new ExpressionEvaluator(
+                    var evaluator = new ExpressionEvaluator(
                         ResolveReference,
                         ResolveOperator,
-                        ResolveFunction).Evaluate(tree);
+                        ResolveFunction);
 
-                    Console.WriteLine("Eval: " + evalResult);
+                    var evalResult = UnionValue.Null;
+                    for (int i = 0; i < 1; i++)
+                    {
+                        evalResult = evaluator.Evaluate(tree);
+                    }
+                    Console.WriteLine("Eval: " + evalResult.Double);
                 }
             }
             Console.WriteLine();
         }
 
 
-        public static object ResolveReference(ReadOnlyMemory<char> name)
+        public static UnionValue ResolveReference(ReadOnlyMemory<char> name)
         {
             throw new NotImplementedException();
         }
 
-        public static object ResolveOperator(ReadOnlyMemory<char> name, object left, object right)
+        public static UnionValue ResolveOperator(ReadOnlyMemory<char> name, UnionValue left, UnionValue right)
         {
-            if(name.Length < 1 || name.Length > 2)
+            if (name.Length < 1 || name.Length > 2)
                 throw new NotImplementedException();
 
             switch (name.Span[0])
             {
-                case '+': return (double)left + (double)right;
-                case '-': return (double)left - (double)right;
-                case '*': return (double)left * (double)right;
-                case '/': return (double)left / (double)right;
+                case '+': return left.Double + right.Double;
+                case '-': return left.Double - right.Double;
+
+                case '*': return left.Double * right.Double;
+                case '/': return left.Double / right.Double;
 
                 default:
-                    return new NotSupportedException();
+                    throw new NotSupportedException();
             }
         }
 
-        public static object ResolveFunction(ReadOnlyMemory<char> name, IEnumerable<object> arguments)
+        public static UnionValue ResolveFunction(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
         {
             throw new NotImplementedException();
         }
