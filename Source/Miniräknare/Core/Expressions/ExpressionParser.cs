@@ -6,6 +6,28 @@ namespace Miniräknare.Expressions
 {
     public partial class ExpressionParser
     {
+        private static List<OperatorDefinition> _definitions;
+
+        static ExpressionParser()
+        {
+            _definitions = new List<OperatorDefinition>()
+            {
+                new OperatorDefinition("+".AsMemory(), false, 0),
+                new OperatorDefinition("-".AsMemory(), false, 0),
+            };
+        }
+
+        public static OperatorDefinition GetOperatorDefinition(ReadOnlySpan<char> value)
+        {
+            for (int i = 0; i < _definitions.Count; i++)
+            {
+                var def = _definitions[i];
+                if (def.Name.Span.SequenceEqual(value))
+                    return def;
+            }
+            return null;
+        }
+
         public enum ResultCode
         {
             Ok = 0,
@@ -129,42 +151,29 @@ namespace Miniräknare.Expressions
 
         #region MakeOperations
 
-        public class OperatorDefinition
-        {
-            public ReadOnlyMemory<char> Name { get; }
-            public bool RequiresBothSides { get; }
-            public int Priority { get; }
-
-            public OperatorDefinition(ReadOnlyMemory<char> name, bool requiresBothSides, int priority)
-            {
-                if (name.IsEmpty)
-                    throw new ArgumentException(nameof(name));
-
-                Name = name;
-                RequiresBothSides = requiresBothSides;
-                Priority = priority;
-            }
-        }
-
         private static ResultCode MakeOperations(List<Token> tokens)
         {
+            if (tokens.Count == 2)
+                return ResultCode.Ok;
+
             // TODO: implement operator priority
 
             for (int i = 0; i < tokens.Count; i++)
             {
-                var currentToken = tokens[i];
-                if (currentToken.Type == TokenType.Operator)
+                ResultCode tmpCode; 
+
+                var token = tokens[i];
+                if (token.Type == TokenType.List)
                 {
-                    var operatorToken = (ValueToken)currentToken;
+                    if ((tmpCode = MakeOperations(((ListToken)token).Children)) != ResultCode.Ok)
+                        return tmpCode;
+                }
+                else if (token.Type == TokenType.Operator)
+                {
+                    var opToken = (ValueToken)token;
 
-                    var operatorDef = (OperatorDefinition)null; // get defs
-
-                    // '+' and '-' don't error when missing left value
-                    // !operatorToken.ValueEqualTo('+') &&
-                    // !operatorToken.ValueEqualTo('-')
-                    
-                    if (operatorDef != null &&
-                        operatorDef.RequiresBothSides)
+                    var opDef = GetOperatorDefinition(opToken.Value.Span);
+                    if (OperatorDefinition.GetRequiresBothSides(opDef))
                     {
                         if (i - 1 < 0)
                             return ResultCode.OperatorMissingLeftValue;
@@ -176,18 +185,23 @@ namespace Miniräknare.Expressions
                     var leftToken = i - 1 < 0 ? null : tokens[i - 1];
                     var rightToken = tokens[i + 1];
 
+                    if (rightToken is ListToken rightListToken)
+                    {
+                        if ((tmpCode = MakeOperations(rightListToken.Children)) != ResultCode.Ok)
+                            return tmpCode;
+                    }
+
                     var resultList = new List<Token>(leftToken == null ? 2 : 3);
                     if (leftToken != null)
                         resultList.Add(leftToken);
-                    resultList.Add(operatorToken);
+                    resultList.Add(opToken);
                     resultList.Add(rightToken);
-
-                    // TODO: check if this yields correct behavior
 
                     var resultToken = new ListToken(resultList);
                     int firstIndex = i - (resultList.Count - 2);
                     tokens.RemoveRange(firstIndex + 1, resultList.Count - 1);
-                    tokens[firstIndex] = resultToken; // insert result token
+                    tokens[firstIndex] = resultToken;
+
                     i--; // go back and check for next operator
                 }
             }

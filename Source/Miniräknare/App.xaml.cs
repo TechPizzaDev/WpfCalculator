@@ -66,49 +66,55 @@ namespace Miniräknare
                 {
                     //Print(tree.Tokens);
                     var parseResult = ExpressionParser.ParseTokens(tree.Tokens);
+                    Console.WriteLine("ParseTokens code: " + parseResult);
 
-                    //Print(tree.Tokens);
-                    var evaluator = new ExpressionEvaluator(
+                        //Print(tree.Tokens);
+                        var evaluator = new ExpressionEvaluator(
                         ResolveReference,
                         ResolveOperator,
                         ResolveFunction);
 
-                    var evalResult = UnionValue.Null;
+                    var eval = Evaluation.Undefined;
                     for (int i = 0; i < 1; i++)
                     {
-                        evalResult = evaluator.Evaluate(tree);
+                        eval = evaluator.Evaluate(tree);
                     }
-                    Console.WriteLine("Eval: " + evalResult.Double);
+
+                    if(eval.Code != EvalCode.Ok)
+                    {
+                        Console.WriteLine("Eval code: " + eval.Code);
+                    }
+                    else
+                        Console.WriteLine("Eval: " + eval.Value.Double);
                 }
             }
             Console.WriteLine();
         }
 
-
-        public static UnionValue ResolveReference(ReadOnlyMemory<char> name)
+        public static Evaluation ResolveReference(ReadOnlyMemory<char> name)
         {
             throw new NotImplementedException();
         }
 
-        public static UnionValue ResolveOperator(ReadOnlyMemory<char> name, UnionValue left, UnionValue right)
+        public static Evaluation ResolveOperator(ReadOnlyMemory<char> name, UnionValue? left, UnionValue right)
         {
             if (name.Length < 1 || name.Length > 2)
-                throw new NotImplementedException();
+                return new Evaluation(EvalCode.InvalidOperatorCall);
 
             switch (name.Span[0])
             {
-                case '+': return left.Double + right.Double;
-                case '-': return left.Double - right.Double;
+                case '+': return left.GetValueOrDefault().Double + right.Double;
+                case '-': return left.GetValueOrDefault().Double - right.Double;
 
-                case '*': return left.Double * right.Double;
-                case '/': return left.Double / right.Double;
+                case '*': return left.GetValueOrDefault().Double * right.Double;
+                case '/': return left.GetValueOrDefault().Double / right.Double;
 
                 default:
-                    throw new NotSupportedException();
+                    return Evaluation.Undefined;
             }
         }
 
-        public static UnionValue ResolveFunction(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
+        public static Evaluation ResolveFunction(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
         {
             throw new NotImplementedException();
         }

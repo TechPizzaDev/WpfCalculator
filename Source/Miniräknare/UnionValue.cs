@@ -1,4 +1,6 @@
-﻿namespace Miniräknare
+﻿using System.Runtime.InteropServices;
+
+namespace Miniräknare
 {
     public enum UnionValueType : int
     {
@@ -7,27 +9,21 @@
         Double
     }
 
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Explicit)]
     public readonly struct UnionValue
     {
-        public static readonly UnionValue Null = new UnionValue();
+        public static UnionValue Null { get; } = new UnionValue(UnionValueType.Null);
 
-        [System.Runtime.InteropServices.FieldOffset(0)]
-        public readonly UnionValueType Type;
+        [field: FieldOffset(0)] public UnionValueType Type { get; }
+        [field: FieldOffset(sizeof(UnionValueType))] public float Float { get; }
+        [field: FieldOffset(sizeof(UnionValueType))] public double Double { get; }
 
-        [System.Runtime.InteropServices.FieldOffset(sizeof(UnionValueType))]
-        public readonly float Float;
-
-        [System.Runtime.InteropServices.FieldOffset(sizeof(UnionValueType))]
-        public readonly double Double;
-
-        public UnionValue(double value) : this()
-        {
-            Type = UnionValueType.Double;
-            Double = value;
-        }
+        private UnionValue(UnionValueType type) : this() => Type = type;
+        public UnionValue(double value) : this(UnionValueType.Double) => Double = value;
+        public UnionValue(float value) : this(UnionValueType.Float) => Float = value;
 
         public static implicit operator UnionValue(double value) => new UnionValue(value);
+        public static implicit operator UnionValue(float value) => new UnionValue(value);
 
         public override string ToString()
         {

@@ -7,9 +7,9 @@ namespace Miniräknare.Expressions
 {
     public class ExpressionEvaluator
     {
-        public delegate UnionValue ResolveReferenceDelegate(ReadOnlyMemory<char> name);
-        public delegate UnionValue ResolveOperatorDelegate(ReadOnlyMemory<char> name, UnionValue left, UnionValue right);
-        public delegate UnionValue ResolveFunctionDelegate(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments);
+        public delegate Evaluation ResolveReferenceDelegate(ReadOnlyMemory<char> name);
+        public delegate Evaluation ResolveOperatorDelegate(ReadOnlyMemory<char> name, UnionValue? left, UnionValue right);
+        public delegate Evaluation ResolveFunctionDelegate(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments);
 
         public ResolveReferenceDelegate ResolveReference { get; }
         public ResolveOperatorDelegate ResolveOperator { get; }
@@ -25,15 +25,15 @@ namespace Miniräknare.Expressions
             ResolveFunction = resolveFunction ?? throw new ArgumentNullException(nameof(resolveFunction));
         }
 
-        public UnionValue Evaluate(ExpressionTree tree)
+        public Evaluation Evaluate(ExpressionTree tree)
         {
             if (tree.Tokens.Count > 0 && tree.Tokens.Count <= 3)
                 return EvaluateList(tree.Tokens);
 
-            return UnionValue.Null;
+            return Evaluation.Undefined;
         }
 
-        private UnionValue EvaluateList(List<Token> list)
+        private Evaluation EvaluateList(List<Token> list)
         {
             if (list.Count == 1)
                 return EvaluateToken(list[0]);
@@ -48,10 +48,10 @@ namespace Miniräknare.Expressions
                 list[1] is ValueToken opToken)
                 return EvaluateOperator(opToken, list[0], list[2]);
 
-            return UnionValue.Null;
+            return Evaluation.Undefined;
         }
 
-        private UnionValue EvaluateToken(Token token)
+        private Evaluation EvaluateToken(Token token)
         {
             if (token is ListToken listToken)
                 return EvaluateList(listToken.Children);
@@ -74,7 +74,7 @@ namespace Miniräknare.Expressions
                         return EvaluateReference(valueToken);
 
                     default:
-                        return UnionValue.Null;
+                        return Evaluation.Undefined;
                 }
             }
             else if (token is FunctionToken funcToken)
@@ -83,29 +83,47 @@ namespace Miniräknare.Expressions
             }
             else
             {
-                return UnionValue.Null;
+                return Evaluation.Undefined;
             }
         }
 
-        private UnionValue EvaluateReference(ValueToken token)
+        private Evaluation EvaluateReference(ValueToken token)
         {
             return ResolveReference.Invoke(token.Value);
         }
 
-        private UnionValue EvaluateFunction(FunctionToken token)
+        private Evaluation EvaluateOperator(ValueToken opToken, Token leftToken, Token rightToken)
+        {
+            var opDef = ExpressionParser.GetOperatorDefinition(opToken.Value.Span);
+            if (leftToken == null && OperatorDefinition.GetRequiresBothSides(opDef))
+                return new Evaluation(EvalCode.InvalidOperatorCall);
+
+            var leftEval = leftToken != null ? EvaluateToken(leftToken) : (Evaluation?)null;
+            if (leftEval.HasValue)
+            {
+                var leftEvalValue = leftEval.Value;
+                if (leftEvalValue.Code != EvalCode.Ok)
+                    return leftEvalValue;
+            }
+
+            var rightEval = EvaluateToken(rightToken);
+            if (rightEval.Code != EvalCode.Ok)
+                return rightEval;
+
+            return ResolveOperator.Invoke(opToken.Value, leftEval?.Value, rightEval.Value);
+        }
+
+        private Evaluation EvaluateFunction(FunctionToken token)
         {
             Span<UnionValue> args = stackalloc UnionValue[token.Arguments.Count];
             for (int i = 0; i < token.Arguments.Count; i++)
-                args[i] = EvaluateToken(token.Arguments[i]);
-            
+            {
+                var eval = EvaluateToken(token.Arguments[i]);
+                if (eval.Code != EvalCode.Ok)
+                    return eval;
+                args[i] = eval.Value;
+            }
             return ResolveFunction.Invoke(token.Name.Value, args);
-        }
-
-        private UnionValue EvaluateOperator(ValueToken opToken, Token leftToken, Token rightToken)
-        {
-            var leftValue = EvaluateToken(leftToken);
-            var rightValue = EvaluateToken(rightToken);
-            return ResolveOperator.Invoke(opToken.Value, leftValue, rightValue);
         }
     }
 }
