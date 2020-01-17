@@ -29,7 +29,7 @@ namespace Miniräknare.Expressions
             _tokenDefinitions = new[]
             {
                 NewDef(TokenType.Operator, IsOperator),
-                NewDef(TokenType.Name, IsName),
+                NewDef(TokenType.Name, char.IsLetter),
                 NewDef(TokenType.DecimalSeparator, c => c == '.' || c == ',', true),
                 NewDef(TokenType.DecimalDigit, char.IsDigit, true),
                 decimalNumberDef,
@@ -54,7 +54,8 @@ namespace Miniräknare.Expressions
             return null;
         }
 
-        public static void TokenizeInput(ReadOnlyMemory<char> inputText, ICollection<Token> output)
+        public static void Tokenize(
+            ReadOnlyMemory<char> text, ICollection<Token> output)
         {
             var currentType = TokenType.Unknown;
             int lastOffset = 0;
@@ -65,19 +66,20 @@ namespace Miniräknare.Expressions
                 int length = offset - lastOffset;
                 if (length > 0)
                 {
-                    var slice = inputText.Slice(lastOffset, length);
+                    var slice = text.Slice(lastOffset, length);
                     output.Add(new ValueToken(currentType, slice));
                 }
             }
 
-            var span = inputText.Span;
-            while (offset < inputText.Length)
+            var span = text.Span;
+            while (offset < text.Length)
             {
                 char c = span[offset];
                 TokenDefinition definition = GetDefinition(c);
 
                 var nextType = definition == null ? TokenType.Unknown : definition.Type;
-                if (nextType != currentType || definition.IsSingular)
+                bool isSingular = definition == null ? false : definition.IsSingular;
+                if (nextType != currentType || isSingular)
                 {
                     FinishToken();
 
@@ -105,13 +107,6 @@ namespace Miniräknare.Expressions
                 default:
                     return false;
             }
-        }
-
-        private static bool IsName(char c)
-        {
-            if (char.IsLetter(c))
-                return true;
-            return false;
         }
     }
 }

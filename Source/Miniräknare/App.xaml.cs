@@ -39,7 +39,11 @@ namespace Miniräknare
             _splashScreen.Show();
 
 
+            //TestExpressionLoop();
+        }
 
+        private static void TestExpressionLoop()
+        {
             static void Print(IEnumerable<Token> tt)
             {
                 string x = "";
@@ -48,58 +52,76 @@ namespace Miniräknare
                 Console.WriteLine(x);
             }
 
-            var tree = new ExpressionTree();
+            var tree = new ExpressionTree(ExpressionOptions.Default);
+
             while (true)
             {
                 string input = Console.ReadLine();
 
                 tree.Tokens.Clear();
                 //ExpressionTokenizer.TokenizeInput(".2__5__5 + yo_u +1_0  - 5_99.1 + xD  () + wat(nou; 25; omg(45; a))".AsMemory(), tree.Tokens);
-                ExpressionTokenizer.TokenizeInput(input.AsMemory(), tree.Tokens);
+                ExpressionTokenizer.Tokenize(input.AsMemory(), tree.Tokens);
                 //Print(tree.Tokens);
 
-                var result = ExpressionSanitizer.SanitizeTokens(tree.Tokens);
+                var result = ExpressionSanitizer.Sanitize(tree);
                 int index = result.ErrorTokenPosition ?? -1;
-                Console.WriteLine("SanitizeTokens code: " + result.Code + " at index " + index);
+                //Console.WriteLine("SanitizeTokens code: " + result.Code + " at index " + index);
 
                 if (result.Code == ExpressionSanitizer.ResultCode.Ok)
                 {
                     //Print(tree.Tokens);
-                    var parseResult = ExpressionParser.ParseTokens(tree.Tokens);
-                    Console.WriteLine("ParseTokens code: " + parseResult);
-
-                        //Print(tree.Tokens);
-                        var evaluator = new ExpressionEvaluator(
-                        ResolveReference,
-                        ResolveOperator,
-                        ResolveFunction);
-
-                    var eval = Evaluation.Undefined;
-                    for (int i = 0; i < 1; i++)
+                    var parseCode = ExpressionParser.Parse(tree);
+                    if (parseCode == ExpressionParser.ResultCode.Ok)
                     {
-                        eval = evaluator.Evaluate(tree);
-                    }
+                        var optimizeCode = ExpressionReducer.Reduce(tree);
+                        if (optimizeCode == ExpressionReducer.ResultCode.Ok)
+                        {
+                            Print(tree.Tokens);
+                            var evaluator = new ExpressionTreeEvaluator(
+                                tree,
+                                ResolveReference,
+                                ResolveOperator,
+                                ResolveFunction);
 
-                    if(eval.Code != EvalCode.Ok)
-                    {
-                        Console.WriteLine("Eval code: " + eval.Code);
+                            var eval = Evaluation.Undefined;
+                            for (int i = 0; i < 1; i++)
+                                eval = evaluator.Evaluate();
+
+                            if (eval.Code != EvalCode.Ok)
+                            {
+                                Console.WriteLine("Eval code: " + eval.Code);
+                            }
+                            else
+                            {
+                                double evalValue = eval.Value.Double;
+                                string textValue = double.IsInfinity(evalValue) ? "Infinity" : evalValue.ToString();
+                                Console.WriteLine("Eval: " + textValue);
+                            }
+                        }
+                        else
+                            Console.WriteLine("Optimize code: " + parseCode);
                     }
                     else
-                        Console.WriteLine("Eval: " + eval.Value.Double);
+                        Console.WriteLine("Parse code: " + parseCode);
                 }
             }
-            Console.WriteLine();
         }
 
         public static Evaluation ResolveReference(ReadOnlyMemory<char> name)
         {
+            return new Evaluation(EvalCode.UnresolvedReference);
             throw new NotImplementedException();
+        }
+
+        public static Evaluation ResolveFunction(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
+        {
+            return new Evaluation(EvalCode.UnresolvedFunction);
         }
 
         public static Evaluation ResolveOperator(ReadOnlyMemory<char> name, UnionValue? left, UnionValue right)
         {
-            if (name.Length < 1 || name.Length > 2)
-                return new Evaluation(EvalCode.InvalidOperatorCall);
+            if (name.Length != 1)
+                return new Evaluation(EvalCode.UnresolvedOperator);
 
             switch (name.Span[0])
             {
@@ -108,15 +130,14 @@ namespace Miniräknare
 
                 case '*': return left.GetValueOrDefault().Double * right.Double;
                 case '/': return left.GetValueOrDefault().Double / right.Double;
+                    
+                case '%': return left.GetValueOrDefault().Double % right.Double;
+
+                case '^': return Math.Pow(left.Value.Double, right.Double);
 
                 default:
-                    return Evaluation.Undefined;
+                    return new Evaluation(EvalCode.UnresolvedOperator);
             }
-        }
-
-        public static Evaluation ResolveFunction(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
-        {
-            throw new NotImplementedException();
         }
 
         #region Startup

@@ -9,7 +9,10 @@
 
     <BitmapImage x:Key="Icon_UnknownWords" UriSource="/Content/Icons/Field/UnknownWords.png" />
     <BitmapImage x:Key="Icon_UnknownWordsNested" UriSource="/Content/Icons/Field/UnknownWordsNested.png" />
-    
+
+    <BitmapImage x:Key="Icon_SyntaxError" UriSource="/Content/Icons/Field/SyntaxError.png" />
+    <BitmapImage x:Key="Icon_SyntaxErrorNested" UriSource="/Content/Icons/Field/SyntaxErrorNested.png" />
+
     <!--#endregion-->
     
 </ResourceDictionary>

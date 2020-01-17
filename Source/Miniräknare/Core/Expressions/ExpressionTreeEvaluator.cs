@@ -5,32 +5,37 @@ using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare.Expressions
 {
-    public class ExpressionEvaluator
+    public readonly struct ExpressionTreeEvaluator
     {
+        // TODO: remove recursion
+
         public delegate Evaluation ResolveReferenceDelegate(ReadOnlyMemory<char> name);
         public delegate Evaluation ResolveOperatorDelegate(ReadOnlyMemory<char> name, UnionValue? left, UnionValue right);
         public delegate Evaluation ResolveFunctionDelegate(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments);
 
+        public ExpressionTree Tree { get; }
         public ResolveReferenceDelegate ResolveReference { get; }
         public ResolveOperatorDelegate ResolveOperator { get; }
         public ResolveFunctionDelegate ResolveFunction { get; }
 
-        public ExpressionEvaluator(
+        public ExpressionTreeEvaluator(
+            ExpressionTree tree,
             ResolveReferenceDelegate resolveReference,
             ResolveOperatorDelegate resolveOperator,
             ResolveFunctionDelegate resolveFunction)
         {
+            Tree = tree ?? throw new ArgumentNullException(nameof(tree));
             ResolveReference = resolveReference ?? throw new ArgumentNullException(nameof(resolveReference));
             ResolveOperator = resolveOperator ?? throw new ArgumentNullException(nameof(resolveOperator));
             ResolveFunction = resolveFunction ?? throw new ArgumentNullException(nameof(resolveFunction));
         }
 
-        public Evaluation Evaluate(ExpressionTree tree)
+        public Evaluation Evaluate()
         {
-            if (tree.Tokens.Count > 0 && tree.Tokens.Count <= 3)
-                return EvaluateList(tree.Tokens);
+            if (Tree.Tokens.Count > 0 && Tree.Tokens.Count <= 3)
+                return EvaluateList(Tree.Tokens);
 
-            return Evaluation.Undefined;
+            return Evaluation.Empty;
         }
 
         private Evaluation EvaluateList(List<Token> list)
@@ -40,9 +45,15 @@ namespace Miniräknare.Expressions
 
             if (list.Count == 2 &&
                 list[0] is ValueToken valueToken &&
-                valueToken.Type == TokenType.Operator &&
-                valueToken.ValueEqualTo('-'))
-                return EvaluateOperator(valueToken, null, list[1]);
+                valueToken.Type == TokenType.Operator)
+            {
+                var subtractOpDef = Tree.Options.GetOperatorDefinition(OperatorType.Subtract);
+                if (subtractOpDef != null)
+                {
+                    if (valueToken.Value.Span.SequenceEqual(subtractOpDef.Name.Span))
+                        return EvaluateOperator(valueToken, null, list[1]);
+                }
+            }
 
             if (list.Count == 3 &&
                 list[1] is ValueToken opToken)
@@ -94,9 +105,18 @@ namespace Miniräknare.Expressions
 
         private Evaluation EvaluateOperator(ValueToken opToken, Token leftToken, Token rightToken)
         {
-            var opDef = ExpressionParser.GetOperatorDefinition(opToken.Value.Span);
-            if (leftToken == null && OperatorDefinition.GetRequiresBothSides(opDef))
-                return new Evaluation(EvalCode.InvalidOperatorCall);
+            var opDef = Tree.Options.GetOperatorDefinition(opToken.Value.Span);
+            if (leftToken == null && (
+                opDef?.Sidedness == OperatorSidedness.Both ||
+                opDef?.Sidedness == OperatorSidedness.Left ||
+                opDef?.Sidedness == OperatorSidedness.OptionalRight))
+                return new Evaluation(EvalCode.OperatorMissingLeftValue);
+
+            if (rightToken == null && (
+                opDef?.Sidedness == OperatorSidedness.Both ||
+                opDef?.Sidedness == OperatorSidedness.Right ||
+                opDef?.Sidedness == OperatorSidedness.OptionalLeft))
+                return new Evaluation(EvalCode.OperatorMissingRightValue);
 
             var leftEval = leftToken != null ? EvaluateToken(leftToken) : (Evaluation?)null;
             if (leftEval.HasValue)

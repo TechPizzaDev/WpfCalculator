@@ -7,7 +7,7 @@ namespace Miniräknare.Expressions
 {
     public partial class ExpressionSanitizer
     {
-        private static TokenType[] DecimalSeparatorTypes = new [] { TokenType.DecimalSeparator };
+        private static TokenType[] DecimalSeparatorTypes = new[] { TokenType.DecimalSeparator };
         private static TokenType[] DecimalNumberComponents = new[] { TokenType.DecimalDigit, TokenType.DecimalSeparator };
 
         public const char DecimalSeparator = '.';
@@ -24,6 +24,7 @@ namespace Miniräknare.Expressions
             TrailingDecimalSeparator,
             InvalidDecimalSeparator,
             MultipleDecimalSeparators,
+            MissingSubtractOperator,
             NegativeSignMissingValue,
             UnexpectedListSeparator
         }
@@ -42,44 +43,38 @@ namespace Miniräknare.Expressions
             }
         }
 
-        public static SanitizeResult SanitizeTokens(List<Token> tokens)
+        public static SanitizeResult Sanitize(
+            List<Token> tokens, ExpressionOptions options)
         {
-            RemoveWhiteSpaces(tokens);
-
             var builder = new StringBuilder();
 
-            var result = ValidateTypesInGroups(builder, tokens);
-            if (result.Code != ResultCode.Ok)
+            SanitizeResult result;
+            if ((result = RemoveWhiteSpaces(tokens)).Code != ResultCode.Ok ||
+                (result = ValidateTypesInGroups(builder, tokens)).Code != ResultCode.Ok ||
+                (result = MergeGroupsOfSingleType(builder, tokens)).Code != ResultCode.Ok ||
+                (result = MergeGroupsOfMultipleTypes(builder, tokens, options)).Code != ResultCode.Ok ||
+                (result = ValidateFunctionArguments(tokens)).Code != ResultCode.Ok)
                 return result;
 
-            result = MergeGroupsOfSingleType(builder, tokens);
-            if (result.Code != ResultCode.Ok)
-                return result;
+            return SanitizeResult.Ok;
+        }
 
-            result = MergeGroupsOfMultipleTypes(builder, tokens);
-            if (result.Code != ResultCode.Ok)
-                return result;
-
-            result = ValidateFunctionArguments(tokens);
-            if (result.Code != ResultCode.Ok)
-                return result;
-
-            return result;
+        public static SanitizeResult Sanitize(ExpressionTree tree)
+        {
+            return Sanitize(tree.Tokens, tree.Options);
         }
 
         #region RemoveWhiteSpaces
 
-        private static void RemoveWhiteSpaces(IList<Token> tokens)
+        private static SanitizeResult RemoveWhiteSpaces(IList<Token> tokens)
         {
-            int i = 0;
-            while (i < tokens.Count)
-            {
-                var currentToken = tokens[i];
-                if (currentToken.Type == TokenType.WhiteSpace)
+            for (int i = tokens.Count; i-- > 0; )
+            { 
+                var token = tokens[i];
+                if (token.Type == TokenType.WhiteSpace)
                     tokens.RemoveAt(i);
-                else
-                    i++;
             }
+            return SanitizeResult.Ok;
         }
 
         #endregion
@@ -196,7 +191,8 @@ namespace Miniräknare.Expressions
 
         #region MergeGroupsOfMultipleTypes
 
-        private static SanitizeResult MergeGroupsOfMultipleTypes(StringBuilder builder, List<Token> tokens)
+        private static SanitizeResult MergeGroupsOfMultipleTypes(
+            StringBuilder builder, List<Token> tokens, ExpressionOptions options)
         {
             Token lastToken = null;
 
@@ -297,7 +293,11 @@ namespace Miniräknare.Expressions
                     currentToken is ValueToken valueToken &&
                     valueToken.Value.Length == 2)
                 {
-                    if (valueToken.Value.Span[1] == '-')
+                    var subtractOpDef = options.GetOperatorDefinition(OperatorType.Subtract);
+                    if (subtractOpDef == null)
+                        return new SanitizeResult(ResultCode.MissingSubtractOperator, i);
+
+                    if (valueToken.Value.Span.SequenceEqual(subtractOpDef.Name.Span))
                     {
                         var secondToken = GetNextToken(tokens, i);
                         if (secondToken == null)
@@ -329,6 +329,8 @@ namespace Miniräknare.Expressions
 
         private static SanitizeResult ValidateFunctionArguments(List<Token> tokens)
         {
+            // TODO: remove recursion
+
             static SanitizeResult ValidateFunction(FunctionToken function)
             {
                 TokenType? lastArgType = null;

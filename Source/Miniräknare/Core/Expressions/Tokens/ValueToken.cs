@@ -13,13 +13,6 @@ namespace Miniräknare.Expressions.Tokens
             Value = value;
         }
 
-        public bool ValueEqualTo(char value)
-        {
-            if (Value.Length < 1 || Value.Length > 1)
-                return false;
-            return Value.Span[0] == value;
-        }
-
         public override string ToString()
         {
             return Value.ToString();

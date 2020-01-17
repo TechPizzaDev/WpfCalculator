@@ -2,20 +2,10 @@
 
 namespace Miniräknare.Expressions
 {
-    public enum EvalCode
+    public readonly struct Evaluation : IEquatable<Evaluation>
     {
-        Undefined,
-        Ok,
-        InvalidOperatorCall,
-        UnresolvedReference,
-        UnresolvedOperator,
-        UnresolvedFunction
-    }
-
-    public readonly struct Evaluation
-    {
-        public static Evaluation Undefined { get; } = new Evaluation(
-            EvalCode.Undefined, ReadOnlyMemory<char>.Empty);
+        public static Evaluation Undefined { get; } = new Evaluation(EvalCode.Undefined);
+        public static Evaluation Empty { get; } = new Evaluation(EvalCode.Empty);
 
         public EvalCode Code { get; }
         public UnionValue Value { get; }
@@ -37,6 +27,13 @@ namespace Miniräknare.Expressions
             Code = EvalCode.Ok;
             Value = result;
             UnresolvedName = ReadOnlyMemory<char>.Empty;
+        }
+
+        public bool Equals(Evaluation other)
+        {
+            return Code == other.Code
+                && Value.Equals(other.Value)
+                && UnresolvedName.Span.SequenceEqual(other.UnresolvedName.Span);
         }
 
         public static implicit operator Evaluation(double value) => new Evaluation(value);

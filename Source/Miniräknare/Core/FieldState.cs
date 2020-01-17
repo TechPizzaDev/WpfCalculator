@@ -13,8 +13,7 @@ namespace Miniräknare
         SyntaxError = 1 << 3,
         UnknownWords = 1 << 4,
         UnknownFunctions = 1 << 5,
-        NameDuplicates = 1 << 6,
-
+        
         UnknownWordsNested = UnknownWords | NestedError,
         UnknownFunctionsNested = UnknownFunctions | NestedError,
         SyntaxErrorNested = SyntaxError | NestedError

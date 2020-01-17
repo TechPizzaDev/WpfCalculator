@@ -4,48 +4,44 @@ using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare.Expressions
 {
-    public partial class ExpressionParser
+    public static class ExpressionParser
     {
-        private static List<OperatorDefinition> _definitions;
-
-        static ExpressionParser()
-        {
-            _definitions = new List<OperatorDefinition>()
-            {
-                new OperatorDefinition("+".AsMemory(), false, 0),
-                new OperatorDefinition("-".AsMemory(), false, 0),
-            };
-        }
-
-        public static OperatorDefinition GetOperatorDefinition(ReadOnlySpan<char> value)
-        {
-            for (int i = 0; i < _definitions.Count; i++)
-            {
-                var def = _definitions[i];
-                if (def.Name.Span.SequenceEqual(value))
-                    return def;
-            }
-            return null;
-        }
+        // TODO: remove recursion
 
         public enum ResultCode
         {
             Ok = 0,
+            NoTokens,
             MissingListEnd,
             ListEndWithoutStart,
             OperatorMissingLeftValue,
             OperatorMissingRightValue,
-            InvalidTokenBeforeList
+            InvalidTokenBeforeList,
+            MissingMultiplicationOperator,
+            UnknownSymbol,
+            EmptyList // TODO
         }
 
-        public static ResultCode ParseTokens(List<Token> tokens)
+        public static ResultCode Parse(List<Token> tokens, ExpressionOptions options)
         {
+            if (tokens == null) throw new ArgumentNullException(nameof(tokens));
+            if (options == null) throw new ArgumentNullException(nameof(options));
+
+            if (tokens.Count == 0)
+                return ResultCode.NoTokens;
+
             ResultCode code;
             if ((code = MakeLists(tokens)) != ResultCode.Ok ||
-                (code = MakeFunctions(tokens)) != ResultCode.Ok ||
-                (code = MakeOperations(tokens)) != ResultCode.Ok)
+                (code = MakeFunctions(tokens, options)) != ResultCode.Ok ||
+                (code = MakeImplicitMultiplications(tokens, options)) != ResultCode.Ok ||
+                (code = MakeOperatorGroups(tokens, options)) != ResultCode.Ok)
                 return code;
             return code;
+        }
+
+        public static ResultCode Parse(ExpressionTree tree)
+        {
+            return Parse(tree.Tokens, tree.Options);
         }
 
         #region MakeLists
@@ -113,99 +109,208 @@ namespace Miniräknare.Expressions
 
         #region MakeFunctions
 
-        private static ResultCode MakeFunctions(IList<Token> tokens)
+        private static ResultCode MakeFunctions(List<Token> tokens, ExpressionOptions options)
         {
             // Loop from the end so we can call "MakeFunctions" recursively.
             for (int i = tokens.Count; i-- > 0;)
             {
-                var currentToken = tokens[i];
-                if (currentToken.Type == TokenType.List)
+                var token = tokens[i];
+                if (token.Type != TokenType.List)
+                    continue;
+
+                var listToken = (ListToken)token;
+                ResultCode code;
+                if ((code = MakeFunctions(listToken.Children, options)) != ResultCode.Ok)
+                    return code;
+
+                if (i - 1 < 0)
+                    continue; // We reached the list's beginning.
+
+                var leftToken = tokens[i - 1];
+                if (leftToken.Type != TokenType.Name)
                 {
-                    var listToken = (ListToken)currentToken;
-                    ResultCode code;
-                    if ((code = MakeFunctions(listToken.Children)) != ResultCode.Ok)
-                        return code;
-
-                    if (i - 1 < 0)
-                        continue; // We reached the list's beginning.
-
-                    var leftToken = tokens[i - 1];
-                    if (leftToken.Type != TokenType.Name)
-                    {
-                        if (leftToken.Type == TokenType.Operator)
-                            continue;
-                        return ResultCode.InvalidTokenBeforeList;
-                    }
-
-                    var nameToken = (ValueToken)leftToken;
-                    var funcToken = new FunctionToken(nameToken, listToken);
-
-                    tokens[i - 1] = funcToken; // replace left token
-                    tokens.RemoveAt(i); // remove current token
+                    if (leftToken.Type == TokenType.Operator ||
+                        leftToken.Type == TokenType.DecimalDigit ||
+                        leftToken.Type == TokenType.DecimalNumber)
+                        continue;
+                    return ResultCode.InvalidTokenBeforeList;
                 }
+
+                var nameToken = (ValueToken)leftToken;
+                var funcToken = new FunctionToken(nameToken, listToken);
+
+                tokens[i - 1] = funcToken; // replace left token
+                tokens.RemoveAt(i); // remove current token
             }
             return ResultCode.Ok;
         }
 
         #endregion
 
-        #region MakeOperations
+        #region MakeImplicitMultiplications
 
-        private static ResultCode MakeOperations(List<Token> tokens)
+        private static ResultCode MakeImplicitMultiplications(
+            List<Token> tokens, ExpressionOptions options)
         {
-            if (tokens.Count == 2)
-                return ResultCode.Ok;
-
-            // TODO: implement operator priority
-
+            // Loop from the end so we can call "MakeImplicitMultiplications" recursively.
             for (int i = 0; i < tokens.Count; i++)
             {
-                ResultCode tmpCode; 
-
                 var token = tokens[i];
                 if (token.Type == TokenType.List)
                 {
-                    if ((tmpCode = MakeOperations(((ListToken)token).Children)) != ResultCode.Ok)
-                        return tmpCode;
+                    var listToken = (ListToken)token;
+                    ResultCode code;
+                    if ((code = MakeImplicitMultiplications(listToken.Children, options)) != ResultCode.Ok)
+                        return code;
                 }
-                else if (token.Type == TokenType.Operator)
+                else if (
+                    token.Type == TokenType.Name || 
+                    token.Type == TokenType.Function)
                 {
-                    var opToken = (ValueToken)token;
+                }
+                else
+                {
+                    // Skip as this type is not allowed to have an implicit factor prefix.
+                    continue;
+                }
 
-                    var opDef = GetOperatorDefinition(opToken.Value.Span);
-                    if (OperatorDefinition.GetRequiresBothSides(opDef))
+                if (i - 1 < 0)
+                    continue; // We reached the list's beginning.
+
+                var leftToken = tokens[i - 1];
+                if (leftToken.Type == TokenType.Operator)
+                    continue;
+
+                if (leftToken.Type != TokenType.DecimalDigit &&
+                    leftToken.Type != TokenType.DecimalNumber)
+                    return ResultCode.InvalidTokenBeforeList;
+
+                var multiplyOpDef = options.GetOperatorDefinition(OperatorType.Multiply);
+                if (multiplyOpDef == null)
+                    return ResultCode.MissingMultiplicationOperator;
+
+                var opToken = new ValueToken(TokenType.Operator, multiplyOpDef.Name);
+                var implicitMultiplyList = new List<Token>(3)
+                {
+                    leftToken,
+                    opToken,
+                    token
+                };
+                var implicitMultiplyToken = new ListToken(implicitMultiplyList);
+
+                tokens[i - 1] = implicitMultiplyToken; // replace left token
+                tokens.RemoveAt(i); // remove current token
+            }
+            return ResultCode.Ok;
+        }
+
+        #endregion
+
+        #region MakeOperationsGroups
+
+        private static ResultCode MakeOperatorGroups(List<Token> tokens, ExpressionOptions options)
+        {
+            var listStack = new Stack<List<Token>>();
+            listStack.Push(tokens);
+
+            var opIndices = new List<(int index, ValueToken token, OperatorDefinition definition)>();
+            var opShifts = new List<(int index, int shift)>();
+
+            while (listStack.Count > 0)
+            {
+                var currentTokens = listStack.Pop();
+                for (int j = 0; j < currentTokens.Count; j++)
+                {
+                    var token = currentTokens[j];
+                    if (token.Type != TokenType.List)
+                        continue;
+
+                    var listToken = (ListToken)token;
+                    listStack.Push(listToken.Children);
+                }
+
+                // Gather operators so we can sort them by priority rules.
+                opIndices.Clear();
+                for (int j = 0; j < currentTokens.Count; j++)
+                {
+                    var token = currentTokens[j];
+                    if (token.Type != TokenType.Operator)
+                        continue;
+
+                    var opToken = (ValueToken)token;
+                    var opDef = options.GetOperatorDefinition(opToken.Value.Span);
+                    if (opDef == null)
+                        return ResultCode.UnknownSymbol;
+
+                    opIndices.Add((index: j, opToken, opDef));
+                }
+
+                opIndices.Sort((x, y) =>
+                {
+                    int xPriority = x.definition?.Priority ?? 0;
+                    int yPriority = y.definition?.Priority ?? 0;
+
+                    // Sort types in descending order.
+                    int priorityCompare = yPriority.CompareTo(xPriority);
+                    if (priorityCompare != 0)
+                        return priorityCompare;
+
+                    // Sort indices of same type in ascending order.
+                    return x.index.CompareTo(y.index);
+                });
+
+                // Merge token triplets with a center operator or
+                // pairs with a leading operator.
+                opShifts.Clear();
+                for (int i = 0; i < opIndices.Count; i++)
+                {
+                    var (opIndex, opToken, opDef) = opIndices[i];
+
+                    // Offset "opIndex" by shifts caused by previous operator merges.
+                    for (int j = 0; j < opShifts.Count; j++)
                     {
-                        if (i - 1 < 0)
+                        var (shiftIndex, shift) = opShifts[j];
+                        if (shiftIndex < opIndex)
+                            opIndex += shift;
+                    }
+
+                    if (opDef?.Sidedness == OperatorSidedness.Both ||
+                        opDef?.Sidedness == OperatorSidedness.Left ||
+                        opDef?.Sidedness == OperatorSidedness.OptionalRight)
+                    {
+                        if (opIndex - 1 < 0)
                             return ResultCode.OperatorMissingLeftValue;
                     }
 
-                    if (i + 1 >= tokens.Count)
-                        return ResultCode.OperatorMissingRightValue;
-
-                    var leftToken = i - 1 < 0 ? null : tokens[i - 1];
-                    var rightToken = tokens[i + 1];
-
-                    if (rightToken is ListToken rightListToken)
+                    if (opDef?.Sidedness == OperatorSidedness.Both ||
+                        opDef?.Sidedness == OperatorSidedness.Right ||
+                        opDef?.Sidedness == OperatorSidedness.OptionalLeft)
                     {
-                        if ((tmpCode = MakeOperations(rightListToken.Children)) != ResultCode.Ok)
-                            return tmpCode;
+                        if (opIndex + 1 >= currentTokens.Count)
+                            return ResultCode.OperatorMissingRightValue;
                     }
 
-                    var resultList = new List<Token>(leftToken == null ? 2 : 3);
+                    // Certain operators work as a prefix (like the negative '-' sign);
+                    // they don't need a left token.
+                    var leftToken = opIndex - 1 < 0 ? null : currentTokens[opIndex - 1];
+                    var rightToken = currentTokens[opIndex + 1];
+
+                    int extraCount = leftToken == null ? 0 : 1;
+                    var resultList = new List<Token>(2 + extraCount);
                     if (leftToken != null)
                         resultList.Add(leftToken);
                     resultList.Add(opToken);
                     resultList.Add(rightToken);
 
+                    int firstIndex = opIndex - extraCount;
                     var resultToken = new ListToken(resultList);
-                    int firstIndex = i - (resultList.Count - 2);
-                    tokens.RemoveRange(firstIndex + 1, resultList.Count - 1);
-                    tokens[firstIndex] = resultToken;
+                    currentTokens[firstIndex] = resultToken;
+                    currentTokens.RemoveRange(firstIndex + 1, resultList.Count - 1);
 
-                    i--; // go back and check for next operator
+                    int nextShift = 1 - resultList.Count;
+                    opShifts.Add((opIndex, nextShift));
                 }
             }
-
             return ResultCode.Ok;
         }
 

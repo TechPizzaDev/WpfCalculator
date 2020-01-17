@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Miniräknare
 {
@@ -10,7 +11,7 @@ namespace Miniräknare
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    public readonly struct UnionValue
+    public readonly struct UnionValue : IEquatable<UnionValue>
     {
         public static UnionValue Null { get; } = new UnionValue(UnionValueType.Null);
 
@@ -25,12 +26,31 @@ namespace Miniräknare
         public static implicit operator UnionValue(double value) => new UnionValue(value);
         public static implicit operator UnionValue(float value) => new UnionValue(value);
 
+        public bool Equals(UnionValue other)
+        {
+            switch (Type & other.Type)
+            {
+                case UnionValueType.Double: return Double == other.Double;
+                case UnionValueType.Float: return Float == other.Float;
+
+                case UnionValueType.Null:
+                default:
+                    return Type == UnionValueType.Null
+                        && other.Type == UnionValueType.Null;
+            }
+        }
+
         public override string ToString()
+        {
+            return ToString(true);
+        }
+
+        public string ToString(bool suffix)
         {
             return Type switch
             {
-                UnionValueType.Double => Double.ToString() + "d",
-                UnionValueType.Float => Float.ToString() + "f",
+                UnionValueType.Double => Double.ToString() + (suffix ? "d" : ""),
+                UnionValueType.Float => Float.ToString() + (suffix ? "f" : ""),
                 UnionValueType.Null => "null",
                 _ => string.Empty,
             };

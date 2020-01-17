@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using Miniräknare.Expressions;
 
 namespace Miniräknare
 {
@@ -32,12 +33,26 @@ namespace Miniräknare
 
         private string GetNewFieldName()
         {
+            int tries = 0;
+
+            Try:
             foreach(var field in Fields.Keys)
             {
 
             }
             char[] omegalul = "qwertyuiopåasdfghjklöäzxcvbnm".ToCharArray();
-            return omegalul[new Random().Next(omegalul.Length)].ToString();
+            var r = new Random();
+            string newName = omegalul[r.Next(omegalul.Length)].ToString() +
+                omegalul[r.Next(omegalul.Length)].ToString();
+
+            if (!ExpressionField.ValidateName(newName, out newName))
+            {
+                tries++;
+                if (tries > 100)
+                    throw new Exception();
+                goto Try;
+            }
+            return newName;
         }
 
         #region DragDropManager stuff
@@ -74,10 +89,8 @@ namespace Miniräknare
 
         private void AddNewField_Click(object sender, RoutedEventArgs e)
         {
-            var field = new ExpressionField
-            {
-                Name = GetNewFieldName()
-            };
+            string fieldName = GetNewFieldName();
+            var field = new ExpressionField(fieldName, ExpressionOptions.Default);
 
             var listItem = new ListViewItem
             {

@@ -5,22 +5,27 @@ namespace Miniräknare.Expressions
     public class OperatorDefinition
     {
         public ReadOnlyMemory<char> Name { get; }
-        public bool RequiresBothSides { get; }
         public int Priority { get; }
 
-        public OperatorDefinition(ReadOnlyMemory<char> name, bool requiresBothSides, int priority)
+        public OperatorType Type { get; }
+        public OperatorSidedness Sidedness { get; }
+
+        public OperatorDefinition(
+            ReadOnlyMemory<char> name, 
+            int priority,
+            OperatorType type,
+            OperatorSidedness sidedness)
         {
             if (name.IsEmpty)
                 throw new ArgumentException(nameof(name));
 
             Name = name;
-            RequiresBothSides = requiresBothSides;
             Priority = priority;
-        }
-
-        public static bool GetRequiresBothSides(OperatorDefinition definition)
-        {
-            return definition == null || definition.RequiresBothSides;
+            Type = type;
+            
+            if (sidedness == OperatorSidedness.Left)
+                throw new NotImplementedException();
+            Sidedness = sidedness;
         }
     }
 }
