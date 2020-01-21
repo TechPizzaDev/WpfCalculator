@@ -102,6 +102,7 @@ namespace Miniräknare.Expressions
                 case '*':
                 case '%':
                 case '^':
+                case '!':
                     return true;
 
                 default:

@@ -152,7 +152,6 @@ namespace Miniräknare.Expressions
         private static ResultCode MakeImplicitMultiplications(
             List<Token> tokens, ExpressionOptions options)
         {
-            // Loop from the end so we can call "MakeImplicitMultiplications" recursively.
             for (int i = 0; i < tokens.Count; i++)
             {
                 var token = tokens[i];
@@ -164,7 +163,7 @@ namespace Miniräknare.Expressions
                         return code;
                 }
                 else if (
-                    token.Type == TokenType.Name || 
+                    token.Type == TokenType.Name ||
                     token.Type == TokenType.Function)
                 {
                 }
@@ -175,13 +174,14 @@ namespace Miniräknare.Expressions
                 }
 
                 if (i - 1 < 0)
-                    continue; // We reached the list's beginning.
+                    continue; // We are at the list's beginning.
 
                 var leftToken = tokens[i - 1];
                 if (leftToken.Type == TokenType.Operator)
                     continue;
 
-                if (leftToken.Type != TokenType.DecimalDigit &&
+                if (leftToken.Type != TokenType.List &&
+                    leftToken.Type != TokenType.DecimalDigit &&
                     leftToken.Type != TokenType.DecimalNumber)
                     return ResultCode.InvalidTokenBeforeList;
 
@@ -190,16 +190,7 @@ namespace Miniräknare.Expressions
                     return ResultCode.MissingMultiplicationOperator;
 
                 var opToken = new ValueToken(TokenType.Operator, multiplyOpDef.Name);
-                var implicitMultiplyList = new List<Token>(3)
-                {
-                    leftToken,
-                    opToken,
-                    token
-                };
-                var implicitMultiplyToken = new ListToken(implicitMultiplyList);
-
-                tokens[i - 1] = implicitMultiplyToken; // replace left token
-                tokens.RemoveAt(i); // remove current token
+                tokens.Insert(i, opToken);
             }
             return ResultCode.Ok;
         }
@@ -274,35 +265,47 @@ namespace Miniräknare.Expressions
                             opIndex += shift;
                     }
 
-                    if (opDef?.Sidedness == OperatorSidedness.Both ||
-                        opDef?.Sidedness == OperatorSidedness.Left ||
-                        opDef?.Sidedness == OperatorSidedness.OptionalRight)
+                    Token leftToken = null;
+                    Token rightToken = null;
+
+                    if (opDef?.Sidedness != OperatorSidedness.Right)
                     {
                         if (opIndex - 1 < 0)
-                            return ResultCode.OperatorMissingLeftValue;
+                        {
+                            if (opDef?.Sidedness == OperatorSidedness.Left ||
+                                opDef?.Sidedness == OperatorSidedness.OptionalRight)
+                                return ResultCode.OperatorMissingLeftValue;
+                        }
+                        else
+                            leftToken = currentTokens[opIndex - 1];
                     }
 
-                    if (opDef?.Sidedness == OperatorSidedness.Both ||
-                        opDef?.Sidedness == OperatorSidedness.Right ||
-                        opDef?.Sidedness == OperatorSidedness.OptionalLeft)
+                    if (opDef?.Sidedness != OperatorSidedness.Left)
                     {
                         if (opIndex + 1 >= currentTokens.Count)
-                            return ResultCode.OperatorMissingRightValue;
+                        {
+                            if (opDef?.Sidedness == OperatorSidedness.Right ||
+                                opDef?.Sidedness == OperatorSidedness.OptionalLeft)
+                                return ResultCode.OperatorMissingRightValue;
+                        }
+                        else
+                            rightToken = currentTokens[opIndex + 1];
                     }
 
-                    // Certain operators work as a prefix (like the negative '-' sign);
-                    // they don't need a left token.
-                    var leftToken = opIndex - 1 < 0 ? null : currentTokens[opIndex - 1];
-                    var rightToken = currentTokens[opIndex + 1];
+                    int sideTokenCount = 0;
+                    if (leftToken != null)
+                        sideTokenCount++;
+                    if (rightToken != null)
+                        sideTokenCount++;
+                    var resultList = new List<Token>(1 + sideTokenCount);
 
-                    int extraCount = leftToken == null ? 0 : 1;
-                    var resultList = new List<Token>(2 + extraCount);
                     if (leftToken != null)
                         resultList.Add(leftToken);
                     resultList.Add(opToken);
-                    resultList.Add(rightToken);
+                    if (rightToken != null)
+                        resultList.Add(rightToken);
 
-                    int firstIndex = opIndex - extraCount;
+                    int firstIndex = opIndex - (leftToken != null ? 1 : 0);
                     var resultToken = new ListToken(resultList);
                     currentTokens[firstIndex] = resultToken;
                     currentTokens.RemoveRange(firstIndex + 1, resultList.Count - 1);

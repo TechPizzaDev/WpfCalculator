@@ -238,7 +238,7 @@ namespace Miniräknare.Expressions
                     if (length > 1)
                     {
                         bool separatorEncountered = false;
-                        for (int j = i; j < end + 1; j++)
+                        for (int j = i; j < end + 1 && j < tokens.Count; j++)
                         {
                             if (tokens[j] is ValueToken vt)
                             {

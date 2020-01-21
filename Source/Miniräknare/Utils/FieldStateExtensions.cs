@@ -8,8 +8,8 @@ namespace Miniräknare
             return state switch
             {
                 FieldState.SyntaxError => FieldState.SyntaxErrorNested,
-                FieldState.UnknownWords => FieldState.UnknownWordsNested,
-                FieldState.UnknownFunctions => FieldState.UnknownFunctionsNested,
+                FieldState.UnknownWord => FieldState.UnknownWordNested,
+                FieldState.UnknownFunction => FieldState.UnknownFunctionNested,
                 _ => state,
             };
         }

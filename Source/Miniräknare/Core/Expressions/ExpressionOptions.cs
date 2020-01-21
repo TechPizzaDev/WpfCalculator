@@ -15,12 +15,15 @@ namespace Miniräknare.Expressions
                 new OperatorDefinition("*".AsMemory(), 1, OperatorType.Multiply, OperatorSidedness.Both),
                 new OperatorDefinition("/".AsMemory(), 1, OperatorType.Divide, OperatorSidedness.Both),
                 new OperatorDefinition("%".AsMemory(), 1, OperatorType.Modulo, OperatorSidedness.Both),
-                new OperatorDefinition("^".AsMemory(), 2, OperatorType.Exponent, OperatorSidedness.Both)
+                new OperatorDefinition("^".AsMemory(), 2, OperatorType.Exponent, OperatorSidedness.Both),
+                new OperatorDefinition("!".AsMemory(), 2, OperatorType.Factorial, OperatorSidedness.Left)
             });
 
         private OperatorDefinition[] _opDefinitions;
 
         public bool ImplicitMultiplications { get; }
+
+        public ReadOnlyMemory<OperatorDefinition> OpDefinitions => _opDefinitions;
 
         public ExpressionOptions(
             bool implicitMultiplications,

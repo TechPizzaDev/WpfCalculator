@@ -31,12 +31,13 @@
             </Grid>
             <!--#endregion-->
 
-            <!--#region ResultValue and ErrorIcon-->
+            <!--#region ResultValue and StatusIcon-->
             <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Stretch">
-                <Image Width="40" Height="40" Visibility="{Binding ResultArrowVisibility}" Source="{StaticResource Icon_ResultArrow}" />
-                <TextBlock Text="{Binding ResultTextValue}" FontSize="24" FontFamily="Consolas" VerticalAlignment="Center" />
+                <Image Width="42" Height="42" Source="{Binding StateIcon}" Margin="0,0,1,0" />
+                <TextBox IsReadOnly="True" Text="{Binding ResultTextValue, Mode=OneWay}" 
+                         FontSize="24" FontFamily="Consolas" 
+                         VerticalAlignment="Center" BorderThickness="0"/>
             </StackPanel>
-            <Image Grid.Row="3" Width="40" Height="40" Source="{Binding ErrorIcon}" HorizontalAlignment="Left" />
             <!--#endregion-->
         </Grid>
     </DataTemplate>

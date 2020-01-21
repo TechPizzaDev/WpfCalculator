@@ -10,7 +10,7 @@ namespace Miniräknare
         
         public MathFormula(string[] input, string[] output)
         {
-            Console.WriteLine("HEH");
+            Console.WriteLine(input.Length + " " + output.Length);
         }
     }
 }

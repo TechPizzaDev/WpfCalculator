@@ -22,9 +22,6 @@ namespace Miniräknare.Expressions
             Name = name;
             Priority = priority;
             Type = type;
-            
-            if (sidedness == OperatorSidedness.Left)
-                throw new NotImplementedException();
             Sidedness = sidedness;
         }
     }

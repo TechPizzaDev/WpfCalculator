@@ -10,7 +10,7 @@ namespace Miniräknare.Expressions
         // TODO: remove recursion
 
         public delegate Evaluation ResolveReferenceDelegate(ReadOnlyMemory<char> name);
-        public delegate Evaluation ResolveOperatorDelegate(ReadOnlyMemory<char> name, UnionValue? left, UnionValue right);
+        public delegate Evaluation ResolveOperatorDelegate(ReadOnlyMemory<char> name, UnionValue? left, UnionValue? right);
         public delegate Evaluation ResolveFunctionDelegate(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments);
 
         public ExpressionTree Tree { get; }
@@ -41,24 +41,40 @@ namespace Miniräknare.Expressions
         private Evaluation EvaluateList(List<Token> list)
         {
             if (list.Count == 1)
-                return EvaluateToken(list[0]);
-
-            if (list.Count == 2 &&
-                list[0] is ValueToken valueToken &&
-                valueToken.Type == TokenType.Operator)
             {
-                var subtractOpDef = Tree.Options.GetOperatorDefinition(OperatorType.Subtract);
-                if (subtractOpDef != null)
+                return EvaluateToken(list[0]);
+            }
+            else if (list.Count == 2)
+            {
+                for (int opIndex = 0; opIndex < list.Count; opIndex++)
                 {
-                    if (valueToken.Value.Span.SequenceEqual(subtractOpDef.Name.Span))
-                        return EvaluateOperator(valueToken, null, list[1]);
+                    var token = list[opIndex];
+                    if (token.Type != TokenType.Operator)
+                        continue;
+
+                    var opDefinitions = Tree.Options.OpDefinitions.Span;
+                    for (int j = 0; j < opDefinitions.Length; j++)
+                    {
+                        var opDef = opDefinitions[j];
+                        if (opDef.Sidedness == OperatorSidedness.Both)
+                            continue;
+
+                        var opToken = (ValueToken)token;
+                        if (opToken.Value.Span.SequenceEqual(opDef.Name.Span))
+                        {
+                            var leftToken = opIndex == 0 ? null : list[0];
+                            var rightToken = opIndex == 1 ? null : list[1];
+                            return EvaluateOperator(opToken, leftToken, rightToken);
+                        }
+                    }
+                    break;
                 }
             }
-
-            if (list.Count == 3 &&
-                list[1] is ValueToken opToken)
-                return EvaluateOperator(opToken, list[0], list[2]);
-
+            else if (list.Count == 3)
+            {
+                if (list[1] is ValueToken opToken)
+                    return EvaluateOperator(opToken, list[0], list[2]);
+            }
             return Evaluation.Undefined;
         }
 
@@ -126,11 +142,15 @@ namespace Miniräknare.Expressions
                     return leftEvalValue;
             }
 
-            var rightEval = EvaluateToken(rightToken);
-            if (rightEval.Code != EvalCode.Ok)
-                return rightEval;
+            var rightEval = rightToken != null ? EvaluateToken(rightToken) : (Evaluation?)null;
+            if (rightEval.HasValue)
+            {
+                var rightEvalValue = rightEval.Value;
+                if (rightEvalValue.Code != EvalCode.Ok)
+                    return rightEvalValue;
+            }
 
-            return ResolveOperator.Invoke(opToken.Value, leftEval?.Value, rightEval.Value);
+            return ResolveOperator.Invoke(opToken.Value, leftEval?.Value, rightEval?.Value);
         }
 
         private Evaluation EvaluateFunction(FunctionToken token)

@@ -3,12 +3,15 @@
 
     <!--#region Icons/Field-->
     
-    <BitmapImage x:Key="Icon_ResultArrow" UriSource="/Content/Icons/Field/ResultArrow.png" />
+    <BitmapImage x:Key="Icon_Ok" UriSource="/Content/Icons/Field/ResultArrow.png" />
 
     <BitmapImage x:Key="Icon_CyclicReferences" UriSource="/Content/Icons/Field/CyclicReferences.png" />
 
-    <BitmapImage x:Key="Icon_UnknownWords" UriSource="/Content/Icons/Field/UnknownWords.png" />
-    <BitmapImage x:Key="Icon_UnknownWordsNested" UriSource="/Content/Icons/Field/UnknownWordsNested.png" />
+    <BitmapImage x:Key="Icon_UnknownWord" UriSource="/Content/Icons/Field/UnknownWord.png" />
+    <BitmapImage x:Key="Icon_UnknownWordNested" UriSource="/Content/Icons/Field/UnknownWordNested.png" />
+
+    <BitmapImage x:Key="Icon_UnknownFunction" UriSource="/Content/Icons/Field/UnknownFunction.png" />
+    <BitmapImage x:Key="Icon_UnknownFunctionNested" UriSource="/Content/Icons/Field/UnknownWordNested.png" />
 
     <BitmapImage x:Key="Icon_SyntaxError" UriSource="/Content/Icons/Field/SyntaxError.png" />
     <BitmapImage x:Key="Icon_SyntaxErrorNested" UriSource="/Content/Icons/Field/SyntaxErrorNested.png" />

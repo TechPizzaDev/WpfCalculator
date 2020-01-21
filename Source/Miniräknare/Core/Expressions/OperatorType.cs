@@ -8,6 +8,7 @@
         Multiply,
         Divide,
         Exponent,
+        Factorial,
         Modulo,
         Special
     }

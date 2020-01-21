@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -19,7 +16,6 @@ namespace Miniräknare
 
         private bool _isHitTestVisible;
         private string _name;
-        private Visibility _resultArrowVisibility;
 
         private string _textValue;
         private FieldState _state;
@@ -28,22 +24,8 @@ namespace Miniräknare
         public event PropertyChangedEventHandler PropertyChanged;
 
         public int TabIndex { get; set; }
-        public object ErrorIcon { get; private set; }
-
-        public string ResultTextValue
-        {
-            get
-            {
-                // TODO: make ErrorIcon a "StatusIcon" instead
-                if (State != FieldState.Ok)
-                {
-                    ResultArrowVisibility = Visibility.Hidden;
-                    return "";
-                }
-                ResultArrowVisibility = Visibility.Visible;
-                return ResultValue.Value.ToString(false);
-            }
-        }
+        public object StateIcon { get; private set; }
+        public string ResultTextValue { get; private set; }
 
         #region Notifying Properties
 
@@ -57,7 +39,12 @@ namespace Miniräknare
                     _state = value;
                     OnPropertyChanged();
 
-                    SetErrorIcon(_state);
+                    var newStateIcon = GetStatusIconResource(_state);
+                    if (newStateIcon != StateIcon)
+                    {
+                        StateIcon = newStateIcon;
+                        OnPropertyChanged(nameof(StateIcon));
+                    }
                 }
             }
         }
@@ -108,19 +95,6 @@ namespace Miniräknare
             }
         }
 
-        public Visibility ResultArrowVisibility
-        {
-            get => _resultArrowVisibility;
-            set 
-            {
-                if(_resultArrowVisibility != value)
-                {
-                    _resultArrowVisibility = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
         public string Name
         {
             get => _name;
@@ -147,7 +121,7 @@ namespace Miniräknare
 
             IsHitTestVisible = true;
             TextValue = string.Empty;
-            _resultArrowVisibility = Visibility.Visible;
+            State = FieldState.Ok;
         }
 
         public ExpressionField(string name, ExpressionOptions options) : this()
@@ -183,7 +157,7 @@ namespace Miniräknare
             return FieldState.Ok;
         }
 
-        private static FieldState EvalToFieldCode(EvalCode code)
+        private static FieldState EvalCodeToFieldState(EvalCode code)
         {
             switch (code)
             {
@@ -192,11 +166,11 @@ namespace Miniräknare
                     return FieldState.Ok;
 
                 case EvalCode.UnresolvedFunction:
-                    return FieldState.UnknownFunctions;
+                    return FieldState.UnknownFunction;
 
                 case EvalCode.UnresolvedOperator:
                 case EvalCode.UnresolvedReference:
-                    return FieldState.UnknownWords;
+                    return FieldState.UnknownWord;
 
                 case EvalCode.Undefined:
                 default:
@@ -216,7 +190,7 @@ namespace Miniräknare
                 ResolveFunction);
 
             var eval = evaluator.Evaluate();
-            var state = EvalToFieldCode(eval.Code);
+            var state = EvalCodeToFieldState(eval.Code);
 
             return (eval, state);
 
@@ -319,13 +293,13 @@ namespace Miniräknare
         private void UpdateResultValue()
         {
             var (eval, state) = Evaluate();
-
             State = state;
 
-            if (eval.Code == EvalCode.Empty)
-                ResultValue = new Evaluation(new UnionValue(0d));
-            else
-                ResultValue = eval;
+            ResultValue = eval.Code != EvalCode.Empty
+                ? eval : new Evaluation(new UnionValue(0d));
+
+            ResultTextValue = State != FieldState.Ok
+                ? "" : ResultValue.Value.ToString(false);
 
             OnPropertyChanged(nameof(ResultTextValue));
         }
@@ -341,22 +315,32 @@ namespace Miniräknare
             return new Evaluation(EvalCode.UnresolvedFunction);
         }
 
-        private static Evaluation ResolveOperator(ReadOnlyMemory<char> name, UnionValue? left, UnionValue right)
+        public static Evaluation ResolveOperator(ReadOnlyMemory<char> name, UnionValue? left, UnionValue? right)
         {
             if (name.Length != 1)
                 return new Evaluation(EvalCode.UnresolvedOperator);
 
             switch (name.Span[0])
             {
-                case '+': return left.GetValueOrDefault().Double + right.Double;
-                case '-': return left.GetValueOrDefault().Double - right.Double;
+                case '+': return left.GetValueOrDefault().Double + right.Value.Double;
+                case '-': return left.GetValueOrDefault().Double - right.Value.Double;
 
-                case '*': return left.GetValueOrDefault().Double * right.Double;
-                case '/': return left.GetValueOrDefault().Double / right.Double;
+                case '*': return left.Value.Double * right.Value.Double;
+                case '/': return left.Value.Double / right.Value.Double;
 
-                case '%': return left.GetValueOrDefault().Double % right.Double;
+                case '%': return left.Value.Double % right.Value.Double;
 
-                case '^': return Math.Pow(left.Value.Double, right.Double);
+                case '^': return Math.Pow(left.Value.Double, right.Value.Double);
+
+                case '!':
+                    double number = left.Value.Double;
+                    double result = 1;
+                    while (number != 1)
+                    {
+                        result *= number;
+                        number -= 1;
+                    }
+                    return result;
 
                 default:
                     return new Evaluation(EvalCode.UnresolvedOperator);
@@ -426,28 +410,13 @@ namespace Miniräknare
             }
         }
 
-        #region ErrorIcon Helpers
-
-        private void SetErrorIcon(FieldState state)
+        public static object GetStatusIconResource(FieldState state)
         {
-            var newErrorIconSource = GetErrorIconResource(state);
-            if (newErrorIconSource != ErrorIcon)
-            {
-                ErrorIcon = newErrorIconSource;
-                OnPropertyChanged(nameof(ErrorIcon));
-            }
-        }
-
-        public static object GetErrorIconResource(FieldState state)
-        {
-            if (state == FieldState.Ok ||
-                state == FieldState.Indeterminate)
+            if (state == FieldState.Indeterminate)
                 return null;
 
             string resourceName = "Icon_" + state;
             return App.Instance.MainWindow.FindResource(resourceName);
         }
-
-        #endregion
     }
 }

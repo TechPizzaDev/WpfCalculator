@@ -39,7 +39,7 @@ namespace Miniräknare
             _splashScreen.Show();
 
 
-            //TestExpressionLoop();
+            TestExpressionLoop();
         }
 
         private static void TestExpressionLoop()
@@ -80,7 +80,7 @@ namespace Miniräknare
                             var evaluator = new ExpressionTreeEvaluator(
                                 tree,
                                 ResolveReference,
-                                ResolveOperator,
+                                ExpressionField.ResolveOperator,
                                 ResolveFunction);
 
                             var eval = Evaluation.Undefined;
@@ -116,28 +116,6 @@ namespace Miniräknare
         public static Evaluation ResolveFunction(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
         {
             return new Evaluation(EvalCode.UnresolvedFunction);
-        }
-
-        public static Evaluation ResolveOperator(ReadOnlyMemory<char> name, UnionValue? left, UnionValue right)
-        {
-            if (name.Length != 1)
-                return new Evaluation(EvalCode.UnresolvedOperator);
-
-            switch (name.Span[0])
-            {
-                case '+': return left.GetValueOrDefault().Double + right.Double;
-                case '-': return left.GetValueOrDefault().Double - right.Double;
-
-                case '*': return left.GetValueOrDefault().Double * right.Double;
-                case '/': return left.GetValueOrDefault().Double / right.Double;
-                    
-                case '%': return left.GetValueOrDefault().Double % right.Double;
-
-                case '^': return Math.Pow(left.Value.Double, right.Double);
-
-                default:
-                    return new Evaluation(EvalCode.UnresolvedOperator);
-            }
         }
 
         #region Startup
