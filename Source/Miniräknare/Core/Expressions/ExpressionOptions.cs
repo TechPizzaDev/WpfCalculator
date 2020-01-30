@@ -13,7 +13,7 @@ namespace Miniräknare.Expressions
                 new OperatorDefinition("+".AsMemory(), 0, OperatorType.Add, OperatorSidedness.OptionalLeft),
                 new OperatorDefinition("-".AsMemory(), 0, OperatorType.Subtract, OperatorSidedness.OptionalLeft),
                 new OperatorDefinition("*".AsMemory(), 1, OperatorType.Multiply, OperatorSidedness.Both),
-                new OperatorDefinition("/".AsMemory(), 1, OperatorType.Divide, OperatorSidedness.Both),
+                new OperatorDefinition(new [] { "/".AsMemory(), ":".AsMemory() }, 1, OperatorType.Divide, OperatorSidedness.Both),
                 new OperatorDefinition("%".AsMemory(), 1, OperatorType.Modulo, OperatorSidedness.Both),
                 new OperatorDefinition("^".AsMemory(), 2, OperatorType.Exponent, OperatorSidedness.Both),
                 new OperatorDefinition("!".AsMemory(), 2, OperatorType.Factorial, OperatorSidedness.Left)
@@ -38,8 +38,12 @@ namespace Miniräknare.Expressions
             for (int i = 0; i < _opDefinitions.Length; i++)
             {
                 var def = _opDefinitions[i];
-                if (def.Name.Span.SequenceEqual(value))
-                    return def;
+                for (int j = 0; j < def.Names.Length; j++)
+                {
+                    var name = def.Names[j];
+                    if (name.Span.SequenceEqual(value))
+                        return def;
+                }
             }
             return null;
         }

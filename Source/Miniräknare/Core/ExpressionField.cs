@@ -59,7 +59,7 @@ namespace Miniräknare
                     _textValue = value;
                     OnPropertyChanged();
 
-                    State = Parse();
+                    State = ParseTextValue();
                     if (State == FieldState.Ok)
                         UpdateResultValue();
                 }
@@ -135,7 +135,7 @@ namespace Miniräknare
             UpdateResultValue();
         }
 
-        public FieldState Parse()
+        public FieldState ParseTextValue()
         {
             if (_expressionTree == null)
                 return FieldState.Indeterminate;
@@ -157,7 +157,7 @@ namespace Miniräknare
             return FieldState.Ok;
         }
 
-        private static FieldState EvalCodeToFieldState(EvalCode code)
+        private static FieldState EvalToFieldState(EvalCode code, UnionValue value)
         {
             switch (code)
             {
@@ -172,16 +172,32 @@ namespace Miniräknare
                 case EvalCode.UnresolvedReference:
                     return FieldState.UnknownWord;
 
+                case EvalCode.ErroredFunction:
+                case EvalCode.ErroredOperator:
+                case EvalCode.ErroredReference:
+                    if (value.Type == UnionValueType.Enum)
+                    {
+                        var state = (FieldState)value.Enum;
+                        switch (state)
+                        {
+                            case FieldState.UnknownWord:
+                            case FieldState.UnknownFunction:
+                            case FieldState.SyntaxError:
+                                return state | FieldState.NestedError;
+                        }
+                    }
+                    return FieldState.Indeterminate;
+
                 case EvalCode.Undefined:
                 default:
                     return FieldState.SyntaxError;
             }
         }
 
-        public (Evaluation Eval, FieldState State) Evaluate()
+        public Evaluation Evaluate()
         {
             if (_expressionTree == null)
-                return (Evaluation.Undefined, FieldState.Indeterminate);
+                return Evaluation.Undefined;
 
             var evaluator = new ExpressionTreeEvaluator(
                 _expressionTree,
@@ -190,135 +206,65 @@ namespace Miniräknare
                 ResolveFunction);
 
             var eval = evaluator.Evaluate();
-            var state = EvalCodeToFieldState(eval.Code);
+            return eval;
 
-            return (eval, state);
-
-            // TODO: put parsing of TextValue into seperate function,
-            // so it isn't re-parsed everytime we want to update the ResultValue
-
-            //double sum = 0;
-            //var parts = TextValue.Split('+', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToList();
-            //
-            //var newReferences = new HashSet<ExpressionField>(
-            //    parts
-            //    .Where(x => !double.TryParse(x, out _))
-            //    .Select(x => MainWindow.Fields[x]));
-            //
-            //foreach (var reference in _references)
-            //{
-            //    if (newReferences.Contains(reference))
-            //        continue;
-            //
-            //    reference.PropertyChanged -= ReferenceChanged;
-            //    _references.Remove(reference);
-            //}
-            //
-            //foreach (string rawPart in parts)
-            //{
-            //    if (currentState != FieldState.Ok)
-            //        break;
-            //
-            //    string part = rawPart.Trim();
-            //
-            //    if (!double.TryParse(part, out double partValue))
-            //    {
-            //        bool hasFoundItem = false;
-            //
             //        foreach (var referenceField in MainWindow.Fields.Values)
             //        {
             //            if (referenceField.Name != part)
             //                continue;
-            //            hasFoundItem = true;
-            //
+
             //            if (referenceField == this)
             //            {
             //                currentState = FieldState.CyclicReferences;
             //                break;
             //            }
-            //
-            //            // Add reference even if there are state errors;
-            //            // we can then track errored fields and show error messages.
-            //            if (newReferences.Add(referenceField))
-            //                referenceField.PropertyChanged += ReferenceChanged;
-            //
-            //            // Only change current state if it's Ok,
-            //            // we don't want to overwrite previous errors.
-            //            if (currentState == FieldState.Ok)
-            //            {
-            //                if (referenceField.State != FieldState.Ok)
-            //                    currentState = referenceField.State.AsNested();
-            //            }
-            //
-            //            if (currentState == FieldState.Ok)
-            //            {
-            //                partValue = 0;
-            //                //referenceField.ResultValue is Evaluation fieldValue
-            //                //    ? fieldValue
-            //                //    : default;
-            //
-            //                currentState = FieldState.Ok;
-            //            }
-            //            break;
-            //        }
-            //
-            //        if (!hasFoundItem)
-            //        {
-            //            currentState = FieldState.UnknownWords;
-            //        }
-            //    }
-            //
-            //    if (currentState == FieldState.Ok)
-            //    {
-            //        sum += partValue;
-            //    }
-            //}
-            //
-            //if (currentState != FieldState.Ok)
-            //{
-            //    State = currentState;
-            //    return;
-            //}
-            //
+
             //if (CheckForCyclicReferences(Name, newReferences))
             //{
             //    State = FieldState.CyclicReferences;
             //    return;
             //}
-            //
-            //State = FieldState.Ok;
-            //ResultValue = sum;
         }
 
         private void UpdateResultValue()
         {
-            var (eval, state) = Evaluate();
-            State = state;
+            foreach (var field in _references)
+                field.PropertyChanged -= ReferenceChanged;
+            _references.Clear();
 
-            ResultValue = eval.Code != EvalCode.Empty
-                ? eval : new Evaluation(new UnionValue(0d));
+            var eval = Evaluate();
+            State = EvalToFieldState(eval.Code, eval.Value);
 
-            ResultTextValue = State != FieldState.Ok
-                ? "" : ResultValue.Value.ToString(false);
+            ResultValue = eval.Code == EvalCode.Ok ? eval : new Evaluation(new UnionValue(0d));
+            ResultTextValue = State == FieldState.Ok ? ResultValue.Value.ToString(false) : "";
 
             OnPropertyChanged(nameof(ResultTextValue));
         }
 
         private Evaluation ResolveReference(ReadOnlyMemory<char> name)
         {
-            return new Evaluation(EvalCode.UnresolvedReference);
-            throw new NotImplementedException();
+            if (!MainWindow.Fields.TryGetValue(name.ToString(), out var field))
+                return new Evaluation(EvalCode.UnresolvedReference, name);
+
+            if (_references.Add(field))
+                field.PropertyChanged += ReferenceChanged;
+
+            if (field.State != FieldState.Ok)
+                return new Evaluation(
+                    EvalCode.ErroredReference, UnionValue.FromEnum(field.State), name);
+
+            return field.ResultValue;
         }
 
         private Evaluation ResolveFunction(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
         {
-            return new Evaluation(EvalCode.UnresolvedFunction);
+            return new Evaluation(EvalCode.UnresolvedFunction, name);
         }
 
         public static Evaluation ResolveOperator(ReadOnlyMemory<char> name, UnionValue? left, UnionValue? right)
         {
             if (name.Length != 1)
-                return new Evaluation(EvalCode.UnresolvedOperator);
+                return new Evaluation(EvalCode.UnresolvedOperator, name);
 
             switch (name.Span[0])
             {
@@ -326,6 +272,8 @@ namespace Miniräknare
                 case '-': return left.GetValueOrDefault().Double - right.Value.Double;
 
                 case '*': return left.Value.Double * right.Value.Double;
+
+                case ':':
                 case '/': return left.Value.Double / right.Value.Double;
 
                 case '%': return left.Value.Double % right.Value.Double;
@@ -343,10 +291,9 @@ namespace Miniräknare
                     return result;
 
                 default:
-                    return new Evaluation(EvalCode.UnresolvedOperator);
+                    return new Evaluation(EvalCode.UnresolvedOperator, name);
             }
         }
-
 
         private static bool CheckForCyclicReferences(
             string baseName, HashSet<ExpressionField> entryPoint)
@@ -364,13 +311,13 @@ namespace Miniräknare
             }
             return false;
         }
-
+        
         private void ReferenceChanged(object sender, PropertyChangedEventArgs args)
         {
             if (args.PropertyName == nameof(ResultValue) ||
                 args.PropertyName == nameof(State))
             {
-                Evaluate();
+                UpdateResultValue();
             }
         }
 
@@ -402,7 +349,6 @@ namespace Miniräknare
             if (e.Key == Key.Enter && sender is TextBox textBox)
             {
                 // Unfocus the text box and call it's binding.
-
                 Keyboard.ClearFocus();
 
                 var binding = BindingOperations.GetBindingExpression(textBox, TextBox.TextProperty);

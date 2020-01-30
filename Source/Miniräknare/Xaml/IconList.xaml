@@ -11,7 +11,7 @@
     <BitmapImage x:Key="Icon_UnknownWordNested" UriSource="/Content/Icons/Field/UnknownWordNested.png" />
 
     <BitmapImage x:Key="Icon_UnknownFunction" UriSource="/Content/Icons/Field/UnknownFunction.png" />
-    <BitmapImage x:Key="Icon_UnknownFunctionNested" UriSource="/Content/Icons/Field/UnknownWordNested.png" />
+    <BitmapImage x:Key="Icon_UnknownFunctionNested" UriSource="/Content/Icons/Field/UnknownFunctionNested.png" />
 
     <BitmapImage x:Key="Icon_SyntaxError" UriSource="/Content/Icons/Field/SyntaxError.png" />
     <BitmapImage x:Key="Icon_SyntaxErrorNested" UriSource="/Content/Icons/Field/SyntaxErrorNested.png" />

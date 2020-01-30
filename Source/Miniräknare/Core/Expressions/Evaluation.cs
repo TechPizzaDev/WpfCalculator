@@ -11,11 +11,17 @@ namespace Miniräknare.Expressions
         public UnionValue Value { get; }
         public ReadOnlyMemory<char> UnresolvedName { get; }
 
-        public Evaluation(EvalCode code, ReadOnlyMemory<char> unresolvedName)
+        public Evaluation(EvalCode code, UnionValue value, ReadOnlyMemory<char> unresolvedName)
         {
             Code = code;
-            Value = UnionValue.Null;
+            Value = value;
             UnresolvedName = unresolvedName;
+        }
+
+        public Evaluation(EvalCode code, ReadOnlyMemory<char> unresolvedName) 
+            : this(code, UnionValue.Null, unresolvedName)
+        {
+
         }
 
         public Evaluation(EvalCode code) : this(code, ReadOnlyMemory<char>.Empty)

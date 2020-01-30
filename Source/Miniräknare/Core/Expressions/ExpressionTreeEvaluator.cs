@@ -60,11 +60,15 @@ namespace Miniräknare.Expressions
                             continue;
 
                         var opToken = (ValueToken)token;
-                        if (opToken.Value.Span.SequenceEqual(opDef.Name.Span))
+                        for (int k = 0; k < opDef.Names.Length; k++)
                         {
-                            var leftToken = opIndex == 0 ? null : list[0];
-                            var rightToken = opIndex == 1 ? null : list[1];
-                            return EvaluateOperator(opToken, leftToken, rightToken);
+                            var name = opDef.Names[k];
+                            if (name.Span.SequenceEqual(opToken.Value.Span))
+                            {
+                                var leftToken = opIndex == 0 ? null : list[0];
+                                var rightToken = opIndex == 1 ? null : list[1];
+                                return EvaluateOperator(opToken, leftToken, rightToken);
+                            }
                         }
                     }
                     break;

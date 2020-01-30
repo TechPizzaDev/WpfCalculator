@@ -189,7 +189,7 @@ namespace Miniräknare.Expressions
                 if (multiplyOpDef == null)
                     return ResultCode.MissingMultiplicationOperator;
 
-                var opToken = new ValueToken(TokenType.Operator, multiplyOpDef.Name);
+                var opToken = new ValueToken(TokenType.Operator, multiplyOpDef.Names[0]);
                 tokens.Insert(i, opToken);
             }
             return ResultCode.Ok;

@@ -7,8 +7,10 @@ namespace Miniräknare.Expressions
 {
     public partial class ExpressionSanitizer
     {
-        private static TokenType[] DecimalSeparatorTypes = new[] { TokenType.DecimalSeparator };
-        private static TokenType[] DecimalNumberComponents = new[] { TokenType.DecimalDigit, TokenType.DecimalSeparator };
+        private static TokenType[] DecimalSeparatorTypes = 
+            new[] { TokenType.DecimalSeparator };
+        private static TokenType[] DecimalNumberComponents = 
+            new[] { TokenType.DecimalDigit, TokenType.DecimalSeparator };
 
         public const char DecimalSeparator = '.';
 
@@ -24,8 +26,6 @@ namespace Miniräknare.Expressions
             TrailingDecimalSeparator,
             InvalidDecimalSeparator,
             MultipleDecimalSeparators,
-            MissingSubtractOperator,
-            NegativeSignMissingValue,
             UnexpectedListSeparator
         }
 
@@ -51,8 +51,8 @@ namespace Miniräknare.Expressions
             SanitizeResult result;
             if ((result = RemoveWhiteSpaces(tokens)).Code != ResultCode.Ok ||
                 (result = ValidateTypesInGroups(builder, tokens)).Code != ResultCode.Ok ||
-                (result = MergeGroupsOfSingleType(builder, tokens)).Code != ResultCode.Ok ||
-                (result = MergeGroupsOfMultipleTypes(builder, tokens, options)).Code != ResultCode.Ok ||
+                (result = MergeGroupsOfSingles(builder, tokens)).Code != ResultCode.Ok ||
+                (result = MergeGroupsOfMultiples(builder, tokens, options)).Code != ResultCode.Ok ||
                 (result = ValidateFunctionArguments(tokens)).Code != ResultCode.Ok)
                 return result;
 
@@ -128,7 +128,9 @@ namespace Miniräknare.Expressions
                 if (IsMiddleType(TokenType.DecimalDigit, TokenType.DecimalSeparator))
                 {
                     int offset = i - 1;
-                    MergeGroup(builder, tokens, offset, 3, true, TokenType.DecimalNumber, out var resultToken);
+                    MergeGroup(
+                        builder, tokens, offset, length: 3, removeTokens: true, 
+                        TokenType.DecimalNumber, out var resultToken);
                     tokens.Insert(offset, resultToken);
                     goto End;
                 }
@@ -143,7 +145,7 @@ namespace Miniräknare.Expressions
 
         #region MergeGroupsByType
 
-        private static SanitizeResult MergeGroupsOfSingleType(StringBuilder builder, List<Token> tokens)
+        private static SanitizeResult MergeGroupsOfSingles(StringBuilder builder, List<Token> tokens)
         {
             for (int i = 0; i < tokens.Count; i++)
             {
@@ -191,7 +193,7 @@ namespace Miniräknare.Expressions
 
         #region MergeGroupsOfMultipleTypes
 
-        private static SanitizeResult MergeGroupsOfMultipleTypes(
+        private static SanitizeResult MergeGroupsOfMultiples(
             StringBuilder builder, List<Token> tokens, ExpressionOptions options)
         {
             Token lastToken = null;
@@ -250,7 +252,9 @@ namespace Miniräknare.Expressions
                         }
                     }
 
-                    if (MergeGroup(builder, tokens, i, length, true, TokenType.DecimalNumber, out var resultToken))
+                    if (MergeGroup(
+                        builder, tokens, i, length, removeTokens: true,
+                        TokenType.DecimalNumber, out var resultToken))
                         tokens.Insert(i, resultToken);
                     goto End;
                 }
@@ -276,46 +280,17 @@ namespace Miniräknare.Expressions
                     builder.Append("0");
                     builder.Append(((ValueToken)currentToken).Value);
                     builder.Append(((ValueToken)nextToken).Value);
+                    var decimalString = builder.ToString().AsMemory();
 
-                    var decimalToken = new ValueToken(TokenType.DecimalNumber, builder.ToString().AsMemory());
+                    var decimalToken = new ValueToken(TokenType.DecimalNumber, decimalString);
                     tokens[i] = decimalToken; // replace the current token
                     tokens.RemoveAt(i + 1); // remove the next token
 
-                    i--; // Go back one step so we can check if we can merge with folloing digits.
+                    i--; // Go back one step so we can check if we can merge with following digits.
                     goto End;
                 }
 
                 #endregion
-
-                #region Move negative sign to following token
-
-                if (currentToken.Type == TokenType.Operator &&
-                    currentToken is ValueToken valueToken &&
-                    valueToken.Value.Length == 2)
-                {
-                    var subtractOpDef = options.GetOperatorDefinition(OperatorType.Subtract);
-                    if (subtractOpDef == null)
-                        return new SanitizeResult(ResultCode.MissingSubtractOperator, i);
-
-                    if (valueToken.Value.Span.SequenceEqual(subtractOpDef.Name.Span))
-                    {
-                        var secondToken = GetNextToken(tokens, i);
-                        if (secondToken == null)
-                            return new SanitizeResult(ResultCode.NegativeSignMissingValue, i);
-
-                        var firstToken = new ValueToken(TokenType.Operator, valueToken.Value.Slice(0, 1));
-                        var negativeOp = new ValueToken(TokenType.Operator, valueToken.Value.Slice(1, 1));
-                        var negativeToken = new ListToken(new List<Token>(2)
-                        {
-                            negativeOp,
-                            secondToken
-                        });
-                        tokens[i] = firstToken;
-                        tokens[i + 1] = negativeToken;
-                    }
-                }
-
-            #endregion
 
             End:
                 lastToken = currentToken;

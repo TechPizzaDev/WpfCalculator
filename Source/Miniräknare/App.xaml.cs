@@ -38,8 +38,7 @@ namespace Miniräknare
             MainWindow = _splashScreen;
             _splashScreen.Show();
 
-
-            TestExpressionLoop();
+            //TestExpressionLoop();
         }
 
         private static void TestExpressionLoop()

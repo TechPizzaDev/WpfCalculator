@@ -9,7 +9,10 @@
         UnresolvedReference,
         UnresolvedOperator,
         UnresolvedFunction,
-        InvalidOperatorCall,
+
+        ErroredReference,
+        ErroredOperator,
+        ErroredFunction,
 
         OperatorMissingLeftValue,
         OperatorMissingRightValue

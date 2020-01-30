@@ -38,18 +38,17 @@ namespace Miniräknare.Expressions
                 for (int i = 0; i < currentTokens.Count; i++)
                 {
                     var token = currentTokens[i];
-                    if (token.Type != TokenType.List)
-                        continue;
-
-                    var listToken = (ListToken)token;
-                    if (listToken.Count == 1)
+                    if (token.Type == TokenType.List)
                     {
-                        var listChild = listToken[0];
-                        currentTokens[i] = listChild;
-                        i--;
+                        var listToken = (ListToken)token;
+                        if (listToken.Count == 1)
+                        {
+                            var listChild = listToken[0];
+                            currentTokens[i] = listChild;
+                            i--;
+                        }
+                        listStack.Push(listToken.Children);
                     }
-
-                    listStack.Push(listToken.Children);
                 }
             }
             return ResultCode.Ok;
