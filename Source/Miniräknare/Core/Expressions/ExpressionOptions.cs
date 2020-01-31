@@ -10,13 +10,13 @@ namespace Miniräknare.Expressions
             implicitMultiplications: true,
             new[]
             {
-                new OperatorDefinition("+".AsMemory(), 0, OperatorType.Add, OperatorSidedness.OptionalLeft),
-                new OperatorDefinition("-".AsMemory(), 0, OperatorType.Subtract, OperatorSidedness.OptionalLeft),
-                new OperatorDefinition("*".AsMemory(), 1, OperatorType.Multiply, OperatorSidedness.Both),
-                new OperatorDefinition(new [] { "/".AsMemory(), ":".AsMemory() }, 1, OperatorType.Divide, OperatorSidedness.Both),
-                new OperatorDefinition("%".AsMemory(), 1, OperatorType.Modulo, OperatorSidedness.Both),
-                new OperatorDefinition("^".AsMemory(), 2, OperatorType.Exponent, OperatorSidedness.Both),
-                new OperatorDefinition("!".AsMemory(), 2, OperatorType.Factorial, OperatorSidedness.Left)
+                new OperatorDefinition('+', 0, OperatorType.Add, OperatorSidedness.OptionalLeft),
+                new OperatorDefinition('-', 0, OperatorType.Subtract, OperatorSidedness.OptionalLeft),
+                new OperatorDefinition('*', 1, OperatorType.Multiply, OperatorSidedness.Both),
+                new OperatorDefinition(new [] { '/', ':' }, 1, OperatorType.Divide, OperatorSidedness.Both),
+                new OperatorDefinition('%', 1, OperatorType.Modulo, OperatorSidedness.Both),
+                new OperatorDefinition('^', 2, OperatorType.Exponent, OperatorSidedness.Both),
+                new OperatorDefinition('!', 2, OperatorType.Factorial, OperatorSidedness.Left)
             });
 
         private OperatorDefinition[] _opDefinitions;

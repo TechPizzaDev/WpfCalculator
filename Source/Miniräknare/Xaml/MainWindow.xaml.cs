@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -17,8 +18,13 @@ namespace Miniräknare
 
     public partial class MainWindow : Window
     {
-        public static BindingList<ListViewItem> FieldList { get; } = new BindingList<ListViewItem>();
-        public static Dictionary<string, ExpressionField> Fields { get; } = new Dictionary<string, ExpressionField>();
+        private static readonly ReadOnlyMemory<char> _alphabet = "abcdefghijklmnopqrstuvwxyz".AsMemory();
+
+        public static BindingList<ListViewItem> FieldList { get; } =
+            new BindingList<ListViewItem>();
+
+        public static Dictionary<ReadOnlyString, ExpressionField> Fields { get; } =
+            new Dictionary<ReadOnlyString, ExpressionField>();
 
         private LanguageWindow _languageWindow;
 
@@ -31,28 +37,62 @@ namespace Miniräknare
             //InitializeDragDropManager();
         }
 
-        private string GetNewFieldName()
+        private ReadOnlyMemory<char> GenerateFieldName()
         {
-            int tries = 0;
+            const int maxLength = 10;
+            int targetIndex = _alphabet.Length;
 
-            Try:
-            foreach(var field in Fields.Keys)
+            int lastIndex = maxLength - 1;
+            int length = 1;
+            Memory<char> name;
+
+            var nameBuffer = new char[maxLength];
+            var indices = new int[maxLength];
+
+            bool tryGet = true;
+            do
             {
+                var src = _alphabet.Span;
+                for (int i = 0; i < length; i++)
+                    nameBuffer[maxLength - i - 1] = src[indices[maxLength - i - 1]];
+                name = nameBuffer.AsMemory(maxLength - length, length);
 
-            }
-            char[] omegalul = "qwertyuiopåasdfghjklöäzxcvbnm".ToCharArray();
-            var r = new Random();
-            string newName = omegalul[r.Next(omegalul.Length)].ToString() +
-                omegalul[r.Next(omegalul.Length)].ToString();
+                if (!Fields.ContainsKey(name))
+                    break;
 
-            if (!ExpressionField.ValidateName(newName, out newName))
-            {
-                tries++;
-                if (tries > 100)
-                    throw new Exception();
-                goto Try;
-            }
-            return newName;
+                indices[^1]++;
+
+                for (int i = indices.Length; i-- > 0;)
+                {
+                    if (indices[i] != targetIndex)
+                        continue;
+
+                    if (i - 1 < 0)
+                    {
+                        if (indices[i] == targetIndex)
+                        {
+                            tryGet = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        indices[i - 1]++;
+                    }
+
+                    if (i < lastIndex)
+                    {
+                        length++;
+                        if (length > maxLength)
+                            throw new Exception("Max name length reached.");
+
+                        lastIndex = i;
+                    }
+                    indices[i] = 0;
+                }
+            } while (tryGet);
+
+            return name;
         }
 
         #region DragDropManager stuff
@@ -89,7 +129,7 @@ namespace Miniräknare
 
         private void AddNewField_Click(object sender, RoutedEventArgs e)
         {
-            string fieldName = GetNewFieldName();
+            var fieldName = GenerateFieldName();
             var field = new ExpressionField(fieldName, ExpressionOptions.Default);
 
             var listItem = new ListViewItem
@@ -99,7 +139,6 @@ namespace Miniräknare
             };
 
             FieldList.Add(listItem);
-            Fields.Add(field.Name, field);
         }
 
         private void AddNewFunctionField_Click(object sender, RoutedEventArgs e)

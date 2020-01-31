@@ -77,14 +77,13 @@ namespace Miniräknare
                         {
                             Print(tree.Tokens);
                             var evaluator = new ExpressionTreeEvaluator(
-                                tree,
                                 ResolveReference,
                                 ExpressionField.ResolveOperator,
                                 ResolveFunction);
 
                             var eval = Evaluation.Undefined;
                             for (int i = 0; i < 1; i++)
-                                eval = evaluator.Evaluate();
+                                eval = evaluator.Evaluate(tree);
 
                             if (eval.Code != EvalCode.Ok)
                             {

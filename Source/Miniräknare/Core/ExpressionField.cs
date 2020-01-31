@@ -100,11 +100,15 @@ namespace Miniräknare
             get => _name;
             set
             {
-                if (_name != value && ValidateName(value, out value))
+                if (_name != value && ValidateName(value.AsMemory(), out var newName))
                 {
-                    //string oldName = _name;
-                    _name = value;
+                    string oldName = _name;
+                    
+                    if (oldName != null)
+                        MainWindow.Fields.Remove(oldName.AsMemory());
+                    MainWindow.Fields.Add(newName, this);
 
+                    _name = newName.ToString();
                     OnPropertyChanged();
 
                     foreach (var field in MainWindow.Fields.Values)
@@ -124,13 +128,13 @@ namespace Miniräknare
             State = FieldState.Ok;
         }
 
-        public ExpressionField(string name, ExpressionOptions options) : this()
+        public ExpressionField(ReadOnlyMemory<char> name, ExpressionOptions options) : this()
         {
-            if (!ValidateName(name, out string validatedName))
+            if (!ValidateName(name, out var validatedName))
                 throw new ArgumentException(nameof(name));
 
             _expressionTree = new ExpressionTree(options);
-            Name = validatedName;
+            Name = validatedName.ToString();
 
             UpdateResultValue();
         }
@@ -178,6 +182,7 @@ namespace Miniräknare
                     if (value.Type == UnionValueType.Enum)
                     {
                         var state = (FieldState)value.Enum;
+                        state &= ~FieldState.NestedError;
                         switch (state)
                         {
                             case FieldState.UnknownWord:
@@ -199,13 +204,16 @@ namespace Miniräknare
             if (_expressionTree == null)
                 return Evaluation.Undefined;
 
+            var probe = new ExpressionTreeProbe();
+
+            probe.Probe(_expressionTree);
+
             var evaluator = new ExpressionTreeEvaluator(
-                _expressionTree,
                 ResolveReference,
                 ResolveOperator,
                 ResolveFunction);
 
-            var eval = evaluator.Evaluate();
+            var eval = evaluator.Evaluate(_expressionTree);
             return eval;
 
             //        foreach (var referenceField in MainWindow.Fields.Values)
@@ -243,7 +251,7 @@ namespace Miniräknare
 
         private Evaluation ResolveReference(ReadOnlyMemory<char> name)
         {
-            if (!MainWindow.Fields.TryGetValue(name.ToString(), out var field))
+            if (!MainWindow.Fields.TryGetValue(name, out var field))
                 return new Evaluation(EvalCode.UnresolvedReference, name);
 
             if (_references.Add(field))
@@ -256,12 +264,14 @@ namespace Miniräknare
             return field.ResultValue;
         }
 
-        private Evaluation ResolveFunction(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
+        private Evaluation ResolveFunction(
+            ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
         {
             return new Evaluation(EvalCode.UnresolvedFunction, name);
         }
 
-        public static Evaluation ResolveOperator(ReadOnlyMemory<char> name, UnionValue? left, UnionValue? right)
+        public static Evaluation ResolveOperator(
+            ReadOnlyMemory<char> name, UnionValue? left, UnionValue? right)
         {
             if (name.Length != 1)
                 return new Evaluation(EvalCode.UnresolvedOperator, name);
@@ -311,7 +321,7 @@ namespace Miniräknare
             }
             return false;
         }
-        
+
         private void ReferenceChanged(object sender, PropertyChangedEventArgs args)
         {
             if (args.PropertyName == nameof(ResultValue) ||
@@ -330,16 +340,16 @@ namespace Miniräknare
             }
         }
 
-        public static bool ValidateName(string newName, out string validatedName)
+        public static bool ValidateName(
+            ReadOnlyMemory<char> newName, out ReadOnlyMemory<char> validatedName)
         {
             validatedName = newName.Trim();
 
-            if (string.IsNullOrWhiteSpace(validatedName))
+            if (validatedName.IsEmpty)
                 return false;
 
-            foreach (var field in MainWindow.Fields.Values)
-                if (field.Name == validatedName)
-                    return false;
+            if (MainWindow.Fields.ContainsKey(validatedName))
+                return false;
 
             return true;
         }

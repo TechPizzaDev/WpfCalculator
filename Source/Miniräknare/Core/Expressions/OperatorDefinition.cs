@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace Miniräknare.Expressions
 {
@@ -11,7 +12,7 @@ namespace Miniräknare.Expressions
         public OperatorSidedness Sidedness { get; }
 
         public OperatorDefinition(
-            ReadOnlyMemory<char>[] names, 
+            char[] names, 
             int priority,
             OperatorType type,
             OperatorSidedness sidedness)
@@ -19,14 +20,14 @@ namespace Miniräknare.Expressions
             if (names == null) throw new ArgumentNullException(nameof(names));
             if (names.Length == 0) throw new ArgumentException(nameof(names));
 
-            Names = names;
+            Names = names.Select(x => new ReadOnlyMemory<char>(new[] { x })).ToArray();
             Priority = priority;
             Type = type;
             Sidedness = sidedness;
         }
 
         public OperatorDefinition(
-            ReadOnlyMemory<char> name,
+            char name,
             int priority,
             OperatorType type,
             OperatorSidedness sidedness) :

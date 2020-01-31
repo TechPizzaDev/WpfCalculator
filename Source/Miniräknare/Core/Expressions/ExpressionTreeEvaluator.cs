@@ -5,44 +5,45 @@ using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare.Expressions
 {
-    public readonly struct ExpressionTreeEvaluator
+    public class ExpressionTreeEvaluator
     {
         // TODO: remove recursion
 
-        public delegate Evaluation ResolveReferenceDelegate(ReadOnlyMemory<char> name);
-        public delegate Evaluation ResolveOperatorDelegate(ReadOnlyMemory<char> name, UnionValue? left, UnionValue? right);
-        public delegate Evaluation ResolveFunctionDelegate(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments);
+        public delegate Evaluation ResolveReferenceDelegate(
+            ReadOnlyMemory<char> name);
 
-        public ExpressionTree Tree { get; }
+        public delegate Evaluation ExecuteOperatorDelegate(
+            ReadOnlyMemory<char> name, UnionValue? left, UnionValue? right);
+
+        public delegate Evaluation ExecuteFunctionDelegate(
+            ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments);
+
         public ResolveReferenceDelegate ResolveReference { get; }
-        public ResolveOperatorDelegate ResolveOperator { get; }
-        public ResolveFunctionDelegate ResolveFunction { get; }
+        public ExecuteOperatorDelegate ExecuteOperator { get; }
+        public ExecuteFunctionDelegate ExecuteFunction { get; }
 
         public ExpressionTreeEvaluator(
-            ExpressionTree tree,
             ResolveReferenceDelegate resolveReference,
-            ResolveOperatorDelegate resolveOperator,
-            ResolveFunctionDelegate resolveFunction)
+            ExecuteOperatorDelegate resolveOperator,
+            ExecuteFunctionDelegate resolveFunction)
         {
-            Tree = tree ?? throw new ArgumentNullException(nameof(tree));
             ResolveReference = resolveReference ?? throw new ArgumentNullException(nameof(resolveReference));
-            ResolveOperator = resolveOperator ?? throw new ArgumentNullException(nameof(resolveOperator));
-            ResolveFunction = resolveFunction ?? throw new ArgumentNullException(nameof(resolveFunction));
+            ExecuteOperator = resolveOperator ?? throw new ArgumentNullException(nameof(resolveOperator));
+            ExecuteFunction = resolveFunction ?? throw new ArgumentNullException(nameof(resolveFunction));
         }
 
-        public Evaluation Evaluate()
+        public Evaluation Evaluate(ExpressionTree tree)
         {
-            if (Tree.Tokens.Count > 0 && Tree.Tokens.Count <= 3)
-                return EvaluateList(Tree.Tokens);
-
+            if (tree.Tokens.Count > 0 && tree.Tokens.Count <= 3)
+                return EvaluateList(tree.Options, tree.Tokens);
             return Evaluation.Empty;
         }
 
-        private Evaluation EvaluateList(List<Token> list)
+        private Evaluation EvaluateList(ExpressionOptions options, List<Token> list)
         {
             if (list.Count == 1)
             {
-                return EvaluateToken(list[0]);
+                return EvaluateToken(options, list[0]);
             }
             else if (list.Count == 2)
             {
@@ -52,7 +53,7 @@ namespace Miniräknare.Expressions
                     if (token.Type != TokenType.Operator)
                         continue;
 
-                    var opDefinitions = Tree.Options.OpDefinitions.Span;
+                    var opDefinitions = options.OpDefinitions.Span;
                     for (int j = 0; j < opDefinitions.Length; j++)
                     {
                         var opDef = opDefinitions[j];
@@ -67,7 +68,7 @@ namespace Miniräknare.Expressions
                             {
                                 var leftToken = opIndex == 0 ? null : list[0];
                                 var rightToken = opIndex == 1 ? null : list[1];
-                                return EvaluateOperator(opToken, leftToken, rightToken);
+                                return EvaluateOperator(options, opToken, leftToken, rightToken);
                             }
                         }
                     }
@@ -77,15 +78,15 @@ namespace Miniräknare.Expressions
             else if (list.Count == 3)
             {
                 if (list[1] is ValueToken opToken)
-                    return EvaluateOperator(opToken, list[0], list[2]);
+                    return EvaluateOperator(options, opToken, list[0], list[2]);
             }
             return Evaluation.Undefined;
         }
 
-        private Evaluation EvaluateToken(Token token)
+        private Evaluation EvaluateToken(ExpressionOptions options, Token token)
         {
             if (token is ListToken listToken)
-                return EvaluateList(listToken.Children);
+                return EvaluateList(options, listToken.Children);
 
             if (token is ValueToken valueToken)
             {
@@ -102,7 +103,7 @@ namespace Miniräknare.Expressions
                             return double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
 
                     case TokenType.Name:
-                        return EvaluateReference(valueToken);
+                        return ResolveReference.Invoke(valueToken.Value);
 
                     default:
                         return Evaluation.Undefined;
@@ -110,7 +111,7 @@ namespace Miniräknare.Expressions
             }
             else if (token is FunctionToken funcToken)
             {
-                return EvaluateFunction(funcToken);
+                return EvaluateFunction(options, funcToken);
             }
             else
             {
@@ -118,27 +119,23 @@ namespace Miniräknare.Expressions
             }
         }
 
-        private Evaluation EvaluateReference(ValueToken token)
+        private Evaluation EvaluateOperator(
+            ExpressionOptions options, ValueToken op, Token left, Token right)
         {
-            return ResolveReference.Invoke(token.Value);
-        }
-
-        private Evaluation EvaluateOperator(ValueToken opToken, Token leftToken, Token rightToken)
-        {
-            var opDef = Tree.Options.GetOperatorDefinition(opToken.Value.Span);
-            if (leftToken == null && (
+            var opDef = options.GetOperatorDefinition(op.Value.Span);
+            if (left == null && (
                 opDef?.Sidedness == OperatorSidedness.Both ||
                 opDef?.Sidedness == OperatorSidedness.Left ||
                 opDef?.Sidedness == OperatorSidedness.OptionalRight))
                 return new Evaluation(EvalCode.OperatorMissingLeftValue);
 
-            if (rightToken == null && (
+            if (right == null && (
                 opDef?.Sidedness == OperatorSidedness.Both ||
                 opDef?.Sidedness == OperatorSidedness.Right ||
                 opDef?.Sidedness == OperatorSidedness.OptionalLeft))
                 return new Evaluation(EvalCode.OperatorMissingRightValue);
 
-            var leftEval = leftToken != null ? EvaluateToken(leftToken) : (Evaluation?)null;
+            var leftEval = left != null ? EvaluateToken(options, left) : (Evaluation?)null;
             if (leftEval.HasValue)
             {
                 var leftEvalValue = leftEval.Value;
@@ -146,7 +143,7 @@ namespace Miniräknare.Expressions
                     return leftEvalValue;
             }
 
-            var rightEval = rightToken != null ? EvaluateToken(rightToken) : (Evaluation?)null;
+            var rightEval = right != null ? EvaluateToken(options, right) : (Evaluation?)null;
             if (rightEval.HasValue)
             {
                 var rightEvalValue = rightEval.Value;
@@ -154,20 +151,20 @@ namespace Miniräknare.Expressions
                     return rightEvalValue;
             }
 
-            return ResolveOperator.Invoke(opToken.Value, leftEval?.Value, rightEval?.Value);
+            return ExecuteOperator.Invoke(op.Value, leftEval?.Value, rightEval?.Value);
         }
 
-        private Evaluation EvaluateFunction(FunctionToken token)
+        private Evaluation EvaluateFunction(ExpressionOptions options, FunctionToken token)
         {
             Span<UnionValue> args = stackalloc UnionValue[token.Arguments.Count];
             for (int i = 0; i < token.Arguments.Count; i++)
             {
-                var eval = EvaluateToken(token.Arguments[i]);
+                var eval = EvaluateToken(options, token.Arguments[i]);
                 if (eval.Code != EvalCode.Ok)
                     return eval;
                 args[i] = eval.Value;
             }
-            return ResolveFunction.Invoke(token.Name.Value, args);
+            return ExecuteFunction.Invoke(token.Name.Value, args);
         }
     }
 }

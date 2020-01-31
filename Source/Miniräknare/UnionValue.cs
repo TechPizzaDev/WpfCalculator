@@ -72,7 +72,7 @@ namespace Miniräknare
                 UnionValueType.Float => Float.ToString() + (suffix ? "f" : ""),
                 UnionValueType.Long => Long.ToString() + (suffix ? "l" : ""),
                 UnionValueType.ULong => ULong.ToString() + (suffix ? "ul" : ""),
-                UnionValueType.Enum => Enum.ToString() + (suffix ? "e" : ""),
+                UnionValueType.Enum => Enum.ToString() + (suffix ? "enum" : ""),
                 UnionValueType.Null => "null",
                 _ => string.Empty,
             };

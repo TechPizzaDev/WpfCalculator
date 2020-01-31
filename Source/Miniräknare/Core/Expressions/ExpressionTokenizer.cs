@@ -18,17 +18,19 @@ namespace Miniräknare.Expressions
 
         static ExpressionTokenizer()
         {
-            static TokenDefinition NewDef(TokenType type, Func<char, bool> predicate, bool isSingular = false)
+            static TokenDefinition NewDef(
+                TokenType type, Func<char, bool> predicate, bool isSingular = false)
             {
                 return new TokenDefinition(type, predicate, isSingular);
             }
 
-            var decimalNumberDef = NewDef(TokenType.DecimalNumber,
+            var decimalNumberDef = NewDef(
+                TokenType.DecimalNumber,
                 c => CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.OtherNumber);
 
             _tokenDefinitions = new[]
             {
-                NewDef(TokenType.Operator, IsOperator),
+                NewDef(TokenType.Operator, IsOperator, true),
                 NewDef(TokenType.Name, char.IsLetter),
                 NewDef(TokenType.DecimalSeparator, c => c == '.' || c == ',', true),
                 NewDef(TokenType.DecimalDigit, char.IsDigit, true),
