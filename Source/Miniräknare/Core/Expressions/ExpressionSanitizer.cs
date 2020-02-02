@@ -7,9 +7,9 @@ namespace Miniräknare.Expressions
 {
     public partial class ExpressionSanitizer
     {
-        private static TokenType[] DecimalSeparatorTypes = 
+        private static TokenType[] DecimalSeparatorTypes =
             new[] { TokenType.DecimalSeparator };
-        private static TokenType[] DecimalNumberComponents = 
+        private static TokenType[] DecimalNumberComponents =
             new[] { TokenType.DecimalDigit, TokenType.DecimalSeparator };
 
         public const char DecimalSeparator = '.';
@@ -43,8 +43,7 @@ namespace Miniräknare.Expressions
             }
         }
 
-        public static SanitizeResult Sanitize(
-            List<Token> tokens, ExpressionOptions options)
+        public static SanitizeResult Sanitize(List<Token> tokens)
         {
             var builder = new StringBuilder();
 
@@ -52,7 +51,7 @@ namespace Miniräknare.Expressions
             if ((result = RemoveWhiteSpaces(tokens)).Code != ResultCode.Ok ||
                 (result = ValidateTypesInGroups(builder, tokens)).Code != ResultCode.Ok ||
                 (result = MergeGroupsOfSingles(builder, tokens)).Code != ResultCode.Ok ||
-                (result = MergeGroupsOfMultiples(builder, tokens, options)).Code != ResultCode.Ok ||
+                (result = MergeGroupsOfMultiples(builder, tokens)).Code != ResultCode.Ok ||
                 (result = ValidateFunctionArguments(tokens)).Code != ResultCode.Ok)
                 return result;
 
@@ -61,15 +60,15 @@ namespace Miniräknare.Expressions
 
         public static SanitizeResult Sanitize(ExpressionTree tree)
         {
-            return Sanitize(tree.Tokens, tree.Options);
+            return Sanitize(tree.Tokens);
         }
 
         #region RemoveWhiteSpaces
 
         private static SanitizeResult RemoveWhiteSpaces(IList<Token> tokens)
         {
-            for (int i = tokens.Count; i-- > 0; )
-            { 
+            for (int i = tokens.Count; i-- > 0;)
+            {
                 var token = tokens[i];
                 if (token.Type == TokenType.WhiteSpace)
                     tokens.RemoveAt(i);
@@ -129,7 +128,7 @@ namespace Miniräknare.Expressions
                 {
                     int offset = i - 1;
                     MergeGroup(
-                        builder, tokens, offset, length: 3, removeTokens: true, 
+                        builder, tokens, offset, length: 3, removeTokens: true,
                         TokenType.DecimalNumber, out var resultToken);
                     tokens.Insert(offset, resultToken);
                     goto End;
@@ -194,7 +193,7 @@ namespace Miniräknare.Expressions
         #region MergeGroupsOfMultipleTypes
 
         private static SanitizeResult MergeGroupsOfMultiples(
-            StringBuilder builder, List<Token> tokens, ExpressionOptions options)
+            StringBuilder builder, List<Token> tokens)
         {
             Token lastToken = null;
 
@@ -206,10 +205,12 @@ namespace Miniräknare.Expressions
 
                 #region Merging Names with Spaces
 
-                if (currentToken.Type == TokenType.Name ||
-                    currentToken.Type == TokenType.Space)
+                static bool IsNameOrSpace(Token t)
                 {
-                    static bool IsNameOrSpace(Token t) => t.Type == TokenType.Name || t.Type == TokenType.Space;
+                    return t.Type == TokenType.Name || t.Type == TokenType.Space;
+                }
+                if (IsNameOrSpace(currentToken))
+                {
                     int end = AsLongAsMatch(tokens, i, IsNameOrSpace);
                     int length = end - i;
 
@@ -222,17 +223,16 @@ namespace Miniräknare.Expressions
 
                 #region Merging Digits with Numbers
 
-                if (currentToken.Type == TokenType.DecimalDigit ||
-                    currentToken.Type == TokenType.DecimalNumber)
+                static bool IsDigitOrDigitNumber(Token t)
                 {
-                    static bool IsDigitOrDigitNumber(Token t)
-                    {
-                        if (t.Type == TokenType.DecimalDigit)
-                            return true;
-                        if (t.Type == TokenType.DecimalNumber)
-                            return MatchesTypes(((ValueToken)t).Value.Span, DecimalNumberComponents);
-                        return false;
-                    }
+                    if (t.Type == TokenType.DecimalDigit)
+                        return true;
+                    if (t.Type == TokenType.DecimalNumber)
+                        return MatchesTypes(((ValueToken)t).Value.Span, DecimalNumberComponents);
+                    return false;
+                }
+                if (IsDigitOrDigitNumber(currentToken))
+                {
                     int end = AsLongAsMatch(tokens, i, IsDigitOrDigitNumber);
                     int length = end - i;
 
@@ -290,7 +290,7 @@ namespace Miniräknare.Expressions
                     goto End;
                 }
 
-                #endregion
+            #endregion
 
             End:
                 lastToken = currentToken;

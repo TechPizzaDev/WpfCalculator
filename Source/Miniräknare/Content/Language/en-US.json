@@ -32,7 +32,7 @@
 		"ActionButtons": {
 			"Hover": {
 				"AddNewField": "Add new field",
-				"AddNewFunctionField": "Add new function field"
+				"AddNewFunctionField": "Add new formula field"
 			}
 		},
 

@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using Miniräknare.Expressions;
+using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare
 {
@@ -13,6 +15,9 @@ namespace Miniräknare
     {
         private ExpressionTree _expressionTree;
         private HashSet<ExpressionField> _references;
+
+        private ExpressionTreeProbe _probe;
+        private ExpressionTreeEvaluator _evaluator;
 
         private bool _isHitTestVisible;
         private string _name;
@@ -103,7 +108,7 @@ namespace Miniräknare
                 if (_name != value && ValidateName(value.AsMemory(), out var newName))
                 {
                     string oldName = _name;
-                    
+
                     if (oldName != null)
                         MainWindow.Fields.Remove(oldName.AsMemory());
                     MainWindow.Fields.Add(newName, this);
@@ -121,8 +126,6 @@ namespace Miniräknare
 
         public ExpressionField()
         {
-            _references = new HashSet<ExpressionField>();
-
             IsHitTestVisible = true;
             TextValue = string.Empty;
             State = FieldState.Ok;
@@ -133,6 +136,15 @@ namespace Miniräknare
             if (!ValidateName(name, out var validatedName))
                 throw new ArgumentException(nameof(name));
 
+            _probe = new ExpressionTreeProbe();
+            _probe.ProbeReference += ProbeReference;
+
+            _evaluator = new ExpressionTreeEvaluator(
+                ResolveReference,
+                ResolveOperator,
+                ResolveFunction);
+
+            _references = new HashSet<ExpressionField>();
             _expressionTree = new ExpressionTree(options);
             Name = validatedName.ToString();
 
@@ -169,6 +181,9 @@ namespace Miniräknare
                 case EvalCode.Ok:
                     return FieldState.Ok;
 
+                case EvalCode.CyclicReferences:
+                    return FieldState.CyclicReferences;
+
                 case EvalCode.UnresolvedFunction:
                     return FieldState.UnknownFunction;
 
@@ -204,42 +219,61 @@ namespace Miniräknare
             if (_expressionTree == null)
                 return Evaluation.Undefined;
 
-            var probe = new ExpressionTreeProbe();
-
-            probe.Probe(_expressionTree);
-
-            var evaluator = new ExpressionTreeEvaluator(
-                ResolveReference,
-                ResolveOperator,
-                ResolveFunction);
-
-            var eval = evaluator.Evaluate(_expressionTree);
-            return eval;
-
-            //        foreach (var referenceField in MainWindow.Fields.Values)
-            //        {
-            //            if (referenceField.Name != part)
-            //                continue;
-
-            //            if (referenceField == this)
-            //            {
-            //                currentState = FieldState.CyclicReferences;
-            //                break;
-            //            }
-
-            //if (CheckForCyclicReferences(Name, newReferences))
-            //{
-            //    State = FieldState.CyclicReferences;
-            //    return;
-            //}
-        }
-
-        private void UpdateResultValue()
-        {
             foreach (var field in _references)
                 field.PropertyChanged -= ReferenceChanged;
             _references.Clear();
 
+            _probe.Probe(_expressionTree);
+
+            if (HasCyclicReferences(Name, _references))
+            {
+                State = FieldState.CyclicReferences;
+                return new Evaluation(EvalCode.CyclicReferences);
+            }
+
+            var eval = _evaluator.Evaluate(_expressionTree);
+            return eval;
+        }
+
+        private void ProbeReference(ValueToken name)
+        {
+            if (!MainWindow.Fields.TryGetValue(name.Value, out var field))
+                return;
+
+            if (_references.Add(field))
+                field.PropertyChanged += ReferenceChanged;
+        }
+
+        private static bool HasCyclicReferences(
+            string baseName, IEnumerable<ExpressionField> baseReferences)
+        {
+            var checkedSet = new HashSet<ExpressionField>();
+
+            bool Core(string name, IEnumerable<ExpressionField> references)
+            {
+                foreach (var reference in references)
+                {
+                    if (name == reference.Name)
+                        return true;
+
+                    if (checkedSet.Add(reference) && Core(name, reference._references))
+                        return true;
+                }
+                return false;
+            }
+
+            if (Core(baseName, baseReferences))
+                return true;
+
+            foreach (var set in checkedSet)
+                if (set.State == FieldState.CyclicReferences)
+                    return true;
+
+            return false;
+        }
+
+        private void UpdateResultValue()
+        {
             var eval = Evaluate();
             State = EvalToFieldState(eval.Code, eval.Value);
 
@@ -254,9 +288,6 @@ namespace Miniräknare
             if (!MainWindow.Fields.TryGetValue(name, out var field))
                 return new Evaluation(EvalCode.UnresolvedReference, name);
 
-            if (_references.Add(field))
-                field.PropertyChanged += ReferenceChanged;
-
             if (field.State != FieldState.Ok)
                 return new Evaluation(
                     EvalCode.ErroredReference, UnionValue.FromEnum(field.State), name);
@@ -267,6 +298,9 @@ namespace Miniräknare
         private Evaluation ResolveFunction(
             ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
         {
+            if (name.Span.SequenceEqual("sin"))
+                return new Evaluation(new UnionValue(Math.Sin(arguments[0].Double)));
+
             return new Evaluation(EvalCode.UnresolvedFunction, name);
         }
 
@@ -305,23 +339,6 @@ namespace Miniräknare
             }
         }
 
-        private static bool CheckForCyclicReferences(
-            string baseName, HashSet<ExpressionField> entryPoint)
-        {
-            if (entryPoint.Count == 0)
-                return false;
-
-            foreach (var entry in entryPoint)
-            {
-                if (entry.Name == baseName)
-                    return true;
-
-                if (CheckForCyclicReferences(baseName, entry._references))
-                    return true;
-            }
-            return false;
-        }
-
         private void ReferenceChanged(object sender, PropertyChangedEventArgs args)
         {
             if (args.PropertyName == nameof(ResultValue) ||
@@ -341,12 +358,21 @@ namespace Miniräknare
         }
 
         public static bool ValidateName(
-            ReadOnlyMemory<char> newName, out ReadOnlyMemory<char> validatedName)
+            ReadOnlyMemory<char> newName,
+            out ReadOnlyMemory<char> validatedName)
         {
             validatedName = newName.Trim();
 
             if (validatedName.IsEmpty)
                 return false;
+
+            var nameSpan = validatedName.Span;
+            for (int i = 0; i < nameSpan.Length; i++)
+            {
+                char c = nameSpan[i];
+                if (!(ExpressionTokenizer.IsNameToken(c) || ExpressionTokenizer.IsSpaceToken(c)))
+                    return false;
+            }
 
             if (MainWindow.Fields.ContainsKey(validatedName))
                 return false;

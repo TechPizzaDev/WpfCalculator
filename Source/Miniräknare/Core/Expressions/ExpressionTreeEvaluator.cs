@@ -34,22 +34,24 @@ namespace Miniräknare.Expressions
 
         public Evaluation Evaluate(ExpressionTree tree)
         {
-            if (tree.Tokens.Count > 0 && tree.Tokens.Count <= 3)
-                return EvaluateList(tree.Options, tree.Tokens);
-            return Evaluation.Empty;
+            return Evaluate(tree.Tokens, tree.Options);
         }
 
-        private Evaluation EvaluateList(ExpressionOptions options, List<Token> list)
+        public Evaluation Evaluate(List<Token> tokens, ExpressionOptions options)
         {
-            if (list.Count == 1)
+            if (tokens.Count == 0)
             {
-                return EvaluateToken(options, list[0]);
+                return Evaluation.Empty;
             }
-            else if (list.Count == 2)
+            else if (tokens.Count == 1)
             {
-                for (int opIndex = 0; opIndex < list.Count; opIndex++)
+                return EvaluateToken(options, tokens[0]);
+            }
+            else if (tokens.Count == 2)
+            {
+                for (int opIndex = 0; opIndex < tokens.Count; opIndex++)
                 {
-                    var token = list[opIndex];
+                    var token = tokens[opIndex];
                     if (token.Type != TokenType.Operator)
                         continue;
 
@@ -66,8 +68,8 @@ namespace Miniräknare.Expressions
                             var name = opDef.Names[k];
                             if (name.Span.SequenceEqual(opToken.Value.Span))
                             {
-                                var leftToken = opIndex == 0 ? null : list[0];
-                                var rightToken = opIndex == 1 ? null : list[1];
+                                var leftToken = opIndex == 0 ? null : tokens[0];
+                                var rightToken = opIndex == 1 ? null : tokens[1];
                                 return EvaluateOperator(options, opToken, leftToken, rightToken);
                             }
                         }
@@ -75,10 +77,10 @@ namespace Miniräknare.Expressions
                     break;
                 }
             }
-            else if (list.Count == 3)
+            else if (tokens.Count == 3)
             {
-                if (list[1] is ValueToken opToken)
-                    return EvaluateOperator(options, opToken, list[0], list[2]);
+                if (tokens[1] is ValueToken opToken)
+                    return EvaluateOperator(options, opToken, tokens[0], tokens[2]);
             }
             return Evaluation.Undefined;
         }
@@ -86,7 +88,7 @@ namespace Miniräknare.Expressions
         private Evaluation EvaluateToken(ExpressionOptions options, Token token)
         {
             if (token is ListToken listToken)
-                return EvaluateList(options, listToken.Children);
+                return Evaluate(listToken.Children, options);
 
             if (token is ValueToken valueToken)
             {
@@ -113,10 +115,7 @@ namespace Miniräknare.Expressions
             {
                 return EvaluateFunction(options, funcToken);
             }
-            else
-            {
-                return Evaluation.Undefined;
-            }
+            return Evaluation.Undefined;
         }
 
         private Evaluation EvaluateOperator(

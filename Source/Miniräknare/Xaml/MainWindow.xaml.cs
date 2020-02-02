@@ -40,21 +40,21 @@ namespace Miniräknare
         private ReadOnlyMemory<char> GenerateFieldName()
         {
             const int maxLength = 10;
-            int targetIndex = _alphabet.Length;
+            var alphabet = _alphabet.Span;
+            int targetIndex = alphabet.Length;
 
-            int lastIndex = maxLength - 1;
             int length = 1;
-            Memory<char> name;
+            int lastIndex = maxLength - 1;
 
             var nameBuffer = new char[maxLength];
-            var indices = new int[maxLength];
+            Span<int> indices = stackalloc int[maxLength];
+            Memory<char> name;
 
             bool tryGet = true;
             do
             {
-                var src = _alphabet.Span;
                 for (int i = 0; i < length; i++)
-                    nameBuffer[maxLength - i - 1] = src[indices[maxLength - i - 1]];
+                    nameBuffer[maxLength - i - 1] = alphabet[indices[maxLength - i - 1]];
                 name = nameBuffer.AsMemory(maxLength - length, length);
 
                 if (!Fields.ContainsKey(name))

@@ -31,16 +31,26 @@ namespace Miniräknare.Expressions
             _tokenDefinitions = new[]
             {
                 NewDef(TokenType.Operator, IsOperator, true),
-                NewDef(TokenType.Name, char.IsLetter),
+                NewDef(TokenType.Name, IsNameToken),
                 NewDef(TokenType.DecimalSeparator, c => c == '.' || c == ',', true),
                 NewDef(TokenType.DecimalDigit, char.IsDigit, true),
                 decimalNumberDef,
                 NewDef(TokenType.WhiteSpace, char.IsWhiteSpace),
-                NewDef(TokenType.Space, c => c == SpaceChar),
+                NewDef(TokenType.Space, IsSpaceToken),
                 NewDef(TokenType.ListStart, c => c == ListStartChar, true),
                 NewDef(TokenType.ListEnd, c => c == ListEndChar, true),
                 NewDef(TokenType.ListSeparator, c => c == ListSeparatorChar, true)
             };
+        }
+
+        public static bool IsNameToken(char value)
+        {
+            return char.IsLetter(value);
+        }
+
+        public static bool IsSpaceToken(char value)
+        {
+            return value == SpaceChar;
         }
 
         #endregion

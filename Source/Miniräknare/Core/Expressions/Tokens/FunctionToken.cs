@@ -8,13 +8,13 @@ namespace Miniräknare.Expressions.Tokens
         public ValueToken Name { get; }
         public ListToken Arguments { get; }
 
-        public FunctionToken(ValueToken name, ListToken parameters) : base(TokenType.Function, parameters.Children)
+        public FunctionToken(ValueToken name, ListToken arguments) : base(TokenType.Function, arguments.Children)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             if (name.Type != TokenType.Name)
                 throw new ArgumentException("Invalid token type.", nameof(name));
 
-            Arguments = parameters ?? throw new ArgumentNullException(nameof(parameters));
+            Arguments = arguments ?? throw new ArgumentNullException(nameof(arguments));
         }
 
         protected override StringBuilder ToStringCore()

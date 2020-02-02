@@ -26,7 +26,7 @@
                 </MenuItem>
 
                 <MenuItem Header="{l:LanguageBinding Key='Toolbar/Edit'}" Padding="10,1,10,2" Margin="0,0,-5,0">
-                    
+
                 </MenuItem>
 
                 <MenuItem Header="{l:LanguageBinding Key='Toolbar/Tools'}" Padding="10,1,10,2">
@@ -40,7 +40,7 @@
             </Menu>
         </Grid>
         <!--#endregion-->
-        
+
         <Grid Grid.Row ="1" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="50" />
@@ -57,21 +57,39 @@
                             ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewField'}">
                         <Image Source="/Content/Icons/Action/AddNewField.png" />
                     </Button>
-
+                    
                     <Button Click="AddNewFunctionField_Click" VerticalAlignment="Top" Margin="3,3,3,0"
                             ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewFunctionField'}">
                         <Image Source="/Content/Icons/Action/AddNewFunctionField.png" />
 
                         <Button.ContextMenu>
                             <ContextMenu>
+                                <MenuItem IsEnabled="False">
+                                    <MenuItem.Template>
+                                        <ControlTemplate>
+                                            <l:EnabledContentPresenter>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="24" />
+                                                        <ColumnDefinition Width="8" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Image Grid.Column="0" Margin="1" Source="{StaticResource Icon_SearchGlass}" />
+                                                    <TextBox Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                                             FontSize="14" VerticalContentAlignment="Center" Height="24" Margin="0,1,1,0"
+                                                             MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=Grid}, Path=ActualWidth}" />
+                                                </Grid>
+                                            </l:EnabledContentPresenter>
+                                        </ControlTemplate>
+                                    </MenuItem.Template>
+                                </MenuItem>
+
+                                <Separator Margin="0,4,0,0" />
+
                                 <MenuItem Header="{l:LanguageBinding Key='Formulas/Force'}" IsEnabled="False"/>
                                 <!--#region Krafter-->
                                 <MenuItem Header="{l:LanguageBinding Key='Formulas/Force/Solidity'}">
-                                    <MenuItem.Icon>
-                                        <Grid>
-                                        </Grid>
-                                    </MenuItem.Icon>
-
                                     <MenuItem Header="{l:LanguageBinding Key='Scripts/Force/Solidity/Tension'}">
                                         <MenuItem Header="{l:LanguageBinding Key='Scripts/Force/Solidity/Tension/Drag'}" />
                                         <MenuItem Header="{l:LanguageBinding Key='Scripts/Force/Solidity/Tension/Shear'}" />

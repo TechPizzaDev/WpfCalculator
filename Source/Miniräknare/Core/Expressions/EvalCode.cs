@@ -11,8 +11,13 @@
         UnresolvedFunction,
 
         ErroredReference,
+        CyclicReferences,
+        
         ErroredOperator,
+
         ErroredFunction,
+        InvalidArguments,
+        InvalidArgumentCount,
 
         OperatorMissingLeftValue,
         OperatorMissingRightValue
