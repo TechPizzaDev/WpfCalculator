@@ -302,14 +302,15 @@ namespace Miniräknare
         private Evaluation ResolveFunction(
             ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
         {
-            int expectedArgCount = 1;
-            if (arguments.Length != expectedArgCount)
-                return new Evaluation(
-                    EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
-
             if (name.Span.SequenceEqual("sin"))
-                return new Evaluation(new UnionValue(Math.Sin(arguments[0].Double)));
+            {
+                int expectedArgCount = 1;
+                if (arguments.Length != expectedArgCount)
+                    return new Evaluation(
+                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
+                return new Evaluation(new UnionValue(Math.Sin(arguments[0].Double)));
+            }
             return new Evaluation(EvalCode.UnresolvedFunction, name);
         }
 
