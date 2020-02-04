@@ -32,9 +32,9 @@ namespace Miniräknare.Expressions
 
             ResultCode code;
             if ((code = MakeLists(tokens)) != ResultCode.Ok ||
-                (code = MakeFunctions(tokens, options)) != ResultCode.Ok ||
                 (code = MakeImplicitMultiplications(tokens, options)) != ResultCode.Ok ||
-                (code = MakeOperatorGroups(tokens, options)) != ResultCode.Ok)
+                (code = MakeOperatorGroups(tokens, options)) != ResultCode.Ok ||
+                (code = MakeFunctions(tokens, options)) != ResultCode.Ok)
                 return code;
             return code;
         }
@@ -177,7 +177,8 @@ namespace Miniräknare.Expressions
                     continue; // We are at the list's beginning.
 
                 var leftToken = tokens[i - 1];
-                if (leftToken.Type == TokenType.Operator)
+                if (leftToken.Type == TokenType.Operator ||
+                    leftToken.Type == TokenType.Name)
                     continue;
 
                 if (leftToken.Type != TokenType.List &&
