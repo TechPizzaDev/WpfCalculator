@@ -16,6 +16,9 @@
     <BitmapImage x:Key="Icon_SyntaxError" UriSource="/Content/Icons/Field/SyntaxError.png" />
     <BitmapImage x:Key="Icon_SyntaxErrorNested" UriSource="/Content/Icons/Field/SyntaxErrorNested.png" />
 
+    <BitmapImage x:Key="Icon_InvalidArguments" UriSource="/Content/Icons/Field/InvalidArguments.png" />
+    <BitmapImage x:Key="Icon_InvalidArgumentsNested" UriSource="/Content/Icons/Field/InvalidArgumentsNested.png" />
+
     <!--#endregion-->
 
     <DrawingImage x:Key="Icon_SearchGlass">

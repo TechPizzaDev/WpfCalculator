@@ -190,7 +190,18 @@ namespace Miniräknare.Expressions
                     return ResultCode.MissingMultiplicationOperator;
 
                 var opToken = new ValueToken(TokenType.Operator, multiplyOpDef.Names[0]);
-                tokens.Insert(i, opToken);
+
+                // Create a list to prioritize multiplication over other operators.
+                var listTokens = new List<Token>();
+                listTokens.Add(leftToken);
+                listTokens.Add(opToken);
+                listTokens.Add(token);
+                
+                var implicitMulList = new ListToken(listTokens);
+                tokens.Insert(i - 1, implicitMulList);
+
+                // Remove leftToken and current token
+                tokens.RemoveRange(i, 2);    
             }
             return ResultCode.Ok;
         }

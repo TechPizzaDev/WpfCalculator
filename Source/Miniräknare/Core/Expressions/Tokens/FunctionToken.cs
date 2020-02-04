@@ -7,6 +7,7 @@ namespace Miniräknare.Expressions.Tokens
     {
         public ValueToken Name { get; }
         public ListToken Arguments { get; }
+        public int ArgumentCount { get; }
 
         public FunctionToken(ValueToken name, ListToken arguments) : base(TokenType.Function, arguments.Children)
         {
@@ -15,6 +16,13 @@ namespace Miniräknare.Expressions.Tokens
                 throw new ArgumentException("Invalid token type.", nameof(name));
 
             Arguments = arguments ?? throw new ArgumentNullException(nameof(arguments));
+
+            for (int i = 0; i < Arguments.Count; i++)
+            {
+                if (Arguments[i].Type == TokenType.ListSeparator)
+                    continue;
+                ArgumentCount++;
+            }
         }
 
         protected override StringBuilder ToStringCore()

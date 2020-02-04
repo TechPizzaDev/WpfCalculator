@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,10 +17,12 @@ namespace Miniräknare
     {
         public const string LanguageProviderKey = "LanguageProvider";
         public const string FallbackLanguage = "en-US.json";
-        public static readonly ResourceUri LoadingFormulasMessage = new ResourceUri("Other/Loading/InternalFormulas");
 
         public const string FormulasPath = "Content/Formulas";
         public const string LanguagePath = "Content/Language";
+
+        public static ResourceUri LoadingFormulasMessage { get; } =
+            new ResourceUri("Other/Loading/InternalFormulas");
 
         private SplashScreenWindow _splashScreen;
         private AppLanguageProvider _languageProvider;

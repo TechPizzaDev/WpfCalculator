@@ -187,6 +187,10 @@ namespace Miniräknare
                 case EvalCode.UnresolvedFunction:
                     return FieldState.UnknownFunction;
 
+                case EvalCode.InvalidArguments:
+                case EvalCode.InvalidArgumentCount:
+                    return FieldState.InvalidArguments;
+
                 case EvalCode.UnresolvedOperator:
                 case EvalCode.UnresolvedReference:
                     return FieldState.UnknownWord;
@@ -298,6 +302,11 @@ namespace Miniräknare
         private Evaluation ResolveFunction(
             ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
         {
+            int expectedArgCount = 1;
+            if (arguments.Length != expectedArgCount)
+                return new Evaluation(
+                    EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+
             if (name.Span.SequenceEqual("sin"))
                 return new Evaluation(new UnionValue(Math.Sin(arguments[0].Double)));
 

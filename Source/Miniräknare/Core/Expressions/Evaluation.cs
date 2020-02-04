@@ -18,10 +18,13 @@ namespace Miniräknare.Expressions
             UnresolvedName = unresolvedName;
         }
 
-        public Evaluation(EvalCode code, ReadOnlyMemory<char> unresolvedName) 
+        public Evaluation(EvalCode code, ReadOnlyMemory<char> unresolvedName)
             : this(code, UnionValue.Null, unresolvedName)
         {
+        }
 
+        public Evaluation(EvalCode code, UnionValue value) : this(code, value, ReadOnlyMemory<char>.Empty)
+        {
         }
 
         public Evaluation(EvalCode code) : this(code, ReadOnlyMemory<char>.Empty)

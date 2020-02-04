@@ -76,16 +76,16 @@
                                                     </Grid.ColumnDefinitions>
 
                                                     <Image Grid.Column="0" Margin="1" Source="{StaticResource Icon_SearchGlass}" />
-                                                    <TextBox Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                                                             FontSize="14" VerticalContentAlignment="Center" Height="24" Margin="0,1,1,0"
-                                                             MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=Grid}, Path=ActualWidth}" />
+                                                    <TextBox Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                                                             FontSize="15" VerticalContentAlignment="Center" Margin="0,2,1,0"
+                                                             Height="26" MaxWidth="254" />
                                                 </Grid>
                                             </l:EnabledContentPresenter>
                                         </ControlTemplate>
                                     </MenuItem.Template>
                                 </MenuItem>
 
-                                <Separator Margin="0,4,0,0" />
+                                <Separator Margin="-30,5,0,0" />
 
                                 <MenuItem Header="{l:LanguageBinding Key='Formulas/Force'}" IsEnabled="False"/>
                                 <!--#region Krafter-->

@@ -9,6 +9,7 @@ namespace Miniräknare.Expressions
     {
         private static TokenType[] DecimalSeparatorTypes =
             new[] { TokenType.DecimalSeparator };
+
         private static TokenType[] DecimalNumberComponents =
             new[] { TokenType.DecimalDigit, TokenType.DecimalSeparator };
 

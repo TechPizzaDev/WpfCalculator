@@ -12,10 +12,13 @@ namespace Miniräknare
         CyclicReferences = 1 << 2,
         SyntaxError = 1 << 3,
         UnknownWord = 1 << 4,
+
         UnknownFunction = 1 << 5,
+        InvalidArguments = 1 << 6,
         
         UnknownWordNested = UnknownWord | NestedError,
         UnknownFunctionNested = UnknownFunction | NestedError,
-        SyntaxErrorNested = SyntaxError | NestedError
+        SyntaxErrorNested = SyntaxError | NestedError,
+        InvalidArgumentsNested = InvalidArguments | NestedError
     }
 }

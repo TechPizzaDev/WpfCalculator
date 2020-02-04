@@ -153,17 +153,23 @@ namespace Miniräknare.Expressions
             return ExecuteOperator.Invoke(op.Value, leftEval?.Value, rightEval?.Value);
         }
 
-        private Evaluation EvaluateFunction(ExpressionOptions options, FunctionToken token)
+        private Evaluation EvaluateFunction(ExpressionOptions options, FunctionToken function)
         {
-            Span<UnionValue> args = stackalloc UnionValue[token.Arguments.Count];
-            for (int i = 0; i < token.Arguments.Count; i++)
+            Span<UnionValue> argValues = stackalloc UnionValue[function.ArgumentCount];
+            int valueIndex = 0;
+            for (int i = 0; i < function.Arguments.Count; i++)
             {
-                var eval = EvaluateToken(options, token.Arguments[i]);
+                if (function.Arguments[i].Type == TokenType.ListSeparator)
+                    continue;
+
+                var eval = EvaluateToken(options, function.Arguments[i]);
                 if (eval.Code != EvalCode.Ok)
                     return eval;
-                args[i] = eval.Value;
+
+                argValues[valueIndex] = eval.Value;
+                valueIndex++;
             }
-            return ExecuteFunction.Invoke(token.Name.Value, args);
+            return ExecuteFunction.Invoke(function.Name.Value, argValues);
         }
     }
 }
