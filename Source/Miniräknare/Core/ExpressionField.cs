@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -149,6 +150,22 @@ namespace Miniräknare
             Name = validatedName.ToString();
 
             UpdateResultValue();
+        }
+
+        public void OnLoaded(object sender, EventArgs args)
+        {
+            var element = (FrameworkElement)sender;
+
+            var textValueBox = (DependencyObject)element.FindName("TextValueBox");
+            DataObject.AddPastingHandler(textValueBox, OnPaste);
+        }
+
+        public void OnUnloaded(object sender, EventArgs args)
+        {
+            var element = (FrameworkElement)sender;
+
+            var textValueBox = (DependencyObject)element.FindName("TextValueBox");
+            DataObject.RemovePastingHandler(textValueBox, OnPaste);
         }
 
         public FieldState ParseTextValue()
@@ -418,6 +435,17 @@ namespace Miniräknare
 
             string resourceName = "Icon_" + state;
             return App.Instance.MainWindow.FindResource(resourceName);
+        }
+
+        private void OnPaste(object sender, DataObjectPastingEventArgs e)
+        {
+            var isText = e.SourceDataObject.GetDataPresent(DataFormats.Html, true);
+            if (!isText) 
+                return;
+
+            var html = e.SourceDataObject.GetData(DataFormats.Html) as string;
+            
+
         }
     }
 }
