@@ -32,9 +32,9 @@ namespace Miniräknare.Expressions
 
             ResultCode code;
             if ((code = MakeLists(tokens)) != ResultCode.Ok ||
+                (code = MakeFunctions(tokens, options)) != ResultCode.Ok ||
                 (code = MakeImplicitMultiplications(tokens, options)) != ResultCode.Ok ||
-                (code = MakeOperatorGroups(tokens, options)) != ResultCode.Ok ||
-                (code = MakeFunctions(tokens, options)) != ResultCode.Ok)
+                (code = MakeOperatorGroups(tokens, options)) != ResultCode.Ok)
                 return code;
             return code;
         }
@@ -155,19 +155,13 @@ namespace Miniräknare.Expressions
             for (int i = 0; i < tokens.Count; i++)
             {
                 var token = tokens[i];
-                if (token.Type == TokenType.List)
+                if (token is CollectionToken collectionToken)
                 {
-                    var listToken = (ListToken)token;
                     ResultCode code;
-                    if ((code = MakeImplicitMultiplications(listToken.Children, options)) != ResultCode.Ok)
+                    if ((code = MakeImplicitMultiplications(collectionToken.Children, options)) != ResultCode.Ok)
                         return code;
                 }
-                else if (
-                    token.Type == TokenType.Name ||
-                    token.Type == TokenType.Function)
-                {
-                }
-                else
+                else if (token.Type != TokenType.Name)
                 {
                     // Skip as this type is not allowed to have an implicit factor prefix.
                     continue;
@@ -214,11 +208,10 @@ namespace Miniräknare.Expressions
                 for (int j = 0; j < currentTokens.Count; j++)
                 {
                     var token = currentTokens[j];
-                    if (token.Type != TokenType.List)
-                        continue;
-
-                    var listToken = (ListToken)token;
-                    listStack.Push(listToken.Children);
+                    if (token is CollectionToken collectionToken)
+                    {
+                        listStack.Push(collectionToken.Children);
+                    }
                 }
 
                 // Gather operators so we can sort them by priority rules.

@@ -311,6 +311,15 @@ namespace Miniräknare
 
                 return new Evaluation(new UnionValue(Math.Sin(arguments[0].Double)));
             }
+            else if (name.Span.SequenceEqual("round"))
+            {
+                int expectedArgCount = 1;
+                if (arguments.Length != expectedArgCount)
+                    return new Evaluation(
+                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+
+                return new Evaluation(new UnionValue(Math.Round(arguments[0].Double)));
+            }
             return new Evaluation(EvalCode.UnresolvedFunction, name);
         }
 

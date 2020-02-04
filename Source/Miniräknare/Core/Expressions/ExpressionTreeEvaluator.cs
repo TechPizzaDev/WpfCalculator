@@ -157,12 +157,12 @@ namespace Miniräknare.Expressions
         {
             Span<UnionValue> argValues = stackalloc UnionValue[function.ArgumentCount];
             int valueIndex = 0;
-            for (int i = 0; i < function.Arguments.Count; i++)
+            for (int i = 0; i < function.ArgumentList.Count; i++)
             {
-                if (function.Arguments[i].Type == TokenType.ListSeparator)
+                if (function.ArgumentList[i].Type == TokenType.ListSeparator)
                     continue;
 
-                var eval = EvaluateToken(options, function.Arguments[i]);
+                var eval = EvaluateToken(options, function.ArgumentList[i]);
                 if (eval.Code != EvalCode.Ok)
                     return eval;
 
