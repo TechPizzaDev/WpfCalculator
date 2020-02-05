@@ -6,7 +6,8 @@ using System.Text;
 
 namespace Miniräknare.Expressions.Tokens
 {
-    [DebuggerDisplay("{GetDebuggerDisplay(), nq}", Name = "{Type}")]
+    [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(), nq}",
+        Name = "{" + nameof(GetNameDisplay) + "(), nq}")]
     public abstract class CollectionToken : Token, IList<Token>
     {
         public List<Token> Children { get; }
@@ -31,12 +32,14 @@ namespace Miniräknare.Expressions.Tokens
             return ToStringCore().ToString();
         }
 
+        private string GetNameDisplay()
+        {
+            return Type + " (" + Count + ")";
+        }
+
         private string GetDebuggerDisplay()
         {
             var builder = ToStringCore();
-            string prefix = "(" + Count + ")";
-            if (builder.Length > 0)
-                builder.Insert(0, prefix).Insert(prefix.Length, " ");
             return builder.ToString();
         }
 

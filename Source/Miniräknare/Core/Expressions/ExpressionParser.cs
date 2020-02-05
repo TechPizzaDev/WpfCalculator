@@ -262,28 +262,57 @@ namespace Miniräknare.Expressions
                     Token leftToken = null;
                     Token rightToken = null;
 
+                    int left = opIndex - 1;
                     if (opDef?.Sidedness != OperatorSidedness.Right)
                     {
-                        if (opIndex - 1 < 0)
+                        if (left < 0)
                         {
                             if (opDef?.Sidedness == OperatorSidedness.Left ||
                                 opDef?.Sidedness == OperatorSidedness.OptionalRight)
                                 return ResultCode.OperatorMissingLeftValue;
                         }
                         else
-                            leftToken = currentTokens[opIndex - 1];
+                        {
+                            leftToken = currentTokens[left];
+                        }
                     }
 
+                    int right = opIndex + 1;
                     if (opDef?.Sidedness != OperatorSidedness.Left)
                     {
-                        if (opIndex + 1 >= currentTokens.Count)
+                        if (right >= currentTokens.Count)
                         {
                             if (opDef?.Sidedness == OperatorSidedness.Right ||
                                 opDef?.Sidedness == OperatorSidedness.OptionalLeft)
                                 return ResultCode.OperatorMissingRightValue;
                         }
                         else
-                            rightToken = currentTokens[opIndex + 1];
+                        {
+                            rightToken = currentTokens[right];
+
+                            // Mitigates the "op -value" problem.
+                            if (rightToken.Type == TokenType.Operator)
+                            {
+                                int secondRight = opIndex + 2;
+                                if (secondRight < currentTokens.Count)
+                                {
+                                    rightToken = new ListToken(new List<Token>(2)
+                                    {
+                                        rightToken,
+                                        currentTokens[secondRight]
+                                    });
+                                    currentTokens[right] = rightToken;
+                                    currentTokens.RemoveAt(secondRight);
+
+                                    opShifts.Add((right, -1));
+                                    opIndices.RemoveAll(x => x.index == right);
+                                }
+                                else
+                                {
+                                    return ResultCode.OperatorMissingRightValue;
+                                }
+                            }
+                        }
                     }
 
                     int sideTokenCount = 0;
