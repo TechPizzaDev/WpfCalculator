@@ -32,6 +32,7 @@ namespace Miniräknare
         public int TabIndex { get; set; }
         public object StateIcon { get; private set; }
         public string ResultTextValue { get; private set; }
+        public Visibility ResultValueVisibility { get; private set; }
 
         #region Notifying Properties
 
@@ -44,6 +45,9 @@ namespace Miniräknare
                 {
                     _state = value;
                     OnPropertyChanged();
+
+                    ResultValueVisibility = _state == FieldState.Ok ? Visibility.Visible : Visibility.Hidden;
+                    OnPropertyChanged(nameof(ResultValueVisibility));
 
                     var newStateIcon = GetStatusIconResource(_state);
                     if (newStateIcon != StateIcon)

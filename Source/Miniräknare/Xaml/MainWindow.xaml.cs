@@ -13,8 +13,9 @@ using Miniräknare.Expressions;
 namespace Miniräknare
 {
     // TODO: settings:
-    // smooth scroll in field list
-    // show result values with base10 exponent (default) or just a lot of zeroes (+ max decimal count)
+    //  * smooth scroll in field list (quality vs performance)
+    //  * show result values with base10 exponent (default) or just a lot of zeroes (+ max decimal count)
+    //  * result value with either comma or dot
 
     public partial class MainWindow : Window
     {

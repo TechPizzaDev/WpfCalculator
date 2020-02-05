@@ -290,7 +290,7 @@ namespace Miniräknare.Expressions
                         {
                             rightToken = currentTokens[right];
 
-                            // Mitigates the "op -value" problem.
+                            // Mitigates operators with following operators.
                             if (rightToken.Type == TokenType.Operator)
                             {
                                 int secondRight = opIndex + 2;
