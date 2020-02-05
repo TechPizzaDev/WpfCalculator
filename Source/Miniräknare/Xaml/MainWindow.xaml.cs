@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -35,6 +37,64 @@ namespace Miniräknare
             FieldListView.ItemsSource = FieldList;
 
             //InitializeDragDropManager();
+
+
+            var shader = (SpriteEffect)FindResource("Shader_Color_ActionButton");
+
+            Task.Run(() =>
+            {
+                float hue = 0;
+                while (true)
+                {
+                    try
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            var color = ToRgb(hue, 1f, 0.5f);
+                            shader.Color = color;
+                        });
+
+                        hue += 5f;
+                        if (hue >= 360)
+                            hue = 0;
+                        Thread.Sleep(50);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
+                }
+            });
+        }
+
+        public static Color ToRgb(float h, float s, float l)
+        {
+            if (s == 0f)
+            {
+                byte bl = (byte)(255 * l);
+                return Color.FromRgb(bl, bl, bl);
+            }
+
+            h /= 360f;
+            var max = l < 0.5f ? l * (1 + s) : l + s - l * s;
+            var min = 2f * l - max;
+
+            return Color.FromRgb(
+                (byte)(255 * ComponentFromHue(min, max, h + 1f / 3f)),
+                (byte)(255 * ComponentFromHue(min, max, h)),
+                (byte)(255 * ComponentFromHue(min, max, h - 1f / 3f)));
+        }
+
+        private static float ComponentFromHue(float m1, float m2, float h)
+        {
+            h = (h + 1f) % 1f;
+            if (h * 6f < 1)
+                return m1 + (m2 - m1) * 6f * h;
+            if (h * 2 < 1)
+                return m2;
+            if (h * 3 < 2)
+                return m1 + (m2 - m1) * (2f / 3f - h) * 6f;
+            return m1;
         }
 
         private ReadOnlyMemory<char> GenerateFieldName()

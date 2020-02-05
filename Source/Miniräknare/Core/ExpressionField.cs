@@ -323,7 +323,10 @@ namespace Miniräknare
             switch (name.Span[0])
             {
                 case '+': return left.GetValueOrDefault().Double + right.Value.Double;
-                case '-': return left.GetValueOrDefault().Double - right.Value.Double;
+
+                case '-':
+                case '–':
+                    return left.GetValueOrDefault().Double - right.Value.Double;
 
                 case '*': return left.Value.Double * right.Value.Double;
 

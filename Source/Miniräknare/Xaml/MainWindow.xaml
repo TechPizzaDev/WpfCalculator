@@ -41,7 +41,7 @@
         </Grid>
         <!--#endregion-->
 
-        <Grid Grid.Row ="1" Margin="0,0,0,0">
+        <Grid Grid.Row ="1" Margin="0,0,0,0" Effect="{StaticResource Shader_Color_ActionButton}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="50" />
                 <ColumnDefinition Width="5*" />
@@ -55,12 +55,16 @@
                 <StackPanel Orientation="Vertical">
                     <Button Click="AddNewField_Click" VerticalAlignment="Top" Margin="3,3,3,0"
                             ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewField'}">
-                        <Image Source="/Content/Icons/Action/AddNewField.png" />
+
+                        <Image Source="/Content/Icons/Action/AddNewField.png"
+                               Effect="{StaticResource Shader_Color_ActionButton}" />
                     </Button>
                     
                     <Button Click="AddNewFunctionField_Click" VerticalAlignment="Top" Margin="3,3,3,0"
                             ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewFunctionField'}">
-                        <Image Source="/Content/Icons/Action/AddNewFunctionField.png" />
+
+                        <Image Source="/Content/Icons/Action/AddNewFunctionField.png"
+                               Effect="{StaticResource Shader_Color_ActionButton}"/>
 
                         <Button.ContextMenu>
                             <ContextMenu>

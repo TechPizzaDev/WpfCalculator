@@ -13,6 +13,7 @@
 
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Xaml/Icons.xaml" />
+                <ResourceDictionary Source="Xaml/Shaders.xaml" />
                 <ResourceDictionary Source="Xaml/Templates/ExpressionField.xaml" />
             </ResourceDictionary.MergedDictionaries>
             

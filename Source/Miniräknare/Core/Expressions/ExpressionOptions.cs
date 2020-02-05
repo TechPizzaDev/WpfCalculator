@@ -11,7 +11,7 @@ namespace Miniräknare.Expressions
             new[]
             {
                 new OperatorDefinition('+', 0, OperatorType.Add, OperatorSidedness.OptionalLeft),
-                new OperatorDefinition('-', 0, OperatorType.Subtract, OperatorSidedness.OptionalLeft),
+                new OperatorDefinition(new [] { '-', '–' }, 0, OperatorType.Subtract, OperatorSidedness.OptionalLeft),
                 new OperatorDefinition('*', 1, OperatorType.Multiply, OperatorSidedness.Both),
                 new OperatorDefinition(new [] { '/', ':' }, 1, OperatorType.Divide, OperatorSidedness.Both),
                 new OperatorDefinition('%', 1, OperatorType.Modulo, OperatorSidedness.Both),

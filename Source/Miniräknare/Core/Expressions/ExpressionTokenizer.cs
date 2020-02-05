@@ -110,6 +110,7 @@ namespace Miniräknare.Expressions
             {
                 case '+':
                 case '-':
+                case '–':
                 case '/':
                 case '*':
                 case '%':
