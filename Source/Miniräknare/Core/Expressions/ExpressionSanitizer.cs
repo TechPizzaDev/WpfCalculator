@@ -310,15 +310,15 @@ namespace Miniräknare.Expressions
             static SanitizeResult ValidateFunction(FunctionToken function)
             {
                 TokenType? lastArgType = null;
-                for (int i = 0; i < function.Arguments.Count; i++)
+                for (int i = 0; i < function.ArgumentList.Count; i++)
                 {
-                    var arg = function.Arguments[i];
+                    var arg = function.ArgumentList[i];
                     if (arg.Type == TokenType.ListSeparator)
                     {
                         if (!lastArgType.HasValue || lastArgType == TokenType.ListSeparator)
                             return new SanitizeResult(ResultCode.UnexpectedListSeparator, 0);
 
-                        function.Arguments.RemoveAt(i--);
+                        function.ArgumentList.RemoveAt(i--);
                     }
                     lastArgType = arg.Type;
                 }
