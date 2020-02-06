@@ -33,7 +33,7 @@ namespace Miniräknare.Expressions
                 NewDef(TokenType.Operator, IsOperator, true),
                 NewDef(TokenType.Name, IsNameToken),
                 NewDef(TokenType.DecimalSeparator, c => c == '.' || c == ',', true),
-                NewDef(TokenType.DecimalDigit, char.IsDigit, true),
+                NewDef(TokenType.DecimalDigit, IsDigitToken, true),
                 decimalNumberDef,
                 NewDef(TokenType.WhiteSpace, char.IsWhiteSpace),
                 NewDef(TokenType.Space, IsSpaceToken),
@@ -41,6 +41,11 @@ namespace Miniräknare.Expressions
                 NewDef(TokenType.ListEnd, c => c == ListEndChar, true),
                 NewDef(TokenType.ListSeparator, c => c == ListSeparatorChar, true)
             };
+        }
+
+        public static bool IsDigitToken(char value)
+        {
+            return char.IsDigit(value);
         }
 
         public static bool IsNameToken(char value)

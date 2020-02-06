@@ -69,8 +69,7 @@ namespace Miniräknare
                 //Print(tree.Tokens);
 
                 var result = ExpressionSanitizer.Sanitize(tree);
-                int index = result.ErrorTokenPosition ?? -1;
-                //Console.WriteLine("SanitizeTokens code: " + result.Code + " at index " + index);
+                //Console.WriteLine("SanitizeTokens code: " + result.Code + ", ErrorToken: " + result.ErrorToken);
 
                 if (result.Code == ExpressionSanitizer.ResultCode.Ok)
                 {

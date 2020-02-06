@@ -38,7 +38,11 @@
 
                 <MenuItem Header="{l:LanguageBinding Key='Toolbar/Settings'}"
                           Style="{StaticResource ToolbarStyle}">
-                    <MenuItem Header="View..."/>
+
+                    <MenuItem Header="{l:LanguageBinding Key='Toolbar/Settings/View'}">
+                        <MenuItem Header="{l:LanguageBinding Key='Toolbar/Settings/View/Theme'}" />
+                    </MenuItem>
+                    
                     <MenuItem Header="Language..." Click="MenuItem_Language_Click"/>
                 </MenuItem>
             </Menu>

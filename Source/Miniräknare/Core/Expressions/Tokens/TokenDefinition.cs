@@ -8,7 +8,8 @@ namespace Miniräknare.Expressions.Tokens
         public Func<char, bool> Predicate { get; }
         public bool IsSingular { get; }
 
-        public TokenDefinition(TokenType type, Func<char, bool> predicate, bool isSingular)
+        public TokenDefinition(
+            TokenType type, Func<char, bool> predicate, bool isSingular)
         {
             Type = type;
             Predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));

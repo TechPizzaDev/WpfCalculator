@@ -38,6 +38,8 @@ namespace Miniräknare
             FieldListView.ItemsSource = FieldList;
 
             //InitializeDragDropManager();
+
+            AddNewField();
         }
 
         private ReadOnlyMemory<char> GenerateFieldName()
@@ -130,7 +132,7 @@ namespace Miniräknare
 
         #region ActionButton Click handlers
 
-        private void AddNewField_Click(object sender, RoutedEventArgs e)
+        private void AddNewField()
         {
             var fieldName = GenerateFieldName();
             var field = new ExpressionField(fieldName, ExpressionOptions.Default);
@@ -142,6 +144,11 @@ namespace Miniräknare
             };
 
             FieldList.Add(listItem);
+        }
+
+        private void AddNewField_Click(object sender, RoutedEventArgs e)
+        {
+            AddNewField();
         }
 
         private void AddNewFunctionField_Click(object sender, RoutedEventArgs e)

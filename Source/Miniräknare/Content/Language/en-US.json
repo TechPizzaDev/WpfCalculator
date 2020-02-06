@@ -26,6 +26,12 @@
 			},
 
 			"Settings": {
+				"_names": {
+					"View": "View"
+				},
+				"View": {
+					"Theme": "Theme"
+				}
 			}
 		},
 

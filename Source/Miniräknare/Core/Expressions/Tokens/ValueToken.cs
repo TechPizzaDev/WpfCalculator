@@ -13,6 +13,18 @@ namespace Miniräknare.Expressions.Tokens
             Value = value;
         }
 
+        public bool ConsistsOfDigits()
+        {
+            var span = Value.Span;
+            for (int i = 0; i < span.Length; i++)
+            {
+                char c = span[i];
+                if (!ExpressionTokenizer.IsDigitToken(c))
+                    return false;
+            }
+            return true;
+        }
+
         public override string ToString()
         {
             return Value.ToString();

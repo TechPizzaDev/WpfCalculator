@@ -26,6 +26,12 @@
 			},
 
 			"Settings": {
+				"_names": {
+					"View": "Vy"
+				},
+				"View": {
+					"Theme": "Tema"
+				}
 			}
 		},
 

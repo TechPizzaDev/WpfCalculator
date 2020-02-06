@@ -1,1 +1,2 @@
 .\fxc /T ps_2_0 /E main /Fo "C:\Projects\Skola\Miniräknare\Source\Miniräknare\Content\Shaders\SpriteEffect.fxc" "C:\Projects\Skola\Miniräknare\Source\Miniräknare\Content\Shaders\SpriteEffect.fx"
+.\fxc /T ps_2_0 /E main /Fo "C:\Projects\Skola\Miniräknare\Source\Miniräknare\Content\Shaders\InverseEffect.fxc" "C:\Projects\Skola\Miniräknare\Source\Miniräknare\Content\Shaders\InverseEffect.fx"

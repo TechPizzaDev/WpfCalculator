@@ -35,12 +35,12 @@ namespace Miniräknare.Expressions
             public static readonly SanitizeResult Ok = new SanitizeResult(ResultCode.Ok, null);
 
             public ResultCode Code { get; }
-            public int? ErrorTokenPosition { get; }
+            public Token ErrorToken { get; }
 
-            public SanitizeResult(ResultCode code, int? errorTokenPosition)
+            public SanitizeResult(ResultCode code, Token errorToken)
             {
                 Code = code;
-                ErrorTokenPosition = errorTokenPosition;
+                ErrorToken = errorToken;
             }
         }
 
@@ -55,8 +55,7 @@ namespace Miniräknare.Expressions
                 (result = MergeGroupsOfMultiples(builder, tokens)).Code != ResultCode.Ok ||
                 (result = ValidateFunctionArguments(tokens)).Code != ResultCode.Ok)
                 return result;
-
-            return SanitizeResult.Ok;
+            return result;
         }
 
         public static SanitizeResult Sanitize(ExpressionTree tree)
@@ -87,7 +86,7 @@ namespace Miniräknare.Expressions
 
             for (int i = 0; i < tokens.Count; i++)
             {
-                var currentToken = tokens[i];
+                var token = tokens[i];
 
                 #region IsMiddleType
 
@@ -96,10 +95,10 @@ namespace Miniräknare.Expressions
                     TokenType middleType)
                 {
                     if (lastToken != null &&
-                        lastToken.Type != currentToken.Type &&
+                        lastToken.Type != token.Type &&
                         lastToken.Type == groupType)
                     {
-                        if (currentToken.Type == middleType)
+                        if (token.Type == middleType)
                         {
                             if (GetNextToken(tokens, i)?.Type == groupType)
                                 return true;
@@ -111,13 +110,13 @@ namespace Miniräknare.Expressions
                 #endregion
 
                 if (IsMiddleType(TokenType.DecimalDigit, TokenType.DecimalNumber))
-                    return new SanitizeResult(ResultCode.DecimalDigitInNumber, i);
+                    return new SanitizeResult(ResultCode.DecimalDigitInNumber, token);
 
                 if (IsMiddleType(TokenType.DecimalNumber, TokenType.DecimalDigit))
-                    return new SanitizeResult(ResultCode.DecimalNumberInDigit, i);
+                    return new SanitizeResult(ResultCode.DecimalNumberInDigit, token);
 
                 if (IsMiddleType(TokenType.Name, TokenType.WhiteSpace))
-                    return new SanitizeResult(ResultCode.WhiteSpaceInName, i);
+                    return new SanitizeResult(ResultCode.WhiteSpaceInName, token);
 
                 if (IsMiddleType(TokenType.DecimalDigit, TokenType.Space))
                 {
@@ -136,7 +135,7 @@ namespace Miniräknare.Expressions
                 }
 
             End:
-                lastToken = currentToken;
+                lastToken = token;
             }
             return SanitizeResult.Ok;
         }
@@ -176,13 +175,13 @@ namespace Miniräknare.Expressions
                 #endregion
 
                 if (CanMergeGroup(TokenType.DecimalNumber, out _))
-                    return new SanitizeResult(ResultCode.RepeatingDecimalNumbers, i);
+                    return new SanitizeResult(ResultCode.RepeatingDecimalNumbers, tokens[i]);
 
                 if (CanMergeGroup(TokenType.DecimalSeparator, out _))
-                    return new SanitizeResult(ResultCode.RepeatingDecimalSeparators, i);
+                    return new SanitizeResult(ResultCode.RepeatingDecimalSeparators, tokens[i]);
 
                 if (CanMergeGroup(TokenType.ListSeparator, out _))
-                    return new SanitizeResult(ResultCode.RepeatingListSeparators, i);
+                    return new SanitizeResult(ResultCode.RepeatingListSeparators, tokens[i]);
 
                 MergeGroupAndInsert(TokenType.DecimalDigit, TokenType.DecimalNumber);
             }
@@ -202,17 +201,21 @@ namespace Miniräknare.Expressions
 
             for (int i = 0; i < tokens.Count; i++)
             {
-                var currentToken = tokens[i];
+                var token = tokens[i];
 
-                #region Merging Names with Spaces
+                #region Merging Names with Spaces and Digits
 
-                static bool IsNameOrSpace(Token t)
+                if (token.Type == TokenType.Name || 
+                    token.Type == TokenType.Space)
                 {
-                    return t.Type == TokenType.Name || t.Type == TokenType.Space;
-                }
-                if (IsNameOrSpace(currentToken))
-                {
-                    int end = AsLongAsMatch(tokens, i, IsNameOrSpace);
+                    static bool IsNameSpaceOrDigits(Token t)
+                    {
+                        return t.Type == TokenType.Name
+                            || t.Type == TokenType.Space
+                            || (t is ValueToken valueToken && valueToken.ConsistsOfDigits());
+                    }
+
+                    int end = AsLongAsMatch(tokens, i, IsNameSpaceOrDigits);
                     int length = end - i;
 
                     if (MergeGroup(builder, tokens, i, length, true, TokenType.Name, out var resultToken))
@@ -232,7 +235,7 @@ namespace Miniräknare.Expressions
                         return MatchesTypes(((ValueToken)t).Value.Span, DecimalNumberComponents);
                     return false;
                 }
-                if (IsDigitOrDigitNumber(currentToken))
+                if (IsDigitOrDigitNumber(token))
                 {
                     int end = AsLongAsMatch(tokens, i, IsDigitOrDigitNumber);
                     int length = end - i;
@@ -247,7 +250,7 @@ namespace Miniräknare.Expressions
                             {
                                 bool hasSeparator = HasType(vt.Value.Span, DecimalSeparatorTypes);
                                 if (hasSeparator && separatorEncountered)
-                                    return new SanitizeResult(ResultCode.MultipleDecimalSeparators, i);
+                                    return new SanitizeResult(ResultCode.MultipleDecimalSeparators, token);
                                 separatorEncountered |= hasSeparator;
                             }
                         }
@@ -262,24 +265,24 @@ namespace Miniräknare.Expressions
 
                 #endregion
 
-                #region Decimal numbers from separator with trailing numbers
+                #region Making decimal numbers with separator and trailing digits
 
                 // Check for DecimalSeparators with trailing digits
                 // and turn them into decimal numbers.
-                if (currentToken.Type == TokenType.DecimalSeparator)
+                if (token.Type == TokenType.DecimalSeparator)
                 {
                     var nextToken = GetNextToken(tokens, i);
                     if (nextToken == null ||
                         nextToken.Type != TokenType.DecimalDigit)
-                        return new SanitizeResult(ResultCode.TrailingDecimalSeparator, i);
+                        return new SanitizeResult(ResultCode.TrailingDecimalSeparator, token);
 
                     if (lastToken != null &&
                         lastToken.Type != TokenType.Operator)
-                        return new SanitizeResult(ResultCode.InvalidDecimalSeparator, i);
+                        return new SanitizeResult(ResultCode.InvalidDecimalSeparator, token);
 
                     builder.Clear();
                     builder.Append("0");
-                    builder.Append(((ValueToken)currentToken).Value);
+                    builder.Append(((ValueToken)token).Value);
                     builder.Append(((ValueToken)nextToken).Value);
                     var decimalString = builder.ToString().AsMemory();
 
@@ -294,7 +297,7 @@ namespace Miniräknare.Expressions
             #endregion
 
             End:
-                lastToken = currentToken;
+                lastToken = token;
             }
             return SanitizeResult.Ok;
         }
@@ -312,15 +315,16 @@ namespace Miniräknare.Expressions
                 TokenType? lastArgType = null;
                 for (int i = 0; i < function.ArgumentList.Count; i++)
                 {
-                    var arg = function.ArgumentList[i];
-                    if (arg.Type == TokenType.ListSeparator)
+                    var argToken = function.ArgumentList[i];
+                    if (argToken.Type == TokenType.ListSeparator)
                     {
-                        if (!lastArgType.HasValue || lastArgType == TokenType.ListSeparator)
-                            return new SanitizeResult(ResultCode.UnexpectedListSeparator, 0);
+                        if (!lastArgType.HasValue || 
+                            lastArgType == TokenType.ListSeparator)
+                            return new SanitizeResult(ResultCode.UnexpectedListSeparator, argToken);
 
                         function.ArgumentList.RemoveAt(i--);
                     }
-                    lastArgType = arg.Type;
+                    lastArgType = argToken.Type;
                 }
                 return SanitizeResult.Ok;
             }

@@ -185,13 +185,16 @@ namespace Miniräknare
                 return FieldState.SyntaxError;
 
             var parseCode = ExpressionParser.Parse(_expressionTree);
-            if (parseCode == ExpressionParser.ResultCode.NoTokens)
-                return FieldState.Ok;
+            switch (parseCode)
+            {
+                case ExpressionParser.ResultCode.Ok:
+                case ExpressionParser.ResultCode.NoTokens:
+                    return FieldState.Ok;
 
-            if (parseCode != ExpressionParser.ResultCode.Ok)
-                return FieldState.SyntaxError;
-
-            return FieldState.Ok;
+                default:
+                    // TODO: add more exact error object
+                    return FieldState.SyntaxError;
+            }
         }
 
         private static FieldState EvalToFieldState(EvalCode code, UnionValue value)
@@ -413,7 +416,9 @@ namespace Miniräknare
             for (int i = 0; i < nameSpan.Length; i++)
             {
                 char c = nameSpan[i];
-                if (!(ExpressionTokenizer.IsNameToken(c) || ExpressionTokenizer.IsSpaceToken(c)))
+                if (!(ExpressionTokenizer.IsNameToken(c) || 
+                    ExpressionTokenizer.IsSpaceToken(c) ||
+                    (i > 0 && ExpressionTokenizer.IsDigitToken(c))))
                     return false;
             }
 
