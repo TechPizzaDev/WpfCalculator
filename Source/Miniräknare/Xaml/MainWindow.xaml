@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:l="clr-namespace:Miniräknare"
         mc:Ignorable="d"
-        Title="MainWindow" Width="800" Height="450"
+        Title="Miniräknare" Width="800" Height="450"
         Closing="Window_Closing">
 
     <Grid>
@@ -17,7 +17,8 @@
         <!--#region Toolbar/Header Menu-->
         <Grid Grid.Row="0">
             <Menu>
-                <MenuItem Header="{l:LanguageBinding Key='Toolbar/File'}" Padding="10,1,10,2">
+                <MenuItem Header="{l:LanguageBinding Key='Toolbar/File'}" 
+                          Style="{StaticResource ToolbarStyle}">
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/File/New'}" />
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/File/Open'}" />
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/File/Save'}" />
@@ -25,15 +26,18 @@
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/File/Exit'}" Click="MenuItem_Exit_Click" />
                 </MenuItem>
 
-                <MenuItem Header="{l:LanguageBinding Key='Toolbar/Edit'}" Padding="10,1,10,2" Margin="0,0,-5,0">
+                <MenuItem Header="{l:LanguageBinding Key='Toolbar/Edit'}"
+                          Style="{StaticResource ToolbarStyle}">
 
                 </MenuItem>
 
-                <MenuItem Header="{l:LanguageBinding Key='Toolbar/Tools'}" Padding="10,1,10,2">
+                <MenuItem Header="{l:LanguageBinding Key='Toolbar/Tools'}" 
+                          Style="{StaticResource ToolbarStyle}">
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/Tools/SpecialSymbols'}"/>
                 </MenuItem>
 
-                <MenuItem Header="{l:LanguageBinding Key='Toolbar/Settings'}" Padding="10,1,10,2">
+                <MenuItem Header="{l:LanguageBinding Key='Toolbar/Settings'}"
+                          Style="{StaticResource ToolbarStyle}">
                     <MenuItem Header="View..."/>
                     <MenuItem Header="Language..." Click="MenuItem_Language_Click"/>
                 </MenuItem>
@@ -41,7 +45,7 @@
         </Grid>
         <!--#endregion-->
 
-        <Grid Grid.Row ="1" Margin="0,0,0,0" Effect="{StaticResource Shader_Color_ActionButton}">
+        <Grid Grid.Row ="1" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="50" />
                 <ColumnDefinition Width="5*" />
@@ -57,14 +61,14 @@
                             ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewField'}">
 
                         <Image Source="/Content/Icons/Action/AddNewField.png"
-                               Effect="{StaticResource Shader_Color_ActionButton}" />
+                               Effect="{StaticResource SpriteShader_ActionButton}" />
                     </Button>
                     
                     <Button Click="AddNewFunctionField_Click" VerticalAlignment="Top" Margin="3,3,3,0"
                             ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewFunctionField'}">
 
                         <Image Source="/Content/Icons/Action/AddNewFunctionField.png"
-                               Effect="{StaticResource Shader_Color_ActionButton}"/>
+                               Effect="{StaticResource SpriteShader_ActionButton}"/>
 
                         <Button.ContextMenu>
                             <ContextMenu>
@@ -124,7 +128,8 @@
             <!--#region Field List-->
             <Grid Grid.Column="1">
                 <ListView x:Name="FieldListView" MouseDown="FieldList_MouseDown" 
-                          Background="Transparent" HorizontalContentAlignment="Stretch" />
+                          Background="Transparent" HorizontalContentAlignment="Stretch"
+                          ScrollViewer.CanContentScroll="False" />
             </Grid>
             <!--#endregion-->
 

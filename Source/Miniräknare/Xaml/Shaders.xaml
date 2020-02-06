@@ -2,6 +2,6 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:l="clr-namespace:Miniräknare">
 
-    <l:SpriteEffect x:Key="Shader_Color_ActionButton" Color="Red" />
+    <l:SpriteEffect x:Key="SpriteShader_ActionButton" Color="Black" />
 
 </ResourceDictionary>

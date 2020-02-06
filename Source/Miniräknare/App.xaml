@@ -12,8 +12,9 @@
             <l:AppLanguageProvider x:Key="LanguageProvider" />
 
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="Xaml/Icons.xaml" />
                 <ResourceDictionary Source="Xaml/Shaders.xaml" />
+                <ResourceDictionary Source="Xaml/Styles.xaml" />
+                <ResourceDictionary Source="Xaml/Icons.xaml" />
                 <ResourceDictionary Source="Xaml/Templates/ExpressionField.xaml" />
             </ResourceDictionary.MergedDictionaries>
             
