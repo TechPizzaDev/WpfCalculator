@@ -379,6 +379,9 @@ namespace Miniräknare.Expressions
             for (int i = 0; i < chars.Length; i++)
             {
                 var def = ExpressionTokenizer.GetDefinition(chars[i]);
+                if (def == null)
+                    continue;
+
                 for (int j = 0; j < types.Length; j++)
                 {
                     if (def.Type == types[j])
