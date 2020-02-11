@@ -9,7 +9,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Media;
 using Miniräknare.Expressions;
 
 namespace Miniräknare
@@ -26,8 +25,8 @@ namespace Miniräknare
         public static BindingList<ListViewItem> FieldList { get; } =
             new BindingList<ListViewItem>();
 
-        public static Dictionary<ReadOnlyString, ExpressionField> Fields { get; } =
-            new Dictionary<ReadOnlyString, ExpressionField>();
+        public static Dictionary<ReadOnlyString, ExpressionBox> ExpressionBoxes { get; } =
+            new Dictionary<ReadOnlyString, ExpressionBox>();
 
         private LanguageWindow _languageWindow;
 
@@ -62,7 +61,7 @@ namespace Miniräknare
                     nameBuffer[maxLength - i - 1] = alphabet[indices[maxLength - i - 1]];
                 name = nameBuffer.AsMemory(maxLength - length, length);
 
-                if (!Fields.ContainsKey(name))
+                if (!ExpressionBoxes.ContainsKey(name))
                     break;
 
                 indices[^1]++;
@@ -134,8 +133,8 @@ namespace Miniräknare
 
         private void AddNewField()
         {
-            var fieldName = GenerateFieldName();
-            var field = new ExpressionField(fieldName, ExpressionOptions.Default);
+            var field = new ExpressionField(ExpressionOptions.Default);
+            field.InputBox.Name = GenerateFieldName().ToString();
 
             var listItem = new ListViewItem
             {

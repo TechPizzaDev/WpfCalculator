@@ -83,7 +83,7 @@ namespace Miniräknare
                             Print(tree.Tokens);
                             var evaluator = new ExpressionTreeEvaluator(
                                 ResolveReference,
-                                ExpressionField.ResolveOperator,
+                                ExpressionBox.ResolveOperator,
                                 ResolveFunction);
 
                             var eval = Evaluation.Undefined;

@@ -5,8 +5,7 @@
     xmlns:l="clr-namespace:Miniräknare">
 
     <DataTemplate DataType="{x:Type l:ExpressionField}">
-        <Grid Height="100" Loaded="OnLoaded" Unloaded="OnUnloaded" 
-              IsHitTestVisible="{Binding IsHitTestVisible}">
+        <Grid Height="100" IsHitTestVisible="{Binding IsHitTestVisible}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="3"/>
                 <RowDefinition Height="Auto"/>
@@ -14,32 +13,14 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!--#region Name and TextValue-->
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition MinWidth="40" Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <TextBox Grid.Column="0" Name="NameBox" Text="{Binding Name}" FontSize="14" FontWeight="Medium"
-                         BorderBrush="{x:Null}" Background="{x:Null}" AcceptsTab="False" IsTabStop="False" 
-                         VerticalAlignment="Center" HorizontalContentAlignment="Center" Margin="0,0,4,0"
-                         KeyDown="NameBox_KeyDown" />
-
-                <TextBox Name="TextValueBox"
-                         Grid.Column="1" Text="{Binding TextValue, UpdateSourceTrigger=PropertyChanged}" 
-                         FontSize="24" FontFamily="Consolas" VerticalContentAlignment="Center" 
-                         TabIndex="{Binding TabIndex}" 
-                         MinHeight="40" MinWidth="100" />
-            </Grid>
-            <!--#endregion-->
+            <ContentPresenter Grid.Row="1" Content="{Binding InputBox}" />
 
             <!--#region ResultValue and StatusIcon-->
             <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Stretch">
                 <Image Width="42" Height="42" Source="{Binding StateIcon}" Margin="0,0,1,0" />
                 <TextBox IsReadOnly="True" Text="{Binding ResultTextValue, Mode=OneWay}" 
-                         FontSize="24" FontFamily="Consolas" VerticalAlignment="Center" BorderThickness="0" 
-                         Visibility="{Binding ResultValueVisibility}"/>
+                         FontSize="24" FontFamily="Consolas" VerticalAlignment="Center"
+                         BorderThickness="0" Visibility="{Binding ResultValueVisibility}"/>
             </StackPanel>
             <!--#endregion-->
         </Grid>

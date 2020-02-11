@@ -3,7 +3,7 @@
 namespace Miniräknare
 {
     [Flags]
-    public enum FieldState
+    public enum ExpressionBoxState
     {
         Indeterminate = 0,
         Ok = 1 << 0,

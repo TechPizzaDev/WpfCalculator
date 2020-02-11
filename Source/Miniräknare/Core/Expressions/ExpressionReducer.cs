@@ -13,6 +13,9 @@ namespace Miniräknare.Expressions
 
         public static ResultCode Reduce(List<Token> tokens, ExpressionOptions options)
         {
+            // TODO: the reducer can currently break expressions pretty hard, so fix it
+            throw new NotImplementedException();
+
             if (tokens == null) throw new ArgumentNullException(nameof(tokens));
             if (options == null) throw new ArgumentNullException(nameof(options));
 
