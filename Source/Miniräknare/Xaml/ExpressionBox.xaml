@@ -1,0 +1,33 @@
+﻿<UserControl 
+    x:Class="Miniräknare.ExpressionBox"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc = "http://schemas.openxmlformats.org/markup-compatibility/2006"  
+    xmlns:d = "http://schemas.microsoft.com/expression/blend/2008"  
+    mc:Ignorable = "d"
+    d:DesignHeight = "50" d:DesignWidth = "250"
+    xmlns:l="clr-namespace:Miniräknare">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition MinWidth="{Binding NameColumnMinWidth}" Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <TextBox Grid.Column="0" x:Name="NameBox" 
+                 Text="{Binding VariableName}" FontSize="14" FontWeight="Medium"
+                 BorderBrush="{x:Null}" Background="{x:Null}" AcceptsTab="False" IsTabStop="False" 
+                 VerticalAlignment="Center" HorizontalContentAlignment="Center" Margin="0,0,4,0"
+                 Visibility="{Binding NameVisibility}" IsEnabled="{Binding IsNameEnabled}"
+                 KeyDown="NameBox_KeyDown" />
+
+        <TextBox Grid.Column="1" x:Name="TextValueBox"
+                 Text="{Binding TextValue, UpdateSourceTrigger=PropertyChanged}" 
+                 FontSize="24" FontFamily="Consolas" VerticalContentAlignment="Center" 
+                 TabIndex="{Binding TabIndex}" 
+                 MinHeight="40" MinWidth="100"
+                 Loaded="TextValueBox_Loaded"
+                 Unloaded="TextValueBox_Unloaded"/>
+    </Grid>
+
+</UserControl>

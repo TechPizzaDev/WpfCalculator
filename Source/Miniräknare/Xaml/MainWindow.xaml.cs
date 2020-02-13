@@ -22,11 +22,13 @@ namespace Miniräknare
     {
         private static readonly ReadOnlyMemory<char> _alphabet = "abcdefghijklmnopqrstuvwxyz".AsMemory();
 
-        public static BindingList<ListViewItem> FieldList { get; } =
+        private BindingList<ListViewItem> _fieldItemList { get; } =
             new BindingList<ListViewItem>();
 
         public static Dictionary<ReadOnlyString, ExpressionBox> ExpressionBoxes { get; } =
             new Dictionary<ReadOnlyString, ExpressionBox>();
+
+        public static ListView FieldList { get; private set; }
 
         private LanguageWindow _languageWindow;
 
@@ -34,7 +36,10 @@ namespace Miniräknare
         {
             InitializeComponent();
 
-            FieldListView.ItemsSource = FieldList;
+            FieldList = FieldListView;
+            FieldListView.ItemsSource = _fieldItemList;
+
+            _fieldItemList.Add(new ListViewItem() { Content = new FormulaField(ExpressionOptions.Default) });
 
             //InitializeDragDropManager();
 
@@ -134,7 +139,7 @@ namespace Miniräknare
         private void AddNewField()
         {
             var field = new ExpressionField(ExpressionOptions.Default);
-            field.InputBox.Name = GenerateFieldName().ToString();
+            field.InputBox.VariableName = GenerateFieldName().ToString();
 
             var listItem = new ListViewItem
             {
@@ -142,7 +147,7 @@ namespace Miniräknare
                 Content = field
             };
 
-            FieldList.Add(listItem);
+            _fieldItemList.Add(listItem);
         }
 
         private void AddNewField_Click(object sender, RoutedEventArgs e)

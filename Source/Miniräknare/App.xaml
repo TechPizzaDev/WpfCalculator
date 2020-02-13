@@ -15,8 +15,8 @@
                 <ResourceDictionary Source="Xaml/Shaders.xaml" />
                 <ResourceDictionary Source="Xaml/Styles.xaml" />
                 <ResourceDictionary Source="Xaml/Icons.xaml" />
-                <ResourceDictionary Source="Xaml/Templates/ExpressionBox.xaml" />
                 <ResourceDictionary Source="Xaml/Templates/ExpressionField.xaml" />
+                <ResourceDictionary Source="Xaml/Templates/FormulaField.xaml" />
             </ResourceDictionary.MergedDictionaries>
             
         </ResourceDictionary>

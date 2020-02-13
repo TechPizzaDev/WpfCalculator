@@ -11,8 +11,14 @@ using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare
 {
-    public partial class ExpressionBox : INotifyPropertyChanged
+    public partial class ExpressionBox : UserControl, INotifyPropertyChanged
     {
+        public static readonly DependencyProperty TextValueProperty = DependencyProperty.Register(
+             nameof(TextValue),
+             typeof(string),
+             typeof(ExpressionBox),
+             new PropertyMetadata(""));
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         private ExpressionTree _expressionTree;
@@ -21,24 +27,23 @@ namespace Miniräknare
         private ExpressionTreeProbe _probe;
         private ExpressionTreeEvaluator _evaluator;
 
-        private string _name;
+        private string _variableName;
         private bool _showName;
         private bool _isNameEnabled;
 
-        private string _textValue;
         private ExpressionBoxState _state;
         private Evaluation _resultValue;
 
         #region Notifying Properties
 
-        public string Name
+        public string VariableName
         {
-            get => _name;
+            get => _variableName;
             set
             {
-                if (_name != value && ValidateName(value.AsMemory(), out var newName))
+                if (_variableName != value && ValidateName(value.AsMemory(), out var newName))
                 {
-                    string oldName = _name;
+                    string oldName = _variableName;
 
                     if (oldName != null)
                         MainWindow.ExpressionBoxes.Remove(oldName.AsMemory());
@@ -46,7 +51,7 @@ namespace Miniräknare
                     if (!newName.IsEmpty)
                         MainWindow.ExpressionBoxes.Add(newName, this);
 
-                    _name = newName.ToString();
+                    _variableName = newName.ToString();
                     InvokePropertyChanged();
 
                     foreach (var box in MainWindow.ExpressionBoxes.Values)
@@ -99,12 +104,12 @@ namespace Miniräknare
 
         public string TextValue
         {
-            get => _textValue;
+            get => (string)GetValue(TextValueProperty);
             set
             {
-                if (_textValue != value)
+                if (TextValue != value)
                 {
-                    _textValue = value;
+                    SetValue(TextValueProperty, value);
                     InvokePropertyChanged();
 
                     State = ParseTextValue();
@@ -134,14 +139,12 @@ namespace Miniräknare
 
         public ExpressionBox()
         {
+            InitializeComponent();
+
             _state = ExpressionBoxState.Indeterminate;
-            _textValue = string.Empty;
             _isNameEnabled = true;
             _showName = true;
-        }
 
-        public ExpressionBox(ExpressionOptions options) : this()
-        {
             _probe = new ExpressionTreeProbe();
             _probe.ProbeReference += ProbeReference;
 
@@ -151,7 +154,12 @@ namespace Miniräknare
                 ResolveFunction);
 
             _references = new HashSet<ExpressionBox>();
+        }
+
+        public ExpressionBox(ExpressionOptions options) : this()
+        {
             _expressionTree = new ExpressionTree(options);
+
         }
 
         public ExpressionBoxState ParseTextValue()
@@ -190,7 +198,7 @@ namespace Miniräknare
 
             _probe.Probe(_expressionTree);
 
-            if (HasCyclicReferences(Name, _references))
+            if (HasCyclicReferences(VariableName, _references))
             {
                 State = ExpressionBoxState.CyclicReferences;
                 return new Evaluation(EvalCode.CyclicReferences);
@@ -235,7 +243,7 @@ namespace Miniräknare
             {
                 foreach (var reference in references)
                 {
-                    if (name == reference.Name)
+                    if (name == reference.VariableName)
                         return true;
 
                     if (checkedSet.Add(reference) && Core(name, reference._references))
@@ -402,20 +410,14 @@ namespace Miniräknare
             }
         }
 
-        public void OnLoaded(object sender, EventArgs args)
+        private void TextValueBox_Loaded(object sender, RoutedEventArgs e)
         {
-            var element = (FrameworkElement)sender;
-
-            var textValueBox = (DependencyObject)element.FindName("TextValueBox");
-            DataObject.AddPastingHandler(textValueBox, OnPaste);
+            DataObject.AddPastingHandler((TextBox)sender, OnPaste);
         }
 
-        public void OnUnloaded(object sender, EventArgs args)
+        public void TextValueBox_Unloaded(object sender, RoutedEventArgs args)
         {
-            var element = (FrameworkElement)sender;
-
-            var textValueBox = (DependencyObject)element.FindName("TextValueBox");
-            DataObject.RemovePastingHandler(textValueBox, OnPaste);
+            DataObject.RemovePastingHandler((TextBox)sender, OnPaste);
         }
 
         private void NameBox_KeyDown(object sender, KeyEventArgs e)

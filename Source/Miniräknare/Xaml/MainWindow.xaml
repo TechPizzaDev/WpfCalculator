@@ -133,7 +133,8 @@
             <Grid Grid.Column="1">
                 <ListView x:Name="FieldListView" MouseDown="FieldList_MouseDown" 
                           Background="Transparent" HorizontalContentAlignment="Stretch"
-                          ScrollViewer.CanContentScroll="False" />
+                          ScrollViewer.CanContentScroll="False">
+                </ListView>
             </Grid>
             <!--#endregion-->
 
