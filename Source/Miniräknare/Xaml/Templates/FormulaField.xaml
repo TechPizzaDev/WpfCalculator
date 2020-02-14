@@ -8,7 +8,7 @@
         <Grid Margin="-1,4,0,4">
             <ItemsControl ItemsSource="{Binding Fields}"
                           Loaded="List_Loaded"
-                          HorizontalContentAlignment="Stretch"
+                          HorizontalContentAlignment="Stretch" IsTabStop="False"
                           Background="Transparent" BorderThickness="0" Padding="0">
 
                 <ItemsControl.Template>

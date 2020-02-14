@@ -35,38 +35,36 @@ namespace Miniräknare
 
         private void List_Loaded(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine();
             var list = (ItemsControl)sender;
-            var a = (FrameworkElement)VisualTreeHelper.GetChild(list, 0);
-            var b = (FrameworkElement)VisualTreeHelper.GetChild(a, 0);
-            var c = (FrameworkElement)VisualTreeHelper.GetChild(b, 0);
-            var d = (FrameworkElement)VisualTreeHelper.GetChild(c, 0);
+            var itemPresenter = (FrameworkElement)VisualTreeHelper.GetChild(list, 0);
+            var stackPanel = (FrameworkElement)VisualTreeHelper.GetChild(itemPresenter, 0);
 
-            var valueBox = (ExpressionBox)d.FindName("ValueBox");
-            valueBox.PreviewKeyDown += TextValue_KeyDown;
+            int count = VisualTreeHelper.GetChildrenCount(stackPanel);
+            for (int i = 0; i < count; i++)
+            {
+                var contentPresenter = (FrameworkElement)VisualTreeHelper.GetChild(stackPanel, i);
+                var grid = (FrameworkElement)VisualTreeHelper.GetChild(contentPresenter, 0);
+
+                var valueBox = (ExpressionBox)grid.FindName("ValueBox");
+                var disabledDirection = i == 0 
+                    ? FocusNavigationDirection.Previous 
+                    : (i == count - 1) 
+                    ? FocusNavigationDirection.Next 
+                    : (FocusNavigationDirection?)null;
+                valueBox.PreviewKeyDown += (s, e) => TextValue_KeyDown(e, disabledDirection);
+            }
         }
 
-        private void Box_Loaded(object sender, RoutedEventArgs e)
+        private static void TextValue_KeyDown(KeyEventArgs e, FocusNavigationDirection? disabledDirection)
         {
-            var element = (FrameworkElement)sender;
-            var textValueBox = (TextBox)element.FindName("ValueBox");
-            textValueBox.PreviewKeyDown += TextValue_KeyDown;
-            Console.WriteLine("what"); 
-        }
-
-        private void TextValue_KeyDown(object sender, KeyEventArgs e)
-        {
-            var box = (ExpressionBox)sender;
-
-            if (e.Key == Key.Up)
-            {
-
-            }
-            else if (e.Key == Key.Down)
-            {
-
-            }
-            Console.WriteLine(sender + ", " + e);
+            TraversalRequest request = null;
+            if (e.Key == Key.Up && disabledDirection != FocusNavigationDirection.Previous)
+                request = new TraversalRequest(FocusNavigationDirection.Previous);
+            else if (e.Key == Key.Down && disabledDirection != FocusNavigationDirection.Next)
+                request = new TraversalRequest(FocusNavigationDirection.Next);
+            
+            if (request != null)
+                ((TextBox)e.OriginalSource).MoveFocus(request);
         }
     }
 }
