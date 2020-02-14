@@ -6,7 +6,7 @@
 
     <DataTemplate DataType="{x:Type l:FormulaField}">
         <Grid Margin="-1,4,0,4">
-            <ItemsControl ItemsSource="{Binding Fields}"
+            <ItemsControl ItemsSource="{Binding Expressions}"
                           Loaded="List_Loaded"
                           HorizontalContentAlignment="Stretch" IsTabStop="False"
                           Background="Transparent" BorderThickness="0" Padding="0">
@@ -25,8 +25,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <l:ExpressionBox Grid.Column="0" x:Name="ValueBox" 
-                                             Margin="1" TextValue="{Binding}" />
+                            <l:ExpressionBox Grid.Column="0" x:Name="ValueBox" Margin="1" />
                             
                             <TextBlock Margin="5,0,0,0" Grid.Column="1" Text="hej" />
                         </Grid>

@@ -1,18 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using Miniräknare.Expressions;
 
 namespace Miniräknare
 {
+    public class FormulaExpression
+    {
+        public FormulaField Parent { get; }
+        public ExpressionBox Expression { get; set; }
+
+        public FormulaExpression(FormulaField parent)
+        {
+            Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+        }
+    }
+
     public partial class FormulaField
     {
-        public BindingList<string> Fields { get; }
+        public BindingList<FormulaExpression> Expressions { get; }
 
         public FormulaField()
         {
@@ -20,16 +29,16 @@ namespace Miniräknare
 
         public FormulaField(ExpressionOptions options) : this()
         {
-            Fields = new BindingList<string>();
+            Expressions = new BindingList<FormulaExpression>();
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 3; i++)
             {
                 //var box = new ExpressionBox(options);
                 //box.Loaded += Box_Loaded;
 
                 //box.ShowName = false;
 
-                Fields.Add(i.ToString());
+                Expressions.Add(new FormulaExpression(this));
             }
         }
 
@@ -39,6 +48,8 @@ namespace Miniräknare
             var itemPresenter = (FrameworkElement)VisualTreeHelper.GetChild(list, 0);
             var stackPanel = (FrameworkElement)VisualTreeHelper.GetChild(itemPresenter, 0);
 
+            var fields = (BindingList<FormulaExpression>)list.ItemsSource;
+
             int count = VisualTreeHelper.GetChildrenCount(stackPanel);
             for (int i = 0; i < count; i++)
             {
@@ -46,6 +57,8 @@ namespace Miniräknare
                 var grid = (FrameworkElement)VisualTreeHelper.GetChild(contentPresenter, 0);
 
                 var valueBox = (ExpressionBox)grid.FindName("ValueBox");
+                fields[i].Expression = valueBox;
+
                 var disabledDirection = i == 0 
                     ? FocusNavigationDirection.Previous 
                     : (i == count - 1) 
