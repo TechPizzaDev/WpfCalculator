@@ -21,13 +21,22 @@
                     <DataTemplate>
                         <Grid Margin="0,0,0,5">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <l:ExpressionBox Grid.Column="0" x:Name="ValueBox" Margin="1" />
+                            <RadioButton Grid.Column="0" GroupName="kek" IsChecked="{Binding IsTargeted}"
+                                         Margin="5,0,5,0" VerticalAlignment="Center">
+                                
+                                <RadioButton.LayoutTransform>
+                                    <ScaleTransform ScaleX="2" ScaleY="2"/>
+                                </RadioButton.LayoutTransform>
+                            </RadioButton>
+
+                            <l:ExpressionBox Grid.Column="1" x:Name="ValueBox" Margin="1" />
                             
-                            <TextBlock Margin="5,0,0,0" Grid.Column="1" Text="hej" />
+                            <TextBlock Margin="5,0,0,0" Grid.Column="2" Text="hej" />
                         </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

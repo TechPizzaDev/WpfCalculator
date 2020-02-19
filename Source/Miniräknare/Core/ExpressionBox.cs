@@ -11,54 +11,23 @@ using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare
 {
+    [DefaultBindingProperty(nameof(TextValue))]
     public partial class ExpressionBox : UserControl, INotifyPropertyChanged
     {
-        public static readonly DependencyProperty TextValueProperty = DependencyProperty.Register(
-             nameof(TextValue),
-             typeof(string),
-             typeof(ExpressionBox),
-             new PropertyMetadata(""));
-
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private ExpressionTree _expressionTree;
-        private HashSet<ExpressionBox> _references;
+        private string _lastVariableName;
 
+        private ExpressionTree _expressionTree;
         private ExpressionTreeProbe _probe;
         private ExpressionTreeEvaluator _evaluator;
+        private HashSet<ExpressionBox> _references;
 
-        private string _variableName;
         private bool _showName;
-        private bool _isNameEnabled;
-
         private ExpressionBoxState _state;
         private Evaluation _resultValue;
 
         #region Notifying Properties
-
-        public string VariableName
-        {
-            get => _variableName;
-            set
-            {
-                if (_variableName != value && ValidateName(value.AsMemory(), out var newName))
-                {
-                    string oldName = _variableName;
-
-                    if (oldName != null)
-                        MainWindow.ExpressionBoxes.Remove(oldName.AsMemory());
-
-                    if (!newName.IsEmpty)
-                        MainWindow.ExpressionBoxes.Add(newName, this);
-
-                    _variableName = newName.ToString();
-                    InvokePropertyChanged();
-
-                    foreach (var box in MainWindow.ExpressionBoxes.Values)
-                        box.UpdateResultValue();
-                }
-            }
-        }
 
         public bool ShowName
         {
@@ -68,22 +37,6 @@ namespace Miniräknare
                 if (_showName != value)
                 {
                     _showName = value;
-                    InvokePropertyChanged();
-
-                    InvokePropertyChanged(nameof(NameVisibility));
-                    InvokePropertyChanged(nameof(NameColumnMinWidth));
-                }
-            }
-        }
-
-        public bool IsNameEnabled
-        {
-            get => _isNameEnabled;
-            set
-            {
-                if (_isNameEnabled != value)
-                {
-                    _isNameEnabled = value;
                     InvokePropertyChanged();
                 }
             }
@@ -98,23 +51,6 @@ namespace Miniräknare
                 {
                     _state = value;
                     InvokePropertyChanged();
-                }
-            }
-        }
-
-        public string TextValue
-        {
-            get => (string)GetValue(TextValueProperty);
-            set
-            {
-                if (TextValue != value)
-                {
-                    SetValue(TextValueProperty, value);
-                    InvokePropertyChanged();
-
-                    State = ParseTextValue();
-                    if (State == ExpressionBoxState.Ok)
-                        UpdateResultValue();
                 }
             }
         }
@@ -134,16 +70,36 @@ namespace Miniräknare
 
         #endregion
 
-        public Visibility NameVisibility => ShowName ? Visibility.Visible : Visibility.Collapsed;
-        public double NameColumnMinWidth => ShowName ? 40 : 0;
+        public bool IsVariableNameEnabled
+        {
+            get => NameBox.IsEnabled;
+            set => NameBox.IsEnabled = value;
+        }
+
+        public string VariableName
+        {
+            get => NameBox.Text;
+            set => NameBox.Text = value;
+        }
+
+        public string TextValue
+        {
+            get => ValueBox.Text;
+            set => ValueBox.Text = TextValue;
+        }
+
+        #region Constructors
 
         public ExpressionBox()
         {
             InitializeComponent();
 
-            _state = ExpressionBoxState.Indeterminate;
-            _isNameEnabled = true;
-            _showName = true;
+            NameBox.TextChanged += NameBox_TextChanged;
+            ValueBox.TextChanged += ValueBox_TextChanged;
+
+            State = ExpressionBoxState.Indeterminate;
+            IsVariableNameEnabled = true;
+            ShowName = true;
 
             _probe = new ExpressionTreeProbe();
             _probe.ProbeReference += ProbeReference;
@@ -159,7 +115,42 @@ namespace Miniräknare
         public ExpressionBox(ExpressionOptions options) : this()
         {
             _expressionTree = new ExpressionTree(options);
+        }
 
+        #endregion
+
+        private void NameBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var box = (TextBox)sender;
+            if (ValidateName(box.Text.AsMemory(), out ReadOnlyMemory<char> newName))
+            {
+                if (_lastVariableName != null)
+                    MainWindow.GlobalExpressions.Remove(_lastVariableName.AsMemory());
+
+                if (!newName.IsEmpty)
+                    MainWindow.GlobalExpressions.Add(newName, this);
+
+                var newNameString = newName.ToString();
+                _lastVariableName = newNameString;
+                box.Text = newNameString;
+                InvokePropertyChanged(nameof(VariableName));
+
+                foreach (var globalBox in MainWindow.GlobalExpressions.Values)
+                    globalBox.UpdateResultValue();
+            }
+            else
+            {
+                box.Text = _lastVariableName;
+            }
+        }
+
+        private void ValueBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            InvokePropertyChanged(nameof(TextValue));
+
+            State = ParseTextValue();
+            if (State == ExpressionBoxState.Ok)
+                UpdateResultValue();
         }
 
         public ExpressionBoxState ParseTextValue()
@@ -228,7 +219,7 @@ namespace Miniräknare
                     return false;
             }
 
-            if (MainWindow.ExpressionBoxes.ContainsKey(validatedName))
+            if (MainWindow.GlobalExpressions.ContainsKey(validatedName))
                 return false;
 
             return true;
@@ -266,7 +257,7 @@ namespace Miniräknare
 
         private void ProbeReference(ValueToken name)
         {
-            if (!MainWindow.ExpressionBoxes.TryGetValue(name.Value, out var field))
+            if (!MainWindow.GlobalExpressions.TryGetValue(name.Value, out var field))
                 return;
 
             if (_references.Add(field))
@@ -329,7 +320,7 @@ namespace Miniräknare
 
         private Evaluation ResolveReference(ReadOnlyMemory<char> name)
         {
-            if (!MainWindow.ExpressionBoxes.TryGetValue(name, out var field))
+            if (!MainWindow.GlobalExpressions.TryGetValue(name, out var field))
                 return new Evaluation(EvalCode.UnresolvedReference, name);
 
             if (field.State != ExpressionBoxState.Ok)
@@ -410,12 +401,12 @@ namespace Miniräknare
             }
         }
 
-        private void TextValueBox_Loaded(object sender, RoutedEventArgs e)
+        private void ValueBox_Loaded(object sender, RoutedEventArgs e)
         {
             DataObject.AddPastingHandler((TextBox)sender, OnPaste);
         }
 
-        public void TextValueBox_Unloaded(object sender, RoutedEventArgs args)
+        public void ValueBox_Unloaded(object sender, RoutedEventArgs args)
         {
             DataObject.RemovePastingHandler((TextBox)sender, OnPaste);
         }
@@ -446,6 +437,18 @@ namespace Miniräknare
 
         protected void InvokePropertyChanged([CallerMemberName] string propertyName = "")
         {
+            switch (propertyName)
+            {
+                case nameof(ShowName):
+                    NameColumn.MinWidth = ShowName ? 40 : 0;
+                    NameBox.Visibility = ShowName ? Visibility.Visible : Visibility.Collapsed;
+                    break;
+
+                case nameof(IsVariableNameEnabled):
+                    NameBox.IsEnabled = IsVariableNameEnabled;
+                    break;
+            }
+
             if (PropertyChanged != null)
             {
                 var args = new PropertyChangedEventArgs(propertyName);

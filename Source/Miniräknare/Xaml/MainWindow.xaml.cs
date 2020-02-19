@@ -25,7 +25,7 @@ namespace Miniräknare
         private BindingList<ListViewItem> _fieldItemList { get; } =
             new BindingList<ListViewItem>();
 
-        public static Dictionary<ReadOnlyString, ExpressionBox> ExpressionBoxes { get; } =
+        public static Dictionary<ReadOnlyString, ExpressionBox> GlobalExpressions { get; } =
             new Dictionary<ReadOnlyString, ExpressionBox>();
 
         public static ListView FieldList { get; private set; }
@@ -40,9 +40,8 @@ namespace Miniräknare
             FieldListView.ItemsSource = _fieldItemList;
 
             _fieldItemList.Add(new ListViewItem() { Content = new FormulaField(ExpressionOptions.Default) });
-
-            //InitializeDragDropManager();
-
+            _fieldItemList.Add(new ListViewItem() { Content = new FormulaField(ExpressionOptions.Default) });
+            
             AddNewField();
         }
 
@@ -66,7 +65,7 @@ namespace Miniräknare
                     nameBuffer[maxLength - i - 1] = alphabet[indices[maxLength - i - 1]];
                 name = nameBuffer.AsMemory(maxLength - length, length);
 
-                if (!ExpressionBoxes.ContainsKey(name))
+                if (!GlobalExpressions.ContainsKey(name))
                     break;
 
                 indices[^1]++;
@@ -103,36 +102,6 @@ namespace Miniräknare
 
             return name;
         }
-
-        #region DragDropManager stuff
-
-        //private ListViewDragDropManager<ExpressionField> _dragDropManager;
-
-        /*
-        private void InitializeDragDropManager()
-        {
-            //_dragDropManager = new ListViewDragDropManager<ExpressionField>(FieldList);
-            //_dragDropManager.DragAdornerOpacity = 0.8;
-            //_dragDropManager.OnDragStart += DragDropManager_OnDragStart;
-            //_dragDropManager.OnDragStop += DragDropManager_OnDragStop;
-        }
-
-        private void DragDropManager_OnDragStart(object sender, EventArgs e)
-        {
-            foreach (var field in _fields)
-                field.IsHitTestVisible = false;
-
-            Keyboard.ClearFocus();
-        }
-
-        private void DragDropManager_OnDragStop(object sender, EventArgs e)
-        {
-            foreach (var field in _fields)
-                field.IsHitTestVisible = true;
-        }
-        */
-
-        #endregion
 
         #region ActionButton Click handlers
 
@@ -197,6 +166,7 @@ namespace Miniräknare
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
+
             // TODO: check if there is stuff to save
         }
     }

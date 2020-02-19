@@ -58,22 +58,25 @@ namespace Miniräknare
         private void InputBox_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             var box = sender as ExpressionBox;
-            if (e.PropertyName == nameof(ExpressionBox.State))
+            switch (e.PropertyName)
             {
-                ResultValueVisibility = box.State == ExpressionBoxState.Ok ? Visibility.Visible : Visibility.Hidden;
-                InvokePropertyChanged(nameof(ResultValueVisibility));
+                case nameof(ExpressionBox.State):
+                    ResultValueVisibility = box.State == ExpressionBoxState.Ok ? Visibility.Visible : Visibility.Hidden;
+                    InvokePropertyChanged(nameof(ResultValueVisibility));
 
-                var newStateIcon = GetStatusIconResource(box.State);
-                if (newStateIcon != StateIcon)
-                {
-                    StateIcon = newStateIcon;
-                    InvokePropertyChanged(nameof(StateIcon));
-                }
-            }
-            else if (e.PropertyName == nameof(ExpressionBox.ResultValue))
-            {
-                ResultTextValue = box.State == ExpressionBoxState.Ok ? box.ResultValue.Value.ToString(false) : "";
-                InvokePropertyChanged(nameof(ResultTextValue));
+                    var newStateIcon = GetStatusIconResource(box.State);
+                    if (newStateIcon != StateIcon)
+                    {
+                        StateIcon = newStateIcon;
+                        InvokePropertyChanged(nameof(StateIcon));
+                    }
+                    break;
+
+
+                case nameof(ExpressionBox.ResultValue):
+                    ResultTextValue = box.State == ExpressionBoxState.Ok ? box.ResultValue.Value.ToString(false) : "";
+                    InvokePropertyChanged(nameof(ResultTextValue));
+                    break;
             }
         }
 

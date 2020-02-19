@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -8,17 +7,6 @@ using Miniräknare.Expressions;
 
 namespace Miniräknare
 {
-    public class FormulaExpression
-    {
-        public FormulaField Parent { get; }
-        public ExpressionBox Expression { get; set; }
-
-        public FormulaExpression(FormulaField parent)
-        {
-            Parent = parent ?? throw new ArgumentNullException(nameof(parent));
-        }
-    }
-
     public partial class FormulaField
     {
         public BindingList<FormulaExpression> Expressions { get; }
@@ -59,11 +47,14 @@ namespace Miniräknare
                 var valueBox = (ExpressionBox)grid.FindName("ValueBox");
                 fields[i].Expression = valueBox;
 
+                valueBox.ShowName = false;
+
                 var disabledDirection = i == 0 
                     ? FocusNavigationDirection.Previous 
                     : (i == count - 1) 
                     ? FocusNavigationDirection.Next 
                     : (FocusNavigationDirection?)null;
+
                 valueBox.PreviewKeyDown += (s, e) => TextValue_KeyDown(e, disabledDirection);
             }
         }
@@ -71,6 +62,7 @@ namespace Miniräknare
         private static void TextValue_KeyDown(KeyEventArgs e, FocusNavigationDirection? disabledDirection)
         {
             TraversalRequest request = null;
+
             if (e.Key == Key.Up && disabledDirection != FocusNavigationDirection.Previous)
                 request = new TraversalRequest(FocusNavigationDirection.Previous);
             else if (e.Key == Key.Down && disabledDirection != FocusNavigationDirection.Next)
