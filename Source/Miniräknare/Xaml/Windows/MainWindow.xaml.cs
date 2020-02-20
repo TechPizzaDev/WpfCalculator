@@ -40,7 +40,7 @@ namespace Miniräknare
             FieldListView.ItemsSource = _fieldItemList;
 
             _fieldItemList.Add(new ListViewItem() { Content = new FormulaField(ExpressionOptions.Default) });
-            _fieldItemList.Add(new ListViewItem() { Content = new FormulaField(ExpressionOptions.Default) });
+            //_fieldItemList.Add(new ListViewItem() { Content = new FormulaField(ExpressionOptions.Default) });
             
             AddNewField();
         }
@@ -107,7 +107,7 @@ namespace Miniräknare
 
         private void AddNewField()
         {
-            var field = new ExpressionField(ExpressionOptions.Default);
+            var field = new ExpressionField();
             field.InputBox.VariableName = GenerateFieldName().ToString();
 
             var listItem = new ListViewItem

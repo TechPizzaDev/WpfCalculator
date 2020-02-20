@@ -6,8 +6,10 @@
         mc:Ignorable="d"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
-        Title="LanguageWindow" Height="400" Width="500"
-        Loaded="Window_Loaded" Closed="Window_Closed" 
+        Title="Language" 
+        Height="400" Width="500"
+        Loaded="Window_Loaded" 
+        Closed="Window_Closed" 
         StateChanged="Window_StateChanged">
 
     <Grid>

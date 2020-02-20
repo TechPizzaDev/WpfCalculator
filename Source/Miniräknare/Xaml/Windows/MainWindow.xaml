@@ -134,6 +134,12 @@
                 <ListView x:Name="FieldListView" MouseDown="FieldList_MouseDown" 
                           Background="Transparent" HorizontalContentAlignment="Stretch"
                           ScrollViewer.CanContentScroll="False">
+
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Margin" Value="0,0,0,10"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
                 </ListView>
             </Grid>
             <!--#endregion-->

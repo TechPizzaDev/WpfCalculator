@@ -88,6 +88,19 @@ namespace Miniräknare
             set => ValueBox.Text = TextValue;
         }
 
+        public ExpressionTree ExpressionTree
+        {
+            get => _expressionTree;
+            set
+            {
+                if (_expressionTree != value)
+                {
+                    _expressionTree = value;
+                    UpdateResultValue();
+                }
+            }
+        }
+
         #region Constructors
 
         public ExpressionBox()
@@ -101,6 +114,8 @@ namespace Miniräknare
             IsVariableNameEnabled = true;
             ShowName = true;
 
+            _expressionTree = new ExpressionTree(ExpressionOptions.Default);
+
             _probe = new ExpressionTreeProbe();
             _probe.ProbeReference += ProbeReference;
 
@@ -110,11 +125,6 @@ namespace Miniräknare
                 ResolveFunction);
 
             _references = new HashSet<ExpressionBox>();
-        }
-
-        public ExpressionBox(ExpressionOptions options) : this()
-        {
-            _expressionTree = new ExpressionTree(options);
         }
 
         #endregion
@@ -155,17 +165,17 @@ namespace Miniräknare
 
         public ExpressionBoxState ParseTextValue()
         {
-            if (_expressionTree == null)
+            if (ExpressionTree == null)
                 return ExpressionBoxState.Indeterminate;
 
-            _expressionTree.Tokens.Clear();
-            ExpressionTokenizer.Tokenize(TextValue.AsMemory(), _expressionTree.Tokens);
+            ExpressionTree.Tokens.Clear();
+            ExpressionTokenizer.Tokenize(TextValue.AsMemory(), ExpressionTree.Tokens);
 
-            var sanitizeResult = ExpressionSanitizer.Sanitize(_expressionTree);
+            var sanitizeResult = ExpressionSanitizer.Sanitize(ExpressionTree);
             if (sanitizeResult.Code != ExpressionSanitizer.ResultCode.Ok)
                 return ExpressionBoxState.SyntaxError;
 
-            var parseCode = ExpressionParser.Parse(_expressionTree);
+            var parseCode = ExpressionParser.Parse(ExpressionTree);
             switch (parseCode)
             {
                 case ExpressionParser.ResultCode.Ok:
@@ -180,14 +190,14 @@ namespace Miniräknare
 
         public Evaluation Evaluate()
         {
-            if (_expressionTree == null)
+            if (ExpressionTree == null)
                 return Evaluation.Undefined;
 
             foreach (var field in _references)
                 field.PropertyChanged -= ReferenceChanged;
             _references.Clear();
 
-            _probe.Probe(_expressionTree);
+            _probe.Probe(ExpressionTree);
 
             if (HasCyclicReferences(VariableName, _references))
             {
@@ -195,7 +205,7 @@ namespace Miniräknare
                 return new Evaluation(EvalCode.CyclicReferences);
             }
 
-            var eval = _evaluator.Evaluate(_expressionTree);
+            var eval = _evaluator.Evaluate(ExpressionTree);
             return eval;
         }
 
