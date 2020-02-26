@@ -1,0 +1,28 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--#region Icons/-->
+
+    <BitmapImage x:Key="Icon_FieldOptions" UriSource="/Content/Icons/FieldOptions.png" />
+
+    <!--#endregion-->
+    
+    <!--#region Icons/Action/-->
+
+    <BitmapImage x:Key="Icon_Action_Ok" UriSource="/Content/Icons/Action/AddNewField.png" />
+    <BitmapImage x:Key="Icon_Action_CyclicReferences" UriSource="/Content/Icons/Action/AddNewFunctionField.png" />
+
+    <!--#endregion-->
+
+    <!--#region Icons/Field/-->
+
+    <BitmapImage x:Key="Icon_Field_Ok" UriSource="/Content/Icons/Field/ResultArrow.png" />
+    <BitmapImage x:Key="Icon_Field_CyclicReferences" UriSource="/Content/Icons/Field/CyclicReferences.png" />
+    <BitmapImage x:Key="Icon_Field_UnknownWord" UriSource="/Content/Icons/Field/UnknownWord.png" />
+    <BitmapImage x:Key="Icon_Field_UnknownFunction" UriSource="/Content/Icons/Field/UnknownFunction.png" />
+    <BitmapImage x:Key="Icon_Field_SyntaxError" UriSource="/Content/Icons/Field/SyntaxError.png" />
+    <BitmapImage x:Key="Icon_Field_InvalidArguments" UriSource="/Content/Icons/Field/InvalidArguments.png" />
+
+    <!--#endregion-->
+
+</ResourceDictionary>

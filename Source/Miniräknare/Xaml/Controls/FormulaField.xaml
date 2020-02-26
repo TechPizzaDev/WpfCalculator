@@ -5,9 +5,16 @@
     xmlns:l="clr-namespace:Miniräknare">
 
     <Grid>
-        <ItemsControl x:Name="FormulaList"
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="20" />
+        </Grid.ColumnDefinitions>
+        
+        <ItemsControl x:Name="FormulaList" Grid.Column="0"
                       HorizontalContentAlignment="Stretch" IsTabStop="False"
                       Background="Transparent" BorderThickness="0" Padding="0" />
+
+        <Button Grid.Column="1" Margin="4,3,0,0" Style="{StaticResource Button_FieldOptions}" />
     </Grid>
     
 </UserControl>

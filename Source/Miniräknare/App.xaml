@@ -13,8 +13,12 @@
 
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Xaml/Shaders.xaml" />
-                <ResourceDictionary Source="Xaml/Styles.xaml" />
-                <ResourceDictionary Source="Xaml/Icons.xaml" />
+                
+                <ResourceDictionary Source="Xaml/Icons/FileIcons.xaml" />
+                <ResourceDictionary Source="Xaml/Icons/DrawingIcons.xaml" />
+                
+                <ResourceDictionary Source="Xaml/Styles/ColorStyles.xaml" />
+                <ResourceDictionary Source="Xaml/Styles/ElementStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
             
         </ResourceDictionary>

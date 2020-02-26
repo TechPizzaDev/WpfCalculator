@@ -18,6 +18,7 @@ namespace Miniräknare
         
         UnknownWordNested = UnknownWord | NestedError,
         UnknownFunctionNested = UnknownFunction | NestedError,
+        CyclicReferencesNested = CyclicReferences | NestedError,
         SyntaxErrorNested = SyntaxError | NestedError,
         InvalidArgumentsNested = InvalidArguments | NestedError
     }

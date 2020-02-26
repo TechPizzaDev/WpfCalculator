@@ -6,7 +6,8 @@
         xmlns:l="clr-namespace:Miniräknare"
         mc:Ignorable="d"
         Title="Miniräknare" Width="800" Height="450"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        Effect="{StaticResource Shader_Inverse}">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -65,14 +66,14 @@
                             ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewField'}">
 
                         <Image Source="/Content/Icons/Action/AddNewField.png"
-                               Effect="{StaticResource SpriteShader_ActionButton}" />
+                               Effect="{StaticResource Shader_ActionButton}" />
                     </Button>
                     
                     <Button Click="AddNewFunctionField_Click" VerticalAlignment="Top" Margin="3,3,3,0"
                             ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewFunctionField'}">
 
                         <Image Source="/Content/Icons/Action/AddNewFunctionField.png"
-                               Effect="{StaticResource SpriteShader_ActionButton}"/>
+                               Effect="{StaticResource Shader_ActionButton}"/>
 
                         <Button.ContextMenu>
                             <ContextMenu>

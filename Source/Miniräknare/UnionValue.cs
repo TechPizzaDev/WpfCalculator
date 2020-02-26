@@ -59,20 +59,40 @@ namespace Miniräknare
             }
         }
 
+        public double ToDouble()
+        {
+            return Type switch
+            {
+                UnionValueType.Float => Float,
+                UnionValueType.Long => Long,
+                UnionValueType.ULong => ULong,
+                UnionValueType.Enum => Enum,
+                _ => Double,
+            };
+        }
+
+        /// <summary>
+        /// Returns the value of this <see cref="UnionValue"/> as a string with a type suffix.
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return ToString(true);
         }
 
-        public string ToString(bool suffix)
+        /// <summary>
+        /// Returns the value of this <see cref="UnionValue"/> as a string, 
+        /// optionally with a type suffix.
+        /// </summary>
+        public string ToString(bool suffix, string format = null)
         {
             return Type switch
             {
-                UnionValueType.Double => Double.ToString() + (suffix ? "d" : ""),
-                UnionValueType.Float => Float.ToString() + (suffix ? "f" : ""),
-                UnionValueType.Long => Long.ToString() + (suffix ? "l" : ""),
-                UnionValueType.ULong => ULong.ToString() + (suffix ? "ul" : ""),
-                UnionValueType.Enum => Enum.ToString() + (suffix ? "enum" : ""),
+                UnionValueType.Double => Double.ToString(format) + (suffix ? "d" : ""),
+                UnionValueType.Float => Float.ToString(format) + (suffix ? "f" : ""),
+                UnionValueType.Long => Long.ToString(format) + (suffix ? "l" : ""),
+                UnionValueType.ULong => ULong.ToString(format) + (suffix ? "ul" : ""),
+                UnionValueType.Enum => Enum.ToString(format) + (suffix ? "enum" : ""),
                 UnionValueType.Null => "null",
                 _ => string.Empty,
             };

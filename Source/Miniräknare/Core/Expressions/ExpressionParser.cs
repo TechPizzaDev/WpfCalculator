@@ -16,8 +16,9 @@ namespace Miniräknare.Expressions
             ListEndWithoutStart,
             OperatorMissingLeftValue,
             OperatorMissingRightValue,
+            OperatorOnOperator,
             InvalidTokenBeforeList,
-            MissingMultiplicationOperator,
+            MissingMultiplicationDefinition,
             UnknownSymbol,
             EmptyList // TODO
         }
@@ -182,7 +183,7 @@ namespace Miniräknare.Expressions
 
                 var multiplyOpDef = options.GetOperatorDefinition(OperatorType.Multiply);
                 if (multiplyOpDef == null)
-                    return ResultCode.MissingMultiplicationOperator;
+                    return ResultCode.MissingMultiplicationDefinition;
 
                 var opToken = new ValueToken(TokenType.Operator, multiplyOpDef.Names[0]);
                 tokens.Insert(i, opToken);
@@ -209,9 +210,7 @@ namespace Miniräknare.Expressions
                 {
                     var token = currentTokens[j];
                     if (token is CollectionToken collectionToken)
-                    {
                         listStack.Push(collectionToken.Children);
-                    }
                 }
 
                 // Gather operators so we can sort them by priority rules.
@@ -276,6 +275,8 @@ namespace Miniräknare.Expressions
                             leftToken = currentTokens[left];
                         }
                     }
+                    if (leftToken?.Type == TokenType.Operator)
+                        continue;
 
                     int right = opIndex + 1;
                     if (opDef?.Sidedness != OperatorSidedness.Left)
@@ -289,6 +290,8 @@ namespace Miniräknare.Expressions
                         else
                         {
                             rightToken = currentTokens[right];
+                            if (rightToken.Type == TokenType.Operator)
+                                continue;
 
                             // Mitigates operators with following operators.
                             if (rightToken.Type == TokenType.Operator)

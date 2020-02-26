@@ -22,7 +22,7 @@ namespace Miniräknare
     {
         private static readonly ReadOnlyMemory<char> _alphabet = "abcdefghijklmnopqrstuvwxyz".AsMemory();
 
-        private BindingList<ListViewItem> _fieldItemList { get; } =
+        private BindingList<ListViewItem> FieldItemList { get; } =
             new BindingList<ListViewItem>();
 
         public static Dictionary<ReadOnlyString, ExpressionBox> GlobalExpressions { get; } =
@@ -35,15 +35,17 @@ namespace Miniräknare
         public MainWindow()
         {
             InitializeComponent();
-
+            
             FieldList = FieldListView;
-            FieldListView.ItemsSource = _fieldItemList;
+            FieldListView.ItemsSource = FieldItemList;
 
-            _fieldItemList.Add(new ListViewItem() { Content = new FormulaField(ExpressionOptions.Default) });
-            //_fieldItemList.Add(new ListViewItem() { Content = new FormulaField(ExpressionOptions.Default) });
+            FieldItemList.Add(new ListViewItem() { Content = new FormulaField() });
+            //_fieldItemList.Add(new ListViewItem() { Content = new FormulaField() });
             
             AddNewField();
         }
+
+        #region GenerateFieldName
 
         private ReadOnlyMemory<char> GenerateFieldName()
         {
@@ -103,6 +105,8 @@ namespace Miniräknare
             return name;
         }
 
+        #endregion
+
         #region ActionButton Click handlers
 
         private void AddNewField()
@@ -116,7 +120,7 @@ namespace Miniräknare
                 Content = field
             };
 
-            _fieldItemList.Add(listItem);
+            FieldItemList.Add(listItem);
         }
 
         private void AddNewField_Click(object sender, RoutedEventArgs e)

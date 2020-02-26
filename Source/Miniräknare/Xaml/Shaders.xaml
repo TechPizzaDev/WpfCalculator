@@ -2,6 +2,13 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:l="clr-namespace:Miniräknare">
 
-    <l:SpriteEffect x:Key="SpriteShader_ActionButton" Color="Black" />
+    <l:InverseEffect x:Key="Shader_Inverse" />
+
+    <l:SpriteEffect x:Key="Shader_ActionButton" Color="Black" />
+
+    <l:SpriteEffect x:Key="Shader_StateIcon_Ok" Color="Black" />
+    <l:SpriteEffect x:Key="Shader_StateIcon_Error" Color="Red" />
+    <l:SpriteEffect x:Key="Shader_StateIcon_EvalError" Color="Magenta" />
+    <l:SpriteEffect x:Key="Shader_StateIcon_NestedError" Color="Orange" />
 
 </ResourceDictionary>

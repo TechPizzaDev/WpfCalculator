@@ -11,8 +11,6 @@
         UnresolvedFunction,
 
         ErroredReference,
-        CyclicReferences,
-        
         ErroredOperator,
 
         ErroredFunction,

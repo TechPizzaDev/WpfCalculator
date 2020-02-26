@@ -14,16 +14,16 @@ namespace Miniräknare
         public static readonly DependencyProperty InputProperty =
             RegisterPixelShaderSamplerProperty(nameof(Input), typeof(InverseEffect), 0);
 
-        public static readonly DependencyProperty ColorProperty = DependencyProperty.Register(
-            nameof(Color), typeof(Color), typeof(InverseEffect),
+        public static readonly DependencyProperty ColorMultiplierProperty = DependencyProperty.Register(
+            nameof(ColorMultiplier), typeof(Color), typeof(InverseEffect),
             new UIPropertyMetadata(Colors.White, PixelShaderConstantCallback(1)));
 
         public InverseEffect()
         {
             PixelShader = _pixelShader;
-
+            
             UpdateShaderValue(InputProperty);
-            UpdateShaderValue(ColorProperty);
+            UpdateShaderValue(ColorMultiplierProperty);
         }
 
         public Brush Input
@@ -32,10 +32,10 @@ namespace Miniräknare
             set => SetValue(InputProperty, value);
         }
 
-        public Color Color
+        public Color ColorMultiplier
         {
-            get => (Color)GetValue(ColorProperty);
-            set => SetValue(ColorProperty, value);
+            get => (Color)GetValue(ColorMultiplierProperty);
+            set => SetValue(ColorMultiplierProperty, value);
         }
 
         protected override bool FreezeCore(bool isChecking)

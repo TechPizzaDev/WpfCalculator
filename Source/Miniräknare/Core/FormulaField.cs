@@ -1,10 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.ComponentModel;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
-using Miniräknare.Expressions;
 
 namespace Miniräknare
 {
@@ -18,10 +14,7 @@ namespace Miniräknare
 
             _formulaExpressions = new List<FormulaExpressionBox>();
             FormulaList.ItemsSource = _formulaExpressions;
-        }
 
-        public FormulaField(ExpressionOptions options) : this()
-        {
             int count = 3;
             for (int i = 0; i < count; i++)
             {
@@ -38,27 +31,6 @@ namespace Miniräknare
                 _formulaExpressions.Add(formula);
             }
         }
-
-        //private void List_Loaded(object sender, RoutedEventArgs e)
-        //{
-        //    var list = (ItemsControl)sender;
-        //    var itemPresenter = (FrameworkElement)VisualTreeHelper.GetChild(list, 0);
-        //    var stackPanel = (FrameworkElement)VisualTreeHelper.GetChild(itemPresenter, 0);
-        //
-        //    var fields = (BindingList<FormulaExpression>)list.ItemsSource;
-        //
-        //    int count = VisualTreeHelper.GetChildrenCount(stackPanel);
-        //    for (int i = 0; i < count; i++)
-        //    {
-        //        var contentPresenter = (FrameworkElement)VisualTreeHelper.GetChild(stackPanel, i);
-        //        var grid = (FrameworkElement)VisualTreeHelper.GetChild(contentPresenter, 0);
-        //
-        //        var input = (ExpressionBox)grid.FindName("InputBox");
-        //        fields[i].Input = input;
-        //
-        //        InitializeInputBox(input);
-        //    }
-        //}
 
         private static void TextValue_KeyDown(KeyEventArgs e, FocusNavigationDirection? disabledDirection)
         {

@@ -1,13 +1,20 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 
 namespace Miniräknare
 {
     public partial class ExpressionField : UserControl, INotifyPropertyChanged
     {
+        public const string OkShader = "Shader_StateIcon_Ok";
+        public const string ErrorShader = "Shader_StateIcon_Error";
+        public const string EvalErrorShader = "Shader_StateIcon_EvalError";
+        public const string NestedErrorShader = "Shader_StateIcon_NestedError";
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         public ExpressionField()
@@ -15,15 +22,6 @@ namespace Miniräknare
             InitializeComponent();
 
             InputBox.PropertyChanged += (s, e) => InputBox_PropertyChanged(s, e, ResultBox, StateImage);
-        }
-
-        protected void InvokePropertyChanged([CallerMemberName] string propertyName = "")
-        {
-            if (PropertyChanged != null)
-            {
-                var args = new PropertyChangedEventArgs(propertyName);
-                PropertyChanged.Invoke(this, args);
-            }
         }
 
         public static void InputBox_PropertyChanged(
@@ -37,7 +35,9 @@ namespace Miniräknare
                     resultOutput.Visibility = box.State == ExpressionBoxState.Ok ? Visibility.Visible : Visibility.Hidden;
                     UpdateResultValueText(resultOutput, box);
 
-                    stateImage.Source = (ImageSource)GetStatusIconResource(box.State);
+                    var (image, effect) = GetStatusResources(box.State);
+                    stateImage.Source = image;
+                    stateImage.Effect = effect;
                     break;
 
                 case nameof(ExpressionBox.ResultValue):
@@ -48,18 +48,62 @@ namespace Miniräknare
 
         public static void UpdateResultValueText(TextBox output, ExpressionBox source)
         {
-            output.Text = source.State == ExpressionBoxState.Ok
-                ? source.ResultValue.Value.ToString(false)
-                : string.Empty;
+            string text = string.Empty;
+            if (source.State == ExpressionBoxState.Ok)
+            {
+                var result = source.ResultValue.Value;
+                if (result.Type == UnionValueType.Double ||
+                    result.Type == UnionValueType.Float)
+                {
+                    // TODO: add decimal rounding setting
+
+                    var resultDouble = result.ToDouble();
+                    text = resultDouble.ToString();
+                }
+                else
+                {
+                    text = result.ToString(false);
+                }
+            }
+            output.Text = text;
         }
 
-        public static object GetStatusIconResource(ExpressionBoxState state)
+        public static (ImageSource, ShaderEffect) GetStatusResources(ExpressionBoxState state)
         {
             if (state == ExpressionBoxState.Indeterminate)
-                return null;
+                return (null, null);
 
-            string resourceName = "Icon_" + state;
-            return App.Instance.MainWindow.FindResource(resourceName);
+            string shaderName;
+            if (state.HasFlag(ExpressionBoxState.NestedError))
+            {
+                shaderName = NestedErrorShader;
+            }
+            else
+            {
+                switch (state)
+                {
+                    case ExpressionBoxState.SyntaxError:
+                    case ExpressionBoxState.CyclicReferences:
+                        shaderName = ErrorShader;
+                        break;
+
+                    case ExpressionBoxState.UnknownWord:
+                    case ExpressionBoxState.UnknownFunction:
+                    case ExpressionBoxState.InvalidArguments:
+                        shaderName = EvalErrorShader;
+                        break;
+
+                    default:
+                        shaderName = OkShader;
+                        break;
+                }
+            }
+            var shader = App.Instance.MainWindow.FindResource(shaderName) as ShaderEffect;
+
+            string imageName = "Icon_Field_" + (state & ~ExpressionBoxState.NestedError);
+            var image = App.Instance.MainWindow.FindResource(imageName) as ImageSource;
+
+            return (image, shader);
         }
     }
 }

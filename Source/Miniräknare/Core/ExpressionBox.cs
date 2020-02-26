@@ -199,10 +199,15 @@ namespace Miniräknare
 
             _probe.Probe(ExpressionTree);
 
-            if (HasCyclicReferences(VariableName, _references))
+            var cyclicReferences = HasCyclicReferences(VariableName, _references);
+            if (cyclicReferences != CyclicReferenceType.None)
             {
-                State = ExpressionBoxState.CyclicReferences;
-                return new Evaluation(EvalCode.CyclicReferences);
+                var newState = cyclicReferences == CyclicReferenceType.Nested
+                    ? ExpressionBoxState.CyclicReferencesNested
+                    : ExpressionBoxState.CyclicReferences;
+
+                return new Evaluation(
+                    EvalCode.ErroredReference, UnionValue.FromEnum(newState), VariableName.AsMemory());
             }
 
             var eval = _evaluator.Evaluate(ExpressionTree);
@@ -235,56 +240,66 @@ namespace Miniräknare
             return true;
         }
 
-        private static bool HasCyclicReferences(
+        private static CyclicReferenceType HasCyclicReferences(
             string baseName, IEnumerable<ExpressionBox> baseReferences)
         {
             var checkedSet = new HashSet<ExpressionBox>();
 
-            bool Core(string name, IEnumerable<ExpressionBox> references)
+            CyclicReferenceType Core(string name, IEnumerable<ExpressionBox> references)
             {
                 foreach (var reference in references)
                 {
                     if (name == reference.VariableName)
-                        return true;
+                        return CyclicReferenceType.Base;
 
-                    if (checkedSet.Add(reference) && Core(name, reference._references))
-                        return true;
+                    if (checkedSet.Add(reference))
+                    {
+                        var core = Core(name, reference._references);
+                        if (core != CyclicReferenceType.None)
+                            return core;
+                    }
                 }
-                return false;
+                return CyclicReferenceType.None;
             }
 
-            if (Core(baseName, baseReferences))
-                return true;
+            var baseCore = Core(baseName, baseReferences);
+            if (baseCore != CyclicReferenceType.None)
+                return baseCore;
 
-            foreach (var set in checkedSet)
-                if (set.State == ExpressionBoxState.CyclicReferences)
-                    return true;
-
-            return false;
+            foreach (var box in checkedSet)
+            {
+                var result = box.ResultValue;
+                if (result.Code == EvalCode.ErroredReference &&
+                    ((ExpressionBoxState)result.Value.Enum).HasFlag(ExpressionBoxState.CyclicReferences))
+                    return CyclicReferenceType.Nested;
+            }
+            return CyclicReferenceType.None;
         }
 
-
+        public enum CyclicReferenceType
+        {
+            None,
+            Base,
+            Nested
+        }
 
         private void ProbeReference(ValueToken name)
         {
-            if (!MainWindow.GlobalExpressions.TryGetValue(name.Value, out var field))
+            if (!MainWindow.GlobalExpressions.TryGetValue(name.Value, out var expression))
                 return;
 
-            if (_references.Add(field))
-                field.PropertyChanged += ReferenceChanged;
+            if (_references.Add(expression))
+                expression.PropertyChanged += ReferenceChanged;
         }
 
 
-        private static ExpressionBoxState EvalToFieldState(EvalCode code, UnionValue value)
+        private ExpressionBoxState EvalToFieldState(Evaluation eval)
         {
-            switch (code)
+            switch (eval.Code)
             {
                 case EvalCode.Empty:
                 case EvalCode.Ok:
                     return ExpressionBoxState.Ok;
-
-                case EvalCode.CyclicReferences:
-                    return ExpressionBoxState.CyclicReferences;
 
                 case EvalCode.UnresolvedFunction:
                     return ExpressionBoxState.UnknownFunction;
@@ -300,12 +315,17 @@ namespace Miniräknare
                 case EvalCode.ErroredFunction:
                 case EvalCode.ErroredOperator:
                 case EvalCode.ErroredReference:
-                    if (value.Type == UnionValueType.Enum)
+                    if (eval.Value.Type == UnionValueType.Enum)
                     {
-                        var state = (ExpressionBoxState)value.Enum;
+                        var state = (ExpressionBoxState)eval.Value.Enum;
                         state &= ~ExpressionBoxState.NestedError;
                         switch (state)
                         {
+                            case ExpressionBoxState.CyclicReferences:
+                                if (eval.UnresolvedName.Span.SequenceEqual(VariableName))
+                                    return state;
+                                return state | ExpressionBoxState.NestedError;
+
                             case ExpressionBoxState.UnknownWord:
                             case ExpressionBoxState.UnknownFunction:
                             case ExpressionBoxState.SyntaxError:
@@ -323,7 +343,7 @@ namespace Miniräknare
         public void UpdateResultValue()
         {
             var eval = Evaluate();
-            State = EvalToFieldState(eval.Code, eval.Value);
+            State = EvalToFieldState(eval);
 
             ResultValue = eval.Code == EvalCode.Ok ? eval : new Evaluation(new UnionValue(0d));
         }
@@ -350,7 +370,34 @@ namespace Miniräknare
                     return new Evaluation(
                         EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Sin(arguments[0].Double)));
+                return new Evaluation(new UnionValue(Math.Sin(arguments[0].Double * 0.0174532925)));
+            }
+            else if (name.Span.SequenceEqual("cos"))
+            {
+                int expectedArgCount = 1;
+                if (arguments.Length != expectedArgCount)
+                    return new Evaluation(
+                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+
+                return new Evaluation(new UnionValue(Math.Cos(arguments[0].Double * 0.0174532925)));
+            }
+            if (name.Span.SequenceEqual("asin"))
+            {
+                int expectedArgCount = 1;
+                if (arguments.Length != expectedArgCount)
+                    return new Evaluation(
+                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+
+                return new Evaluation(new UnionValue(Math.Asin(arguments[0].Double) * 57.2957795));
+            }
+            else if (name.Span.SequenceEqual("acos"))
+            {
+                int expectedArgCount = 1;
+                if (arguments.Length != expectedArgCount)
+                    return new Evaluation(
+                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+
+                return new Evaluation(new UnionValue(Math.Acos(arguments[0].Double) * 57.2957795));
             }
             else if (name.Span.SequenceEqual("round"))
             {
