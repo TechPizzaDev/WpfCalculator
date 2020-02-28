@@ -8,14 +8,12 @@ using System.Windows.Media.Effects;
 
 namespace Miniräknare
 {
-    public partial class ExpressionField : UserControl, INotifyPropertyChanged
+    public partial class ExpressionField : UserControl
     {
         public const string OkShader = "Shader_StateIcon_Ok";
         public const string ErrorShader = "Shader_StateIcon_Error";
         public const string EvalErrorShader = "Shader_StateIcon_EvalError";
         public const string NestedErrorShader = "Shader_StateIcon_NestedError";
-
-        public event PropertyChangedEventHandler PropertyChanged;
 
         public ExpressionField()
         {
@@ -51,14 +49,17 @@ namespace Miniräknare
             string text = string.Empty;
             if (source.State == ExpressionBoxState.Ok)
             {
-                var result = source.ResultValue.Value;
-                if (result.Type == UnionValueType.Double ||
-                    result.Type == UnionValueType.Float)
+                var result = source.ResultValue.Values.First;
+                if (result.ValueType == UnionValueType.Double ||
+                    result.ValueType == UnionValueType.Float)
                 {
                     // TODO: add decimal rounding setting
 
                     var resultDouble = result.ToDouble();
                     text = resultDouble.ToString();
+                    
+                    if(result.NumberGroup.HasFlag(NumberGroup.Imaginary))
+                        text += "i";
                 }
                 else
                 {
@@ -104,6 +105,11 @@ namespace Miniräknare
             var image = App.Instance.MainWindow.FindResource(imageName) as ImageSource;
 
             return (image, shader);
+        }
+
+        private void OpenContextMenu(object sender, RoutedEventArgs e)
+        {
+            MainGrid.ContextMenu.IsOpen = true;
         }
     }
 }

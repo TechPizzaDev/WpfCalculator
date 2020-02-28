@@ -270,7 +270,7 @@ namespace Miniräknare
             {
                 var result = box.ResultValue;
                 if (result.Code == EvalCode.ErroredReference &&
-                    ((ExpressionBoxState)result.Value.Enum).HasFlag(ExpressionBoxState.CyclicReferences))
+                    ((ExpressionBoxState)result.Values.First.Enum).HasFlag(ExpressionBoxState.CyclicReferences))
                     return CyclicReferenceType.Nested;
             }
             return CyclicReferenceType.None;
@@ -315,9 +315,10 @@ namespace Miniräknare
                 case EvalCode.ErroredFunction:
                 case EvalCode.ErroredOperator:
                 case EvalCode.ErroredReference:
-                    if (eval.Value.Type == UnionValueType.Enum)
+                    var first = eval.Values.First;
+                    if (first.ValueType == UnionValueType.Enum)
                     {
-                        var state = (ExpressionBoxState)eval.Value.Enum;
+                        var state = (ExpressionBoxState)first.Enum;
                         state &= ~ExpressionBoxState.NestedError;
                         switch (state)
                         {
@@ -361,8 +362,10 @@ namespace Miniräknare
         }
 
         private Evaluation ResolveFunction(
-            ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
+            ReadOnlyMemory<char> name, ReadOnlySpan<UnionValueCollection> arguments)
         {
+            var firstArg = (arguments.Length > 0 ? arguments[0] : default).First;
+
             if (name.Span.SequenceEqual("sin"))
             {
                 int expectedArgCount = 1;
@@ -370,7 +373,7 @@ namespace Miniräknare
                     return new Evaluation(
                         EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Sin(arguments[0].Double * 0.0174532925)));
+                return new Evaluation(new UnionValue(Math.Sin(firstArg.Double * 0.0174532925)));
             }
             else if (name.Span.SequenceEqual("cos"))
             {
@@ -379,7 +382,7 @@ namespace Miniräknare
                     return new Evaluation(
                         EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Cos(arguments[0].Double * 0.0174532925)));
+                return new Evaluation(new UnionValue(Math.Cos(firstArg.Double * 0.0174532925)));
             }
             if (name.Span.SequenceEqual("asin"))
             {
@@ -388,7 +391,7 @@ namespace Miniräknare
                     return new Evaluation(
                         EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Asin(arguments[0].Double) * 57.2957795));
+                return new Evaluation(new UnionValue(Math.Asin(firstArg.Double) * 57.2957795));
             }
             else if (name.Span.SequenceEqual("acos"))
             {
@@ -397,7 +400,7 @@ namespace Miniräknare
                     return new Evaluation(
                         EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Acos(arguments[0].Double) * 57.2957795));
+                return new Evaluation(new UnionValue(Math.Acos(firstArg.Double) * 57.2957795));
             }
             else if (name.Span.SequenceEqual("round"))
             {
@@ -406,36 +409,53 @@ namespace Miniräknare
                     return new Evaluation(
                         EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Round(arguments[0].Double)));
+                return new Evaluation(new UnionValue(Math.Round(firstArg.Double)));
+            }
+            else if (name.Span.SequenceEqual("sqrt"))
+            {
+                int expectedArgCount = 1;
+                if (arguments.Length != expectedArgCount)
+                    return new Evaluation(
+                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+
+                double input = firstArg.Double;
+                if (input < 0)
+                    return new Evaluation(EvalCode.InvalidArguments);
+
+                double result = Math.Sqrt(input);
+                return new Evaluation(new UnionValue(result));
             }
             return new Evaluation(EvalCode.UnresolvedFunction, name);
         }
 
         public static Evaluation ResolveOperator(
-            ReadOnlyMemory<char> name, UnionValue? left, UnionValue? right)
+            ReadOnlyMemory<char> name, UnionValueCollection? left, UnionValueCollection? right)
         {
             if (name.Length != 1)
                 return new Evaluation(EvalCode.UnresolvedOperator, name);
 
+            var firstLeft = left.GetValueOrDefault().First.Double;
+            var firstRight = right.GetValueOrDefault().First.Double;
+
             switch (name.Span[0])
             {
-                case '+': return left.GetValueOrDefault().Double + right.Value.Double;
+                case '+': return firstLeft + firstRight;
 
                 case '-':
                 case '–':
-                    return left.GetValueOrDefault().Double - right.Value.Double;
+                    return firstLeft - firstRight;
 
-                case '*': return left.Value.Double * right.Value.Double;
+                case '*': return firstLeft * firstRight;
 
                 case ':':
-                case '/': return left.Value.Double / right.Value.Double;
+                case '/': return firstLeft / firstRight;
 
-                case '%': return left.Value.Double % right.Value.Double;
+                case '%': return firstLeft % firstRight;
 
-                case '^': return Math.Pow(left.Value.Double, right.Value.Double);
+                case '^': return Math.Pow(firstLeft, firstRight);
 
                 case '!':
-                    double number = left.Value.Double;
+                    double number = firstLeft;
                     double result = 1;
                     while (number != 1)
                     {

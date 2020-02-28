@@ -13,10 +13,10 @@ namespace Miniräknare.Expressions
             ReadOnlyMemory<char> name);
 
         public delegate Evaluation ExecuteOperatorDelegate(
-            ReadOnlyMemory<char> name, UnionValue? left, UnionValue? right);
+            ReadOnlyMemory<char> name, UnionValueCollection? left, UnionValueCollection? right);
 
         public delegate Evaluation ExecuteFunctionDelegate(
-            ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments);
+            ReadOnlyMemory<char> name, ReadOnlySpan<UnionValueCollection> arguments);
 
         public ResolveReferenceDelegate ResolveReference { get; }
         public ExecuteOperatorDelegate ExecuteOperator { get; }
@@ -150,12 +150,12 @@ namespace Miniräknare.Expressions
                     return rightEvalValue;
             }
 
-            return ExecuteOperator.Invoke(op.Value, leftEval?.Value, rightEval?.Value);
+            return ExecuteOperator.Invoke(op.Value, leftEval?.Values, rightEval?.Values);
         }
 
         private Evaluation EvaluateFunction(ExpressionOptions options, FunctionToken function)
         {
-            Span<UnionValue> argValues = stackalloc UnionValue[function.ArgumentCount];
+            var argValues = new UnionValueCollection[function.ArgumentCount];
             int valueIndex = 0;
             for (int i = 0; i < function.ArgumentList.Count; i++)
             {
@@ -166,7 +166,7 @@ namespace Miniräknare.Expressions
                 if (eval.Code != EvalCode.Ok)
                     return eval;
 
-                argValues[valueIndex] = eval.Value;
+                argValues[valueIndex] = eval.Values;
                 valueIndex++;
             }
             return ExecuteFunction.Invoke(function.Name.Value, argValues);

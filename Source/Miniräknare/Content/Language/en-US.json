@@ -81,7 +81,12 @@
 			}
 		},
 
+		"Fields": {
+		},
+
 		"Other": {
+			"Remove": "Remove",
+
 			"Loading": {
 				"InternalFormulas": "Loading internal formulas..."
 			}

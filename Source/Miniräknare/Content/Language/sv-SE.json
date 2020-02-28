@@ -81,7 +81,12 @@
 			}
 		},
 
+		"Fields": {
+		},
+
 		"Other": {
+			"Remove": "Ta bort",
+
 			"Loading": {
 				"InternalFormulas": "Laddar interna formler..."
 			}

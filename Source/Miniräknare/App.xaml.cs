@@ -96,7 +96,7 @@ namespace Miniräknare
                             }
                             else
                             {
-                                double evalValue = eval.Value.Double;
+                                double evalValue = eval.Values.First.Double;
                                 string textValue = double.IsInfinity(evalValue) ? "Infinity" : evalValue.ToString();
                                 Console.WriteLine("Eval: " + textValue);
                             }
@@ -116,7 +116,8 @@ namespace Miniräknare
             throw new NotImplementedException();
         }
 
-        public static Evaluation ResolveFunction(ReadOnlyMemory<char> name, ReadOnlySpan<UnionValue> arguments)
+        public static Evaluation ResolveFunction(
+            ReadOnlyMemory<char> name, ReadOnlySpan<UnionValueCollection> arguments)
         {
             return new Evaluation(EvalCode.UnresolvedFunction);
         }

@@ -3,34 +3,47 @@ using System.Runtime.InteropServices;
 
 namespace Miniräknare
 {
-    public enum UnionValueType : int
-    {
-        Null = 0,
-        Float,
-        Double,
-        Long,
-        ULong,
-        Enum
-    }
+    using VType = UnionValueType;
+    using NGroup = NumberGroup;
 
     [StructLayout(LayoutKind.Explicit)]
     public readonly struct UnionValue : IEquatable<UnionValue>
     {
-        public static UnionValue Null { get; } = new UnionValue(UnionValueType.Null);
+        public const int ValueOffset = sizeof(VType) + sizeof(NGroup);
 
-        [field: FieldOffset(0)] public UnionValueType Type { get; }
-        [field: FieldOffset(sizeof(UnionValueType))] public float Float { get; }
-        [field: FieldOffset(sizeof(UnionValueType))] public double Double { get; }
-        [field: FieldOffset(sizeof(UnionValueType))] public long Long { get; }
-        [field: FieldOffset(sizeof(UnionValueType))] public ulong ULong { get; }
+        public static UnionValue Null { get; } = new UnionValue(VType.Null);
+
+        [field: FieldOffset(0)] public VType ValueType { get; }
+        [field: FieldOffset(sizeof(VType))] public NGroup NumberGroup { get; }
+
+        [field: FieldOffset(ValueOffset)] public float Float { get; }
+        [field: FieldOffset(ValueOffset)] public double Double { get; }
+        [field: FieldOffset(ValueOffset)] public long Long { get; }
+        [field: FieldOffset(ValueOffset)] public ulong ULong { get; }
+        [field: FieldOffset(ValueOffset)] public decimal Decimal { get; }
+
         public ulong Enum => ULong;
 
-        private UnionValue(UnionValueType type) : this() => Type = type;
-        private UnionValue(UnionValueType type, ulong value) : this(type) => ULong = value;
+        private UnionValue(VType valueType, NGroup numberGroup) : this()
+        {
+            NumberGroup = numberGroup;
+            ValueType = valueType;
+        }
 
-        public UnionValue(double value) : this(UnionValueType.Double) => Double = value;
-        public UnionValue(float value) : this(UnionValueType.Float) => Float = value;
-        public UnionValue(long value) : this(UnionValueType.Long) => Long = value;
+        private UnionValue(VType valueType) : this(valueType, NGroup.Real)
+        {
+        }
+
+        private UnionValue(VType valueType, NGroup numberGroup, ulong value) :
+            this(valueType, numberGroup)
+        {
+            ULong = value;
+        }
+
+        public UnionValue(double value, NGroup numberType = default) : this(VType.Double, numberType) => Double = value;
+        public UnionValue(float value, NGroup numberType = default) : this(VType.Float, numberType) => Float = value;
+        public UnionValue(long value, NGroup numberType = default) : this(VType.Long, numberType) => Long = value;
+        public UnionValue(decimal value, NGroup numberType = default) : this(VType.Decimal, numberType) => Decimal = value;
 
         public static implicit operator UnionValue(double value) => new UnionValue(value);
         public static implicit operator UnionValue(float value) => new UnionValue(value);
@@ -38,35 +51,38 @@ namespace Miniräknare
         public static UnionValue FromEnum<TEnum>(TEnum value)
             where TEnum : Enum, IConvertible
         {
-            return new UnionValue(UnionValueType.Enum, value.ToUInt64(null));
+            return new UnionValue(VType.Enum, NGroup.Real, value.ToUInt64(null));
         }
 
         public bool Equals(UnionValue other)
         {
-            switch (Type & other.Type)
+            if (NumberGroup != other.NumberGroup)
+                return false;
+
+            switch (ValueType & other.ValueType)
             {
-                case UnionValueType.Double: return Double == other.Double;
-                case UnionValueType.Float: return Float == other.Float;
-                case UnionValueType.Long: return Long == other.Long;
+                case VType.Double: return Double == other.Double;
+                case VType.Float: return Float == other.Float;
+                case VType.Long: return Long == other.Long;
 
-                case UnionValueType.Enum:
-                case UnionValueType.ULong: return ULong == other.ULong;
+                case VType.Enum:
+                case VType.ULong: return ULong == other.ULong;
 
-                case UnionValueType.Null:
+                case VType.Null:
                 default:
-                    return Type == UnionValueType.Null
-                        && other.Type == UnionValueType.Null;
+                    return ValueType == VType.Null
+                        && other.ValueType == VType.Null;
             }
         }
 
         public double ToDouble()
         {
-            return Type switch
+            return ValueType switch
             {
-                UnionValueType.Float => Float,
-                UnionValueType.Long => Long,
-                UnionValueType.ULong => ULong,
-                UnionValueType.Enum => Enum,
+                VType.Float => Float,
+                VType.Long => Long,
+                VType.ULong => ULong,
+                VType.Enum => Enum,
                 _ => Double,
             };
         }
@@ -86,14 +102,14 @@ namespace Miniräknare
         /// </summary>
         public string ToString(bool suffix, string format = null)
         {
-            return Type switch
+            return ValueType switch
             {
-                UnionValueType.Double => Double.ToString(format) + (suffix ? "d" : ""),
-                UnionValueType.Float => Float.ToString(format) + (suffix ? "f" : ""),
-                UnionValueType.Long => Long.ToString(format) + (suffix ? "l" : ""),
-                UnionValueType.ULong => ULong.ToString(format) + (suffix ? "ul" : ""),
-                UnionValueType.Enum => Enum.ToString(format) + (suffix ? "enum" : ""),
-                UnionValueType.Null => "null",
+                VType.Double => Double.ToString(format) + (suffix ? "d" : ""),
+                VType.Float => Float.ToString(format) + (suffix ? "f" : ""),
+                VType.Long => Long.ToString(format) + (suffix ? "l" : ""),
+                VType.ULong => ULong.ToString(format) + (suffix ? "ul" : ""),
+                VType.Enum => Enum.ToString(format) + (suffix ? "enum" : ""),
+                VType.Null => "null",
                 _ => string.Empty,
             };
         }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -43,6 +44,11 @@ namespace Miniräknare
             
             if (request != null)
                 ((TextBox)e.OriginalSource).MoveFocus(request);
+        }
+
+        private void OpenContextMenu(object sender, RoutedEventArgs e)
+        {
+            MainGrid.ContextMenu.IsOpen = true;
         }
     }
 }

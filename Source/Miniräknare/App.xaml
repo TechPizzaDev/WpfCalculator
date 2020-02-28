@@ -19,6 +19,7 @@
                 
                 <ResourceDictionary Source="Xaml/Styles/ColorStyles.xaml" />
                 <ResourceDictionary Source="Xaml/Styles/ElementStyles.xaml" />
+                <ResourceDictionary Source="Xaml/ContextMenus.xaml" />
             </ResourceDictionary.MergedDictionaries>
             
         </ResourceDictionary>

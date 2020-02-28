@@ -4,17 +4,18 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:l="clr-namespace:Miniräknare">
 
-    <Grid>
+    <Grid x:Name="MainGrid" ContextMenu="{StaticResource Menu_FieldOptions}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="20" />
         </Grid.ColumnDefinitions>
-        
+
         <ItemsControl x:Name="FormulaList" Grid.Column="0"
                       HorizontalContentAlignment="Stretch" IsTabStop="False"
                       Background="Transparent" BorderThickness="0" Padding="0" />
 
-        <Button Grid.Column="1" Margin="4,3,0,0" Style="{StaticResource Button_FieldOptions}" />
+        <Button Grid.Column="1" Margin="4,3,0,0" Style="{StaticResource Button_FieldOptions}" 
+                Click="OpenContextMenu" />
     </Grid>
-    
+
 </UserControl>

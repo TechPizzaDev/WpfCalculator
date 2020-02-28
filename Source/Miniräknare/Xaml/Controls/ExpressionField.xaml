@@ -4,32 +4,29 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:l="clr-namespace:Miniräknare">
 
-    <Grid>
+    <Grid x:Name="MainGrid" ContextMenu="{StaticResource Menu_FieldOptions}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="20" />
         </Grid.ColumnDefinitions>
 
-        <Button Grid.Column="1" Margin="4,3,0,0" Style="{StaticResource Button_FieldOptions}" />
+        <l:ExpressionBox Grid.Row="0" Grid.Column="0" x:Name="InputBox" Margin="0,5,0,5" />
 
-        <Grid Grid.Column="0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+        <StackPanel Grid.Row="1" Grid.Column="0"
+                        Orientation="Horizontal" Margin="0,2,0,0" HorizontalAlignment="Stretch">
 
-            <l:ExpressionBox Grid.Row="0" x:Name="InputBox" Margin="0,5,0,5" />
+            <Image x:Name="StateImage" Width="40" Height="40" Margin="-2,0,0,2"/>
 
-            <StackPanel Grid.Row="1" Orientation="Horizontal" 
-                        Margin="0,2,0,0" HorizontalAlignment="Stretch">
-
-                <Image x:Name="StateImage" Width="40" Height="40" Margin="-2,0,0,2"/>
-
-                <TextBox x:Name="ResultBox" IsReadOnly="True" 
+            <TextBox x:Name="ResultBox" Grid.Column="0" IsReadOnly="True" 
                      FontSize="24" FontFamily="Consolas" BorderThickness="0"
                      Margin="2,0,0,0" VerticalAlignment="Center"  />
-            </StackPanel>
-        </Grid>
+        </StackPanel>
+
+        <Button Grid.Column="1" Margin="4,3,0,0" Style="{StaticResource Button_FieldOptions}"
+                Click="OpenContextMenu" />
     </Grid>
-    
 </UserControl>
