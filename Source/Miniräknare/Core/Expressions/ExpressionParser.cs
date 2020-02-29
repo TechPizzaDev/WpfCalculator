@@ -132,7 +132,8 @@ namespace Miniräknare.Expressions
                 {
                     if (leftToken.Type == TokenType.Operator ||
                         leftToken.Type == TokenType.DecimalDigit ||
-                        leftToken.Type == TokenType.DecimalNumber)
+                        leftToken.Type == TokenType.DecimalNumber ||
+                        leftToken.Type == TokenType.List)
                         continue;
                     return ResultCode.InvalidTokenBeforeList;
                 }
@@ -176,9 +177,9 @@ namespace Miniräknare.Expressions
                     leftToken.Type == TokenType.Name)
                     continue;
 
-                if (leftToken.Type != TokenType.List &&
-                    leftToken.Type != TokenType.DecimalDigit &&
-                    leftToken.Type != TokenType.DecimalNumber)
+                if (leftToken.Type != TokenType.DecimalDigit &&
+                    leftToken.Type != TokenType.DecimalNumber &&
+                    leftToken.Type != TokenType.List)
                     return ResultCode.InvalidTokenBeforeList;
 
                 var multiplyOpDef = options.GetOperatorDefinition(OperatorType.Multiply);
