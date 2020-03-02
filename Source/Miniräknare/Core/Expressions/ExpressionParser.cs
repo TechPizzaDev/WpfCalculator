@@ -23,7 +23,7 @@ namespace Miniräknare.Expressions
             EmptyList // TODO
         }
 
-        public static ResultCode Parse(List<Token> tokens, ExpressionOptions options)
+        public static ResultCode Parse(ExpressionOptions options, List<Token> tokens)
         {
             if (tokens == null) throw new ArgumentNullException(nameof(tokens));
             if (options == null) throw new ArgumentNullException(nameof(options));
@@ -42,7 +42,7 @@ namespace Miniräknare.Expressions
 
         public static ResultCode Parse(ExpressionTree tree)
         {
-            return Parse(tree.Tokens, tree.Options);
+            return Parse(tree.ExpressionOptions, tree.Tokens);
         }
 
         #region MakeLists
@@ -54,8 +54,8 @@ namespace Miniräknare.Expressions
 
             for (int i = 0; i < tokens.Count; i++)
             {
-                var currentToken = tokens[i];
-                var currentType = currentToken.Type;
+                var token = tokens[i];
+                var currentType = token.Type;
 
                 if (currentType == TokenType.ListStart)
                 {
@@ -69,7 +69,7 @@ namespace Miniräknare.Expressions
                     if (listStack.Count == 0)
                         return ResultCode.ListEndWithoutStart;
 
-                    var listToken = new ListToken(listStack[ListDepth()]);
+                    var listToken = new ListToken(token.Parent, listStack[ListDepth()]);
                     listStack.RemoveAt(ListDepth());
 
                     if (ListDepth() > -1)
@@ -90,7 +90,7 @@ namespace Miniräknare.Expressions
                 {
                     if (ListDepth() > -1)
                     {
-                        listStack[ListDepth()].Add(currentToken);
+                        listStack[ListDepth()].Add(token);
                         tokens.RemoveAt(i--);
                     }
                     else
@@ -139,7 +139,7 @@ namespace Miniräknare.Expressions
                 }
 
                 var nameToken = (ValueToken)leftToken;
-                var funcToken = new FunctionToken(nameToken, listToken);
+                var funcToken = new FunctionToken(token.Parent, nameToken, listToken);
 
                 tokens[i - 1] = funcToken; // replace left token
                 tokens.RemoveAt(i); // remove current token
@@ -186,7 +186,7 @@ namespace Miniräknare.Expressions
                 if (multiplyOpDef == null)
                     return ResultCode.MissingMultiplicationDefinition;
 
-                var opToken = new ValueToken(TokenType.Operator, multiplyOpDef.Names[0]);
+                var opToken = new ValueToken(token.Parent, TokenType.Operator, multiplyOpDef.Names[0]);
                 tokens.Insert(i, opToken);
             }
             return ResultCode.Ok;
@@ -259,6 +259,8 @@ namespace Miniräknare.Expressions
                             opIndex += shift;
                     }
 
+                    var token = currentTokens[opIndex];
+
                     Token leftToken = null;
                     Token rightToken = null;
 
@@ -300,7 +302,7 @@ namespace Miniräknare.Expressions
                                 int secondRight = opIndex + 2;
                                 if (secondRight < currentTokens.Count)
                                 {
-                                    rightToken = new ListToken(new List<Token>(2)
+                                    rightToken = new ListToken(token.Parent, new List<Token>(2)
                                     {
                                         rightToken,
                                         currentTokens[secondRight]
@@ -333,7 +335,7 @@ namespace Miniräknare.Expressions
                         resultList.Add(rightToken);
 
                     int firstIndex = opIndex - (leftToken != null ? 1 : 0);
-                    var resultToken = new ListToken(resultList);
+                    var resultToken = new ListToken(token.Parent, resultList);
                     currentTokens[firstIndex] = resultToken;
                     currentTokens.RemoveRange(firstIndex + 1, resultList.Count - 1);
 

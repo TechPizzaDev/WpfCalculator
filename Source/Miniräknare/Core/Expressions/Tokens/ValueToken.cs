@@ -8,7 +8,8 @@ namespace Miniräknare.Expressions.Tokens
     {
         public ReadOnlyMemory<char> Value { get; }
 
-        public ValueToken(TokenType type, ReadOnlyMemory<char> value) : base(type)
+        public ValueToken(ListToken parent, TokenType type, ReadOnlyMemory<char> value) 
+            : base(parent, type)
         {
             Value = value;
         }

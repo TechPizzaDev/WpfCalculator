@@ -7,10 +7,12 @@ namespace Miniräknare.Expressions.Tokens
     [DebuggerDisplay("{Type}")]
     public abstract class Token
     {
+        public ListToken Parent { get; }
         public TokenType Type { get; }
 
-        public Token(TokenType type)
+        public Token(ListToken parent, TokenType type)
         {
+            Parent = parent;
             Type = type;
         }
     }

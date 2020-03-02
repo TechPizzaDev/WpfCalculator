@@ -47,6 +47,8 @@ namespace Miniräknare
             //TestExpressionLoop();
         }
 
+        #region TestExpressionLoop
+
         private static void TestExpressionLoop()
         {
             static void Print(IEnumerable<Token> tt)
@@ -122,6 +124,8 @@ namespace Miniräknare
             return new Evaluation(EvalCode.UnresolvedFunction);
         }
 
+        #endregion
+
         #region Startup
 
         protected override void OnStartup(StartupEventArgs e)
@@ -182,6 +186,7 @@ namespace Miniräknare
             }
 
             var tmpStringBuilder = new StringBuilder();
+            var tmpTokenList = new List<Token>();
             for (int i = 0; i < pairs.Count; i++)
             {
                 try
@@ -190,9 +195,7 @@ namespace Miniräknare
                     var stream = pair.Value;
 
                     var formulaData = MathFormulaData.Load(stream);
-                    var formula = new MathFormula(formulaData);
-
-
+                    var formula = new MathFormula(ExpressionOptions.Default, formulaData);
                 }
                 catch (Exception ex)
                 {

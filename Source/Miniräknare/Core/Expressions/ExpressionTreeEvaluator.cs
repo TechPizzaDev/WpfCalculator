@@ -34,7 +34,7 @@ namespace Miniräknare.Expressions
 
         public Evaluation Evaluate(ExpressionTree tree)
         {
-            return Evaluate(tree.Tokens, tree.Options);
+            return Evaluate(tree.Tokens, tree.ExpressionOptions);
         }
 
         public Evaluation Evaluate(List<Token> tokens, ExpressionOptions options)

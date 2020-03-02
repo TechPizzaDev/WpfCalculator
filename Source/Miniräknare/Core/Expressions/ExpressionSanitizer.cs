@@ -286,7 +286,7 @@ namespace Miniräknare.Expressions
                     builder.Append(((ValueToken)nextToken).Value);
                     var decimalString = builder.ToString().AsMemory();
 
-                    var decimalToken = new ValueToken(TokenType.DecimalNumber, decimalString);
+                    var decimalToken = new ValueToken(token.Parent, TokenType.DecimalNumber, decimalString);
                     tokens[i] = decimalToken; // replace the current token
                     tokens.RemoveAt(i + 1); // remove the next token
 

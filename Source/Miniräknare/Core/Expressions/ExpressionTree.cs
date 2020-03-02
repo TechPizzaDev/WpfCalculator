@@ -4,14 +4,16 @@ using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare.Expressions
 {
-    public class ExpressionTree
+    public class ExpressionTree : IExpressionTree
     {
-        public ExpressionOptions Options { get; }
+        public ExpressionOptions ExpressionOptions { get; }
         public List<Token> Tokens { get; }
+
+        IReadOnlyList<Token> IExpressionTree.Tokens => Tokens;
 
         public ExpressionTree(ExpressionOptions options, List<Token> tokens)
         {
-            Options = options ?? throw new ArgumentNullException(nameof(options));
+            ExpressionOptions = options ?? throw new ArgumentNullException(nameof(options));
             Tokens = tokens ?? throw new ArgumentNullException(nameof(tokens));
         }
 

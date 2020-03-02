@@ -6,8 +6,7 @@ namespace Miniräknare
     [JsonObject]
     public class MathFormulaData
     {
-        public string[] Inputs { get; set; }
-        public string[] Outputs { get; set; }
+        public string Formula { get; set; }
 
         public MathFormulaData()
         {

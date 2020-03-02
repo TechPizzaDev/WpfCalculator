@@ -1,11 +1,3 @@
 ﻿{
-  "inputs": [
-    "Force",
-    "Area"
-  ],
-  "outputs": [
-    "Force",
-    "/",
-    "Area"
-  ]
+  "formula": "Force+Area"
 }

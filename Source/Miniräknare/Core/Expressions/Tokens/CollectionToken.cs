@@ -20,7 +20,8 @@ namespace Miniräknare.Expressions.Tokens
             set => Children[index] = value;
         }
 
-        public CollectionToken(TokenType type, List<Token> children) : base(type)
+        public CollectionToken(ListToken parent, TokenType type, List<Token> children) 
+            : base(parent, type)
         {
             Children = children ?? throw new ArgumentNullException(nameof(children));
         }
