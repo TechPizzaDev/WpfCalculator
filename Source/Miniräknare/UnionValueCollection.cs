@@ -8,27 +8,27 @@ namespace Miniräknare
     {
         public static UnionValueCollection Empty { get; } = default;
 
-        private readonly UnionValue _value;
-        private readonly UnionValue[] _values;
+        private readonly UnionValue _first;
+        private readonly UnionValue[] _items;
 
-        public UnionValue First => Values.Length == 0 ? _value : Values[0];
-        public UnionValue[] Values => _values ?? Array.Empty<UnionValue>();
+        public UnionValue First => Items.Length == 0 ? _first : Items[0];
+        public UnionValue[] Items => _items ?? Array.Empty<UnionValue>();
 
-        public int Length => _values == null ? 1 : Values.Length;
+        public int Length => _items == null ? 1 : Items.Length;
 
         public UnionValueCollection(UnionValue value) : this()
         {
-            _value = value;
+            _first = value;
         }
 
         public UnionValueCollection(ReadOnlySpan<UnionValue> values) : this()
         {
-            _values = values.ToArray();
+            _items = values.ToArray();
         }
 
         public UnionValueCollection(IEnumerable<UnionValue> values) : this()
         {
-            _values = values.ToArray();
+            _items = values.ToArray();
         }
 
         public static implicit operator UnionValueCollection(UnionValue value)

@@ -436,7 +436,7 @@ namespace Miniräknare.Expressions
                 if (removeTokens)
                     tokens.RemoveRange(offset, length);
 
-                resultToken = new ValueToken(resultType, builder.ToString().AsMemory());
+                resultToken = new ValueToken(null, resultType, builder.ToString().AsMemory());
                 return true;
             }
             resultToken = default;

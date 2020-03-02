@@ -8,9 +8,9 @@
         DecimalSeparator,
         Name,
         Operator,
-        ListSeparator,
         ListStart,
         ListEnd,
+        ListSeparator,
         WhiteSpace,
         Space,
 

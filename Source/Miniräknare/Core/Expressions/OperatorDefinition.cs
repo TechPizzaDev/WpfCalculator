@@ -6,31 +6,31 @@ namespace Miniräknare.Expressions
     public class OperatorDefinition
     {
         public ReadOnlyMemory<char>[] Names { get; }
-        public int Priority { get; }
+        public int Precedence { get; }
 
         public OperatorType Type { get; }
-        public OperatorSidedness Sidedness { get; }
+        public OperatorAssociativity Associativity { get; }
 
         public OperatorDefinition(
             char[] names, 
-            int priority,
+            int precedence,
             OperatorType type,
-            OperatorSidedness sidedness)
+            OperatorAssociativity associativity)
         {
             if (names == null) throw new ArgumentNullException(nameof(names));
             if (names.Length == 0) throw new ArgumentException(nameof(names));
 
             Names = names.Select(x => new ReadOnlyMemory<char>(new[] { x })).ToArray();
-            Priority = priority;
+            Precedence = precedence;
             Type = type;
-            Sidedness = sidedness;
+            Associativity = associativity;
         }
 
         public OperatorDefinition(
             char name,
             int priority,
             OperatorType type,
-            OperatorSidedness sidedness) :
+            OperatorAssociativity sidedness) :
             this(new[] { name }, priority, type, sidedness)
         {
         }

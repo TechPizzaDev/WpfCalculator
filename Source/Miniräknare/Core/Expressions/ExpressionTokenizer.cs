@@ -84,7 +84,7 @@ namespace Miniräknare.Expressions
                 if (length > 0)
                 {
                     var slice = text.Slice(lastOffset, length);
-                    output.Add(new ValueToken(currentType, slice));
+                    output.Add(new ValueToken(null, currentType, slice));
                 }
             }
 
@@ -111,15 +111,25 @@ namespace Miniräknare.Expressions
 
         private static bool IsOperator(char c)
         {
+            // TODO: check in ExpressionOptions.Default instead
             switch (c)
             {
                 case '+':
+
                 case '-':
                 case '–':
+
                 case '/':
-                case '*':
+                case ':':
+                case '÷':
+
                 case '%':
+
+                case '*':
+                case '×':
+
                 case '^':
+
                 case '!':
                     return true;
 

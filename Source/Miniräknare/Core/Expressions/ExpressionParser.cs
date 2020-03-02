@@ -223,7 +223,7 @@ namespace Miniräknare.Expressions
                         continue;
 
                     var opToken = (ValueToken)token;
-                    var opDef = options.GetOperatorDefinition(opToken.Value.Span);
+                    var opDef = options.GetOperatorDefinition(opToken.Value);
                     if (opDef == null)
                         return ResultCode.UnknownSymbol;
 
@@ -232,8 +232,8 @@ namespace Miniräknare.Expressions
 
                 opIndices.Sort((x, y) =>
                 {
-                    int xPriority = x.definition?.Priority ?? 0;
-                    int yPriority = y.definition?.Priority ?? 0;
+                    int xPriority = x.definition?.Precedence ?? 0;
+                    int yPriority = y.definition?.Precedence ?? 0;
 
                     // Sort types in descending order.
                     int priorityCompare = yPriority.CompareTo(xPriority);
@@ -265,12 +265,11 @@ namespace Miniräknare.Expressions
                     Token rightToken = null;
 
                     int left = opIndex - 1;
-                    if (opDef?.Sidedness != OperatorSidedness.Right)
+                    if (opDef?.Associativity != OperatorAssociativity.Right)
                     {
                         if (left < 0)
                         {
-                            if (opDef?.Sidedness == OperatorSidedness.Left ||
-                                opDef?.Sidedness == OperatorSidedness.OptionalRight)
+                            if (opDef?.Associativity == OperatorAssociativity.Left)
                                 return ResultCode.OperatorMissingLeftValue;
                         }
                         else
@@ -282,12 +281,11 @@ namespace Miniräknare.Expressions
                         continue;
 
                     int right = opIndex + 1;
-                    if (opDef?.Sidedness != OperatorSidedness.Left)
+                    if (opDef?.Associativity != OperatorAssociativity.Left)
                     {
                         if (right >= currentTokens.Count)
                         {
-                            if (opDef?.Sidedness == OperatorSidedness.Right ||
-                                opDef?.Sidedness == OperatorSidedness.OptionalLeft)
+                            if (opDef?.Associativity == OperatorAssociativity.Right)
                                 return ResultCode.OperatorMissingRightValue;
                         }
                         else

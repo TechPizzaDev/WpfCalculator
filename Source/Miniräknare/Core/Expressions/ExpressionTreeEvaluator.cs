@@ -34,10 +34,10 @@ namespace Miniräknare.Expressions
 
         public Evaluation Evaluate(ExpressionTree tree)
         {
-            return Evaluate(tree.Tokens, tree.ExpressionOptions);
+            return Evaluate(tree.ExpressionOptions, tree.Tokens);
         }
 
-        public Evaluation Evaluate(List<Token> tokens, ExpressionOptions options)
+        public Evaluation Evaluate(ExpressionOptions options, List<Token> tokens)
         {
             if (tokens.Count == 0)
             {
@@ -59,7 +59,7 @@ namespace Miniräknare.Expressions
                     for (int j = 0; j < opDefinitions.Length; j++)
                     {
                         var opDef = opDefinitions[j];
-                        if (opDef.Sidedness == OperatorSidedness.Both)
+                        if (opDef.Associativity == OperatorAssociativity.Both)
                             continue;
 
                         var opToken = (ValueToken)token;
@@ -85,10 +85,10 @@ namespace Miniräknare.Expressions
             return Evaluation.Undefined;
         }
 
-        private Evaluation EvaluateToken(ExpressionOptions options, Token token)
+        public Evaluation EvaluateToken(ExpressionOptions options, Token token)
         {
             if (token is ListToken listToken)
-                return Evaluate(listToken.Children, options);
+                return Evaluate(options, listToken.Children);
 
             if (token is ValueToken valueToken)
             {
@@ -118,20 +118,18 @@ namespace Miniräknare.Expressions
             return Evaluation.Undefined;
         }
 
-        private Evaluation EvaluateOperator(
+        public Evaluation EvaluateOperator(
             ExpressionOptions options, ValueToken op, Token left, Token right)
         {
-            var opDef = options.GetOperatorDefinition(op.Value.Span);
+            var opDef = options.GetOperatorDefinition(op.Value);
             if (left == null && (
-                opDef?.Sidedness == OperatorSidedness.Both ||
-                opDef?.Sidedness == OperatorSidedness.Left ||
-                opDef?.Sidedness == OperatorSidedness.OptionalRight))
+                opDef?.Associativity == OperatorAssociativity.Both ||
+                opDef?.Associativity == OperatorAssociativity.Left))
                 return new Evaluation(EvalCode.OperatorMissingLeftValue);
 
             if (right == null && (
-                opDef?.Sidedness == OperatorSidedness.Both ||
-                opDef?.Sidedness == OperatorSidedness.Right ||
-                opDef?.Sidedness == OperatorSidedness.OptionalLeft))
+                opDef?.Associativity == OperatorAssociativity.Both ||
+                opDef?.Associativity == OperatorAssociativity.Right))
                 return new Evaluation(EvalCode.OperatorMissingRightValue);
 
             var leftEval = left != null ? EvaluateToken(options, left) : (Evaluation?)null;
@@ -153,7 +151,7 @@ namespace Miniräknare.Expressions
             return ExecuteOperator.Invoke(op.Value, leftEval?.Values, rightEval?.Values);
         }
 
-        private Evaluation EvaluateFunction(ExpressionOptions options, FunctionToken function)
+        public Evaluation EvaluateFunction(ExpressionOptions options, FunctionToken function)
         {
             var argValues = new UnionValueCollection[function.ArgumentCount];
             int valueIndex = 0;
