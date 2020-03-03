@@ -122,15 +122,18 @@ namespace Miniräknare.Expressions
             ExpressionOptions options, ValueToken op, Token left, Token right)
         {
             var opDef = options.GetOperatorDefinition(op.Value);
-            if (left == null && (
-                opDef?.Associativity == OperatorSidedness.Both ||
-                (bool)opDef?.Associativity.HasFlag(OperatorSidedness.Left)))
-                return new Evaluation(EvalCode.OperatorMissingLeftValue);
+            if (opDef != null)
+            {
+                if (left == null && (
+                    opDef.Associativity == OperatorSidedness.Both ||
+                    opDef.Associativity.HasFlag(OperatorSidedness.Left)))
+                    return new Evaluation(EvalCode.OperatorMissingLeftValue);
 
-            if (right == null && (
-                opDef?.Associativity == OperatorSidedness.Both ||
-                 (bool)opDef?.Associativity.HasFlag(OperatorSidedness.Right)))
-                return new Evaluation(EvalCode.OperatorMissingRightValue);
+                if (right == null && (
+                    opDef.Associativity == OperatorSidedness.Both ||
+                    opDef.Associativity.HasFlag(OperatorSidedness.Right)))
+                    return new Evaluation(EvalCode.OperatorMissingRightValue);
+            }
 
             var leftEval = left != null ? Evaluate(options, left) : (Evaluation?)null;
             if (leftEval.HasValue)

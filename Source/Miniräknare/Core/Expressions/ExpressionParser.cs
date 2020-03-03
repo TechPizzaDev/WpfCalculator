@@ -259,8 +259,6 @@ namespace Miniräknare.Expressions
                             opIndex += shift;
                     }
 
-                    var token = currentTokens[opIndex];
-
                     Token leftToken = null;
                     Token rightToken = null;
 
@@ -269,7 +267,7 @@ namespace Miniräknare.Expressions
                     {
                         if (left < 0)
                         {
-                            if ((bool)opDef?.Associativity.HasFlag(OperatorSidedness.Left))
+                            if (opDef != null && opDef.Associativity.HasFlag(OperatorSidedness.Left))
                                 return ResultCode.OperatorMissingLeftValue;
                         }
                         else
@@ -300,7 +298,7 @@ namespace Miniräknare.Expressions
                                 int secondRight = opIndex + 2;
                                 if (secondRight < currentTokens.Count)
                                 {
-                                    rightToken = new ListToken(token.Parent, new List<Token>(2)
+                                    rightToken = new ListToken(opToken.Parent, new List<Token>(2)
                                     {
                                         rightToken,
                                         currentTokens[secondRight]
@@ -333,7 +331,7 @@ namespace Miniräknare.Expressions
                         resultList.Add(rightToken);
 
                     int firstIndex = opIndex - (leftToken != null ? 1 : 0);
-                    var resultToken = new ListToken(token.Parent, resultList);
+                    var resultToken = new ListToken(opToken.Parent, resultList);
                     currentTokens[firstIndex] = resultToken;
                     currentTokens.RemoveRange(firstIndex + 1, resultList.Count - 1);
 
