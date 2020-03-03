@@ -265,11 +265,11 @@ namespace Miniräknare.Expressions
                     Token rightToken = null;
 
                     int left = opIndex - 1;
-                    if (opDef?.Associativity != OperatorAssociativity.Right)
+                    if (opDef?.Associativity != OperatorSidedness.Right)
                     {
                         if (left < 0)
                         {
-                            if (opDef?.Associativity == OperatorAssociativity.Left)
+                            if ((bool)opDef?.Associativity.HasFlag(OperatorSidedness.Left))
                                 return ResultCode.OperatorMissingLeftValue;
                         }
                         else
@@ -281,11 +281,11 @@ namespace Miniräknare.Expressions
                         continue;
 
                     int right = opIndex + 1;
-                    if (opDef?.Associativity != OperatorAssociativity.Left)
+                    if (opDef?.Associativity != OperatorSidedness.Left)
                     {
                         if (right >= currentTokens.Count)
                         {
-                            if (opDef?.Associativity == OperatorAssociativity.Right)
+                            if ((bool)opDef?.Associativity.HasFlag(OperatorSidedness.Right))
                                 return ResultCode.OperatorMissingRightValue;
                         }
                         else

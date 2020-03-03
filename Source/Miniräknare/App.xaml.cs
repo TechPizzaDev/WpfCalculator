@@ -44,7 +44,7 @@ namespace Miniräknare
             MainWindow = _splashScreen;
             _splashScreen.Show();
 
-            TestExpressionLoop();
+            //TestExpressionLoop();
         }
 
         #region TestExpressionLoop
@@ -70,160 +70,6 @@ namespace Miniräknare
                 ExpressionTokenizer.Tokenize(input.AsMemory(), tree.Tokens);
                 //Print(tree.Tokens);
 
-                // https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-                // awesome stuff
-                var output = new Queue<Token>();
-                var opStack = new Stack<Token>();
-                var tokens = tree.Tokens;
-                for (int i = 0; i < tokens.Count; i++)
-                {
-                    var token = tokens[i];
-                    if (token.Type == TokenType.DecimalDigit)
-                    {
-                        output.Enqueue(token);
-                    }
-                    else if (token.Type == TokenType.Function)
-                    {
-                        opStack.Push(token);
-                    }
-                    else if (token.Type == TokenType.Operator)
-                    {
-                        bool TryPop()
-                        {
-                            if (opStack.Count == 0)
-                                return false;
-
-                            var peek = opStack.Peek();
-                            if (peek.Type == TokenType.ListStart)
-                                return false;
-
-                            if (peek.Type == TokenType.Function)
-                                return true;
-
-                            var opToken = (ValueToken)token;
-                            if (peek.Type == TokenType.Operator)
-                            {
-                                var peekOpToken = (ValueToken)peek;
-                                var peekDef = tree.ExpressionOptions.GetOperatorDefinition(peekOpToken.Value);
-                                var opDef = tree.ExpressionOptions.GetOperatorDefinition(opToken.Value);
-
-                                if (peekDef.Precedence > opDef.Precedence)
-                                    return true;
-
-                                if (peekDef.Precedence == opDef.Precedence &&
-                                    opDef.Associativity == OperatorAssociativity.Left)
-                                    return true;
-                            }
-                            return false;
-                        }
-
-                        while (TryPop())
-                        {
-                            output.Enqueue(opStack.Pop());
-                        }
-                        opStack.Push(token);
-                    }
-                    else if (token.Type == TokenType.ListStart)
-                    {
-                        opStack.Push(token);
-                    }
-                    else if (token.Type == TokenType.ListEnd)
-                    {
-                        bool TryPop()
-                        {
-                            if (opStack.Count > 0)
-                            {
-                                var peek = opStack.Peek();
-                                if (peek.Type != TokenType.ListStart)
-                                    return true;
-                            }
-                            return false;
-                        }
-
-                        while (TryPop())
-                            output.Enqueue(opStack.Pop());
-
-                        // If the stack runs out without finding a left paren, then there are mismatched parentheses.
-                        if (opStack.Count > 0 && opStack.Peek().Type == TokenType.ListStart)
-                            opStack.Pop();
-                        //else
-                        // error;
-                    }
-                }
-
-                // After while loop, if operator stack not null, pop everything to output queue 
-                while (opStack.Count > 0)
-                {
-                    var popped = opStack.Pop();
-
-                    // If the operator token on the top of the stack is a paren, then there are mismatched parentheses.
-                    //if (popped.Type == TokenType.ListStart ||
-                    //    popped.Type == TokenType.ListEnd)
-                    //    // error
-
-                    output.Enqueue(popped);
-                }
-
-                var evaluator = new ExpressionTreeEvaluator(
-                    ResolveReference,
-                    ExpressionBox.ResolveOperator,
-                    ResolveFunction);
-
-
-                // https://en.wikipedia.org/wiki/Reverse_Polish_notation
-                // and simple evaluation too :D
-
-                //var expressionStack = new Stack<UnionValueCollection>();
-                //foreach (var token in output)
-                //{
-                //    if (token.Type == TokenType.Operator)
-                //    {
-                //        var op = (ValueToken)token;
-                //        var operand2 = expressionStack.Pop();
-                //        var operand1 = expressionStack.Pop();
-                //        var evalResult = evaluator.ExecuteOperator(op.Value, operand1, operand2);
-                //        expressionStack.Push(evalResult.Values);
-                //    }
-                //    else if (
-                //        token.Type == TokenType.DecimalDigit || 
-                //        token.Type == TokenType.DecimalNumber)
-                //    {
-                //        var eval = evaluator.EvaluateToken(tree.ExpressionOptions, token);
-                //        expressionStack.Push(eval.Values);
-                //    }
-                //    else
-                //    {
-                //        Console.WriteLine("oof");
-                //    }
-                //}
-
-                var expressionStack = new Stack<Token>();
-                foreach (var token in output)
-                {
-                    if (token.Type == TokenType.Operator)
-                    {
-                        var operand2 = expressionStack.Pop();
-                        var operand1 = expressionStack.Pop();
-                        expressionStack.Push(new ListToken(null, new List<Token>(3) { operand1, token, operand2 }));
-                    }
-                    else if (
-                        token.Type == TokenType.DecimalDigit || 
-                        token.Type == TokenType.DecimalNumber)
-                    {
-                        expressionStack.Push(token);
-                    }
-                    else
-                    {
-                        Console.WriteLine("oof");
-                    }
-                }
-                
-                var eresult = expressionStack.Pop();
-
-                var evale = evaluator.Evaluate(tree.ExpressionOptions, ((ListToken)eresult).Children);
-                
-                continue;
-
                 var result = ExpressionSanitizer.Sanitize(tree);
                 //Console.WriteLine("SanitizeTokens code: " + result.Code + ", ErrorToken: " + result.ErrorToken);
 
@@ -238,9 +84,14 @@ namespace Miniräknare
                         {
                             Print(tree.Tokens);
 
+                            var evaluator = new ExpressionTreeEvaluator(
+                                ResolveReference,
+                                ExpressionBox.ResolveOperator,
+                                ResolveFunction);
+
                             var eval = Evaluation.Undefined;
                             for (int i = 0; i < 1; i++)
-                                eval = evaluator.Evaluate(tree);
+                                eval = evaluator.EvaluateTree(tree);
 
                             if (eval.Code != EvalCode.Ok)
                             {

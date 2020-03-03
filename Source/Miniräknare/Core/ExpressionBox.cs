@@ -210,7 +210,7 @@ namespace Miniräknare
                     EvalCode.ErroredReference, UnionValue.FromEnum(newState), VariableName.AsMemory());
             }
 
-            var eval = _evaluator.Evaluate(ExpressionTree);
+            var eval = _evaluator.EvaluateTree(ExpressionTree);
             return eval;
         }
 
