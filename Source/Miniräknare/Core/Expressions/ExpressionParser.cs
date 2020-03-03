@@ -1,236 +1,349 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare.Expressions
 {
     public static class ExpressionParser
     {
-        public enum ParseCode
-        {
-            Unknown,
-            Ok,
-            MismatchedParentheses,
+        // TODO: remove recursion
 
-            RepeatingDecimalNumbers,
-            RepeatingDecimalSeparators,
-            RepeatingListSeparators
+        public enum ResultCode
+        {
+            Ok = 0,
+            NoTokens,
+            MissingListEnd,
+            ListEndWithoutStart,
+            OperatorMissingLeftValue,
+            OperatorMissingRightValue,
+            OperatorOnOperator,
+            InvalidTokenBeforeList,
+            MissingMultiplicationDefinition,
+            UnknownSymbol,
+            EmptyList // TODO
         }
 
-        private static TokenType[] DecimalSeparatorTypes =
-            new[] { TokenType.DecimalSeparator };
-
-        private static TokenType[] DecimalNumberComponents =
-            new[] { TokenType.DecimalDigit, TokenType.DecimalSeparator };
-
-        public const char DecimalSeparator = '.';
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <remarks>
-        // https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-        /// </remarks>
-        /// <param name="tree"></param>
-        /// <param name="output"></param>
-        /// <returns></returns>
-        public static ParseCode Parse(IExpressionTree tree, out List<Token> output)
+        public static ResultCode Parse(ExpressionOptions options, List<Token> tokens)
         {
-            output = new List<Token>(tree.Tokens);
-            var builder = new StringBuilder();
-            var mergeCode = MergeGroupsOfSingles(builder, output);
-            if (mergeCode != ParseCode.Ok)
-                return mergeCode;
+            if (tokens == null) throw new ArgumentNullException(nameof(tokens));
+            if (options == null) throw new ArgumentNullException(nameof(options));
 
-            var outputQueue = new Queue<Token>();
-            var opStack = new Stack<Token>();
+            if (tokens.Count == 0)
+                return ResultCode.NoTokens;
 
-            for (int i = 0; i < output.Count; i++)
+            ResultCode code;
+            if ((code = MakeLists(tokens)) != ResultCode.Ok ||
+                (code = MakeFunctions(tokens, options)) != ResultCode.Ok ||
+                (code = MakeImplicitMultiplications(tokens, options)) != ResultCode.Ok ||
+                (code = MakeOperatorGroups(tokens, options)) != ResultCode.Ok)
+                return code;
+            return code;
+        }
+
+        public static ResultCode Parse(ExpressionTree tree)
+        {
+            return Parse(tree.ExpressionOptions, tree.Tokens);
+        }
+
+        #region MakeLists
+
+        private static ResultCode MakeLists(IList<Token> tokens)
+        {
+            var listStack = new List<List<Token>>();
+            int ListDepth() => listStack.Count - 1;
+
+            for (int i = 0; i < tokens.Count; i++)
             {
-                var token = output[i];
-                if (token.Type == TokenType.DecimalNumber ||
-                    token.Type == TokenType.DecimalDigit)
+                var token = tokens[i];
+                var currentType = token.Type;
+
+                if (currentType == TokenType.ListStart)
                 {
-                    outputQueue.Enqueue(token);
+                    listStack.Add(new List<Token>());
+
+                    // Remove the ListStart token.
+                    tokens.RemoveAt(i--);
                 }
-                else if (token.Type == TokenType.Function)
+                else if (currentType == TokenType.ListEnd)
                 {
-                    opStack.Push(token);
-                }
-                else if (token.Type == TokenType.Operator)
-                {
-                    bool TryPop()
+                    if (listStack.Count == 0)
+                        return ResultCode.ListEndWithoutStart;
+
+                    var listToken = new ListToken(token.Parent, listStack[ListDepth()]);
+                    listStack.RemoveAt(ListDepth());
+
+                    if (ListDepth() > -1)
                     {
-                        if (opStack.Count == 0)
-                            return false;
+                        listStack[ListDepth()].Add(listToken);
 
-                        var peek = opStack.Peek();
-                        if (peek.Type == TokenType.ListStart)
-                            return false;
-
-                        if (peek.Type == TokenType.Function)
-                            return true;
-
-                        var opToken = (ValueToken)token;
-                        if (peek.Type == TokenType.Operator)
-                        {
-                            var peekOpToken = (ValueToken)peek;
-                            var peekDef = tree.ExpressionOptions.GetOperatorDefinition(peekOpToken.Value);
-                            var opDef = tree.ExpressionOptions.GetOperatorDefinition(opToken.Value);
-
-                            if (peekDef.Precedence > opDef.Precedence)
-                                return true;
-
-                            if (peekDef.Precedence == opDef.Precedence &&
-                                opDef.Associativity == OperatorAssociativity.Left)
-                                return true;
-                        }
-                        return false;
+                        // Remove the ListEnd token.
+                        tokens.RemoveAt(i);
                     }
-
-                    while (TryPop())
-                    {
-                        outputQueue.Enqueue(opStack.Pop());
-                    }
-                    opStack.Push(token);
-                }
-                else if (token.Type == TokenType.ListStart)
-                {
-                    opStack.Push(token);
-                }
-                else if (token.Type == TokenType.ListEnd)
-                {
-                    bool TryPop()
-                    {
-                        if (opStack.Count > 0)
-                        {
-                            var peek = opStack.Peek();
-                            if (peek.Type != TokenType.ListStart)
-                                return true;
-                        }
-                        return false;
-                    }
-
-                    while (TryPop())
-                        outputQueue.Enqueue(opStack.Pop());
-
-                    // If the stack runs out without finding a left paren, then there are mismatched parentheses.
-                    if (opStack.Count > 0 && opStack.Peek().Type == TokenType.ListStart)
-                        opStack.Pop();
                     else
-                        return ParseCode.MismatchedParentheses;
+                    {
+                        // This replaces the ListEnd token.
+                        tokens[i] = listToken;
+                    }
+                    i--;
                 }
                 else
                 {
-                    // ?? what to do here
+                    if (ListDepth() > -1)
+                    {
+                        listStack[ListDepth()].Add(token);
+                        tokens.RemoveAt(i--);
+                    }
+                    else
+                    {
+                        // We don't do anything with tokens outside lists.
+                    }
                 }
             }
 
-            // After while loop, if operator stack not null, pop everything to output queue 
-            while (opStack.Count > 0)
-            {
-                var popped = opStack.Pop();
+            if (ListDepth() > -1)
+                return ResultCode.MissingListEnd;
 
-                // If the operator token on the top of the stack is a paren, then there are mismatched parentheses.
-                if (popped.Type == TokenType.ListStart ||
-                    popped.Type == TokenType.ListEnd)
-                    return ParseCode.MismatchedParentheses;
-
-                outputQueue.Enqueue(popped);
-            }
-
-            output.Clear();
-            output.AddRange(outputQueue);
-
-            return ParseCode.Ok;
+            return ResultCode.Ok;
         }
 
-        private static ParseCode MergeGroupsOfSingles(StringBuilder builder, List<Token> tokens)
+        #endregion
+
+        #region MakeFunctions
+
+        private static ResultCode MakeFunctions(List<Token> tokens, ExpressionOptions options)
+        {
+            // Loop from the end so we can call "MakeFunctions" recursively.
+            for (int i = tokens.Count; i-- > 0;)
+            {
+                var token = tokens[i];
+                if (token.Type != TokenType.List)
+                    continue;
+
+                var listToken = (ListToken)token;
+                ResultCode code;
+                if ((code = MakeFunctions(listToken.Children, options)) != ResultCode.Ok)
+                    return code;
+
+                if (i - 1 < 0)
+                    continue; // We reached the list's beginning.
+
+                var leftToken = tokens[i - 1];
+                if (leftToken.Type != TokenType.Name)
+                {
+                    if (leftToken.Type == TokenType.Operator ||
+                        leftToken.Type == TokenType.DecimalDigit ||
+                        leftToken.Type == TokenType.DecimalNumber ||
+                        leftToken.Type == TokenType.List)
+                        continue;
+                    return ResultCode.InvalidTokenBeforeList;
+                }
+
+                var nameToken = (ValueToken)leftToken;
+                var funcToken = new FunctionToken(token.Parent, nameToken, listToken);
+
+                tokens[i - 1] = funcToken; // replace left token
+                tokens.RemoveAt(i); // remove current token
+            }
+            return ResultCode.Ok;
+        }
+
+        #endregion
+
+        #region MakeImplicitMultiplications
+
+        private static ResultCode MakeImplicitMultiplications(
+            List<Token> tokens, ExpressionOptions options)
         {
             for (int i = 0; i < tokens.Count; i++)
             {
-                #region MergeGroup helpers
-
-                bool CanMergeGroup(TokenType expectedType, out int length)
+                var token = tokens[i];
+                if (token is CollectionToken collectionToken)
                 {
-                    // TODO: cache predicate
-                    int end = AsLongAsMatch(tokens, i, t => t.Type == expectedType);
-                    length = end - i;
-                    if (length > 1)
-                        return true;
-                    return false;
+                    ResultCode code;
+                    if ((code = MakeImplicitMultiplications(collectionToken.Children, options)) != ResultCode.Ok)
+                        return code;
+                }
+                else if (token.Type != TokenType.Name)
+                {
+                    // Skip as this type is not allowed to have an implicit factor prefix.
+                    continue;
                 }
 
-                void MergeGroupAndInsert(TokenType expectedType, TokenType resultType)
-                {
-                    if (!CanMergeGroup(expectedType, out int length))
-                        return;
+                if (i - 1 < 0)
+                    continue; // We are at the list's beginning.
 
-                    if (!MergeGroup(builder, tokens, i, length, true, resultType, out var mergedToken))
-                        // Should never be thrown as we check the length with CanMergeGroup()
-                        throw new Exception("Unknown state.");
+                var leftToken = tokens[i - 1];
+                if (leftToken.Type == TokenType.Operator ||
+                    leftToken.Type == TokenType.Name)
+                    continue;
 
-                    tokens.Insert(i, mergedToken);
-                }
+                if (leftToken.Type != TokenType.DecimalDigit &&
+                    leftToken.Type != TokenType.DecimalNumber &&
+                    leftToken.Type != TokenType.List)
+                    return ResultCode.InvalidTokenBeforeList;
 
-                #endregion
+                var multiplyOpDef = options.GetOperatorDefinition(OperatorType.Multiply);
+                if (multiplyOpDef == null)
+                    return ResultCode.MissingMultiplicationDefinition;
 
-                if (CanMergeGroup(TokenType.DecimalNumber, out _))
-                    return (ParseCode.RepeatingDecimalNumbers);
-
-                if (CanMergeGroup(TokenType.DecimalSeparator, out _))
-                    return (ParseCode.RepeatingDecimalSeparators);
-
-                if (CanMergeGroup(TokenType.ListSeparator, out _))
-                    return (ParseCode.RepeatingListSeparators);
-
-                MergeGroupAndInsert(TokenType.DecimalDigit, TokenType.DecimalNumber);
+                var opToken = new ValueToken(token.Parent, TokenType.Operator, multiplyOpDef.Names[0]);
+                tokens.Insert(i, opToken);
             }
-            return ParseCode.Ok;
+            return ResultCode.Ok;
         }
 
-        public static int AsLongAsMatch(
-            IList<Token> tokens, int offset, Predicate<Token> predicate)
+        #endregion
+
+        #region MakeOperationsGroups
+
+        private static ResultCode MakeOperatorGroups(List<Token> tokens, ExpressionOptions options)
         {
-            for (; offset < tokens.Count; offset++)
-            {
-                if (!predicate.Invoke(tokens[offset]))
-                    break;
-            }
-            return offset;
-        }
+            var listStack = new Stack<List<Token>>();
+            listStack.Push(tokens);
 
-        private static bool MergeGroup(
-            StringBuilder builder, List<Token> tokens, int offset, int length, bool removeTokens,
-            TokenType resultType, out Token resultToken)
-        {
-            if (length > 1)
+            var opIndices = new List<(int index, ValueToken token, OperatorDefinition definition)>();
+            var opShifts = new List<(int index, int shift)>();
+
+            while (listStack.Count > 0)
             {
-                builder.Clear();
-                for (int i = 0; i < length; i++)
+                var currentTokens = listStack.Pop();
+                for (int j = 0; j < currentTokens.Count; j++)
                 {
-                    var groupToken = tokens[i + offset];
-                    if (!(groupToken is ValueToken groupValueToken))
-                        throw new Exception("Groups may only consist out of value tokens.");
-
-                    if (groupValueToken.Type == TokenType.DecimalSeparator)
-                        builder.Append(DecimalSeparator);
-                    else
-                        builder.Append(groupValueToken.Value);
-
-                    if (!removeTokens)
-                        offset++;
+                    var token = currentTokens[j];
+                    if (token is CollectionToken collectionToken)
+                        listStack.Push(collectionToken.Children);
                 }
 
-                if (removeTokens)
-                    tokens.RemoveRange(offset, length);
+                // Gather operators so we can sort them by priority rules.
+                opIndices.Clear();
+                for (int j = 0; j < currentTokens.Count; j++)
+                {
+                    var token = currentTokens[j];
+                    if (token.Type != TokenType.Operator)
+                        continue;
 
-                resultToken = new ValueToken(null, resultType, builder.ToString().AsMemory());
-                return true;
+                    var opToken = (ValueToken)token;
+                    var opDef = options.GetOperatorDefinition(opToken.Value);
+                    if (opDef == null)
+                        return ResultCode.UnknownSymbol;
+
+                    opIndices.Add((index: j, opToken, opDef));
+                }
+
+                opIndices.Sort((x, y) =>
+                {
+                    int xPriority = x.definition?.Precedence ?? 0;
+                    int yPriority = y.definition?.Precedence ?? 0;
+
+                    // Sort types in descending order.
+                    int priorityCompare = yPriority.CompareTo(xPriority);
+                    if (priorityCompare != 0)
+                        return priorityCompare;
+
+                    // Sort indices of same type in ascending order.
+                    return x.index.CompareTo(y.index);
+                });
+
+                // Merge token triplets with a center operator or
+                // pairs with a leading operator.
+                opShifts.Clear();
+                for (int i = 0; i < opIndices.Count; i++)
+                {
+                    var (opIndex, opToken, opDef) = opIndices[i];
+
+                    // Offset "opIndex" by shifts caused by previous operator merges.
+                    for (int j = 0; j < opShifts.Count; j++)
+                    {
+                        var (shiftIndex, shift) = opShifts[j];
+                        if (shiftIndex < opIndex)
+                            opIndex += shift;
+                    }
+
+                    var token = currentTokens[opIndex];
+
+                    Token leftToken = null;
+                    Token rightToken = null;
+
+                    int left = opIndex - 1;
+                    if (opDef?.Associativity != OperatorAssociativity.Right)
+                    {
+                        if (left < 0)
+                        {
+                            if (opDef?.Associativity == OperatorAssociativity.Left)
+                                return ResultCode.OperatorMissingLeftValue;
+                        }
+                        else
+                        {
+                            leftToken = currentTokens[left];
+                        }
+                    }
+                    if (leftToken?.Type == TokenType.Operator)
+                        continue;
+
+                    int right = opIndex + 1;
+                    if (opDef?.Associativity != OperatorAssociativity.Left)
+                    {
+                        if (right >= currentTokens.Count)
+                        {
+                            if (opDef?.Associativity == OperatorAssociativity.Right)
+                                return ResultCode.OperatorMissingRightValue;
+                        }
+                        else
+                        {
+                            rightToken = currentTokens[right];
+                            if (rightToken.Type == TokenType.Operator)
+                                continue;
+
+                            // Mitigates operators with following operators.
+                            if (rightToken.Type == TokenType.Operator)
+                            {
+                                int secondRight = opIndex + 2;
+                                if (secondRight < currentTokens.Count)
+                                {
+                                    rightToken = new ListToken(token.Parent, new List<Token>(2)
+                                    {
+                                        rightToken,
+                                        currentTokens[secondRight]
+                                    });
+                                    currentTokens[right] = rightToken;
+                                    currentTokens.RemoveAt(secondRight);
+
+                                    opShifts.Add((right, -1));
+                                    opIndices.RemoveAll(x => x.index == right);
+                                }
+                                else
+                                {
+                                    return ResultCode.OperatorMissingRightValue;
+                                }
+                            }
+                        }
+                    }
+
+                    int sideTokenCount = 0;
+                    if (leftToken != null)
+                        sideTokenCount++;
+                    if (rightToken != null)
+                        sideTokenCount++;
+                    var resultList = new List<Token>(1 + sideTokenCount);
+
+                    if (leftToken != null)
+                        resultList.Add(leftToken);
+                    resultList.Add(opToken);
+                    if (rightToken != null)
+                        resultList.Add(rightToken);
+
+                    int firstIndex = opIndex - (leftToken != null ? 1 : 0);
+                    var resultToken = new ListToken(token.Parent, resultList);
+                    currentTokens[firstIndex] = resultToken;
+                    currentTokens.RemoveRange(firstIndex + 1, resultList.Count - 1);
+
+                    int nextShift = 1 - resultList.Count;
+                    opShifts.Add((opIndex, nextShift));
+                }
             }
-            resultToken = default;
-            return false;
+            return ResultCode.Ok;
         }
+
+        #endregion
     }
 }

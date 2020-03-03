@@ -13,14 +13,14 @@ namespace Miniräknare.Expressions
         public event ProbeOperatorDelegate ProbeOperator;
         public event ProbeFunctionDelegate ProbeFunction;
 
-        public void Probe(IExpressionTree tree)
+        public void Probe(ExpressionTree tree)
         {
             Probe(tree.Tokens);
         }
 
-        public void Probe(IReadOnlyList<Token> tokens)
+        public void Probe(List<Token> tokens)
         {
-            var listStack = new Stack<IReadOnlyList<Token>>();
+            var listStack = new Stack<List<Token>>();
             listStack.Push(tokens);
 
             while (listStack.Count > 0)

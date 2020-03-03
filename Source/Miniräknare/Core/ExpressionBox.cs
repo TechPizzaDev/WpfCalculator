@@ -171,22 +171,21 @@ namespace Miniräknare
             ExpressionTree.Tokens.Clear();
             ExpressionTokenizer.Tokenize(TextValue.AsMemory(), ExpressionTree.Tokens);
 
-            return ExpressionBoxState.Indeterminate;
-            //var sanitizeResult = ExpressionSanitizer.Sanitize(ExpressionTree);
-            //if (sanitizeResult.Code != ExpressionSanitizer.ResultCode.Ok)
-            //    return ExpressionBoxState.SyntaxError;
-            //
-            //var parseCode = ExpressionParser.Parse(ExpressionTree);
-            //switch (parseCode)
-            //{
-            //    case ExpressionParser.ParseCode.Ok:
-            //    case ExpressionParser.ParseCode.NoTokens:
-            //        return ExpressionBoxState.Ok;
-            //
-            //    default:
-            //        // TODO: add more exact error object
-            //        return ExpressionBoxState.SyntaxError;
-            //}
+            var sanitizeResult = ExpressionSanitizer.Sanitize(ExpressionTree);
+            if (sanitizeResult.Code != ExpressionSanitizer.ResultCode.Ok)
+                return ExpressionBoxState.SyntaxError;
+
+            var parseCode = ExpressionParser.Parse(ExpressionTree);
+            switch (parseCode)
+            {
+                case ExpressionParser.ResultCode.Ok:
+                case ExpressionParser.ResultCode.NoTokens:
+                    return ExpressionBoxState.Ok;
+
+                default:
+                    // TODO: add more exact error object
+                    return ExpressionBoxState.SyntaxError;
+            }
         }
 
         public Evaluation Evaluate()
