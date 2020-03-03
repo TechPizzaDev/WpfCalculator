@@ -10,12 +10,9 @@ namespace Miniräknare
         private ExpressionTree _tree;
         private List<ValueToken> _inputs;
 
-        public ExpressionSanitizer.SanitizeResult SanitizeResult { get; }
-        public ExpressionParser.ResultCode ParseCode { get; }
+        public ExpressionParser.ParseCode ParseCode { get; }
 
-        public bool IsValid =>
-            SanitizeResult.Code == ExpressionSanitizer.ResultCode.Ok &&
-            ParseCode == ExpressionParser.ResultCode.Ok;
+        public bool IsValid => ParseCode == ExpressionParser.ParseCode.Ok;
 
         public ReadOnlyMemory<MathFormula> Permutations { get; }
 
@@ -28,17 +25,14 @@ namespace Miniräknare
 
         public MathFormula(ExpressionOptions options, ReadOnlyMemory<char> formula)
         {
-            _tree = new ExpressionTree(options);
-            ExpressionTokenizer.Tokenize(formula, _tree.Tokens);
+            var sourceTree = new ExpressionTree(options);
+            ExpressionTokenizer.Tokenize(formula, sourceTree.Tokens);
 
-            SanitizeResult = ExpressionSanitizer.Sanitize(_tree);
-            if (SanitizeResult.Code != ExpressionSanitizer.ResultCode.Ok)
+            ParseCode = ExpressionParser.Parse(sourceTree, out var output);
+            if (ParseCode != ExpressionParser.ParseCode.Ok)
                 return;
 
-            ParseCode = ExpressionParser.Parse(_tree);
-            if (ParseCode != ExpressionParser.ResultCode.Ok)
-                return;
-
+            _tree = new ExpressionTree(options, new List<Token>(output));
             _inputs = GatherInputs(_tree);
             Permutations = CreatePermutations();
         }
@@ -48,7 +42,7 @@ namespace Miniräknare
         {
         }
 
-        private static List<ValueToken> GatherInputs(ExpressionTree tree)
+        private static List<ValueToken> GatherInputs(IExpressionTree tree)
         {
             var inputs = new List<ValueToken>();
             var probe = new ExpressionTreeProbe();

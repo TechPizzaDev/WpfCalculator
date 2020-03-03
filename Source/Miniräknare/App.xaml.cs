@@ -61,6 +61,11 @@ namespace Miniräknare
 
             var tree = new ExpressionTree(ExpressionOptions.Default);
 
+            var evaluator = new ExpressionTreeEvaluator(
+                ResolveReference,
+                ExpressionBox.ResolveOperator,
+                ResolveFunction);
+
             while (true)
             {
                 string input = Console.ReadLine();
@@ -70,105 +75,12 @@ namespace Miniräknare
                 ExpressionTokenizer.Tokenize(input.AsMemory(), tree.Tokens);
                 //Print(tree.Tokens);
 
-                // https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-                // awesome stuff
-                var output = new Queue<Token>();
-                var opStack = new Stack<Token>();
-                var tokens = tree.Tokens;
-                for (int i = 0; i < tokens.Count; i++)
+                var parseCode = ExpressionParser.Parse(tree, out var output);
+                if (parseCode != ExpressionParser.ParseCode.Ok)
                 {
-                    var token = tokens[i];
-                    if (token.Type == TokenType.DecimalDigit)
-                    {
-                        output.Enqueue(token);
-                    }
-                    else if (token.Type == TokenType.Function)
-                    {
-                        opStack.Push(token);
-                    }
-                    else if (token.Type == TokenType.Operator)
-                    {
-                        bool TryPop()
-                        {
-                            if (opStack.Count == 0)
-                                return false;
-
-                            var peek = opStack.Peek();
-                            if (peek.Type == TokenType.ListStart)
-                                return false;
-
-                            if (peek.Type == TokenType.Function)
-                                return true;
-
-                            var opToken = (ValueToken)token;
-                            if (peek.Type == TokenType.Operator)
-                            {
-                                var peekOpToken = (ValueToken)peek;
-                                var peekDef = tree.ExpressionOptions.GetOperatorDefinition(peekOpToken.Value);
-                                var opDef = tree.ExpressionOptions.GetOperatorDefinition(opToken.Value);
-
-                                if (peekDef.Precedence > opDef.Precedence)
-                                    return true;
-
-                                if (peekDef.Precedence == opDef.Precedence &&
-                                    opDef.Associativity == OperatorAssociativity.Left)
-                                    return true;
-                            }
-                            return false;
-                        }
-
-                        while (TryPop())
-                        {
-                            output.Enqueue(opStack.Pop());
-                        }
-                        opStack.Push(token);
-                    }
-                    else if (token.Type == TokenType.ListStart)
-                    {
-                        opStack.Push(token);
-                    }
-                    else if (token.Type == TokenType.ListEnd)
-                    {
-                        bool TryPop()
-                        {
-                            if (opStack.Count > 0)
-                            {
-                                var peek = opStack.Peek();
-                                if (peek.Type != TokenType.ListStart)
-                                    return true;
-                            }
-                            return false;
-                        }
-
-                        while (TryPop())
-                            output.Enqueue(opStack.Pop());
-
-                        // If the stack runs out without finding a left paren, then there are mismatched parentheses.
-                        if (opStack.Count > 0 && opStack.Peek().Type == TokenType.ListStart)
-                            opStack.Pop();
-                        //else
-                        // error;
-                    }
+                    Console.WriteLine(parseCode);
+                    continue;
                 }
-
-                // After while loop, if operator stack not null, pop everything to output queue 
-                while (opStack.Count > 0)
-                {
-                    var popped = opStack.Pop();
-
-                    // If the operator token on the top of the stack is a paren, then there are mismatched parentheses.
-                    //if (popped.Type == TokenType.ListStart ||
-                    //    popped.Type == TokenType.ListEnd)
-                    //    // error
-
-                    output.Enqueue(popped);
-                }
-
-                var evaluator = new ExpressionTreeEvaluator(
-                    ResolveReference,
-                    ExpressionBox.ResolveOperator,
-                    ResolveFunction);
-
 
                 // https://en.wikipedia.org/wiki/Reverse_Polish_notation
                 // and simple evaluation too :D
@@ -221,44 +133,46 @@ namespace Miniräknare
                 var eresult = expressionStack.Pop();
 
                 var evale = evaluator.Evaluate(tree.ExpressionOptions, ((ListToken)eresult).Children);
-                
+
+                Console.WriteLine(evale.Values.First);
+
                 continue;
 
-                var result = ExpressionSanitizer.Sanitize(tree);
-                //Console.WriteLine("SanitizeTokens code: " + result.Code + ", ErrorToken: " + result.ErrorToken);
-
-                if (result.Code == ExpressionSanitizer.ResultCode.Ok)
-                {
-                    //Print(tree.Tokens);
-                    var parseCode = ExpressionParser.Parse(tree);
-                    if (parseCode == ExpressionParser.ResultCode.Ok)
-                    {
-                        var optimizeCode = ExpressionReducer.Reduce(tree);
-                        if (optimizeCode == ExpressionReducer.ResultCode.Ok)
-                        {
-                            Print(tree.Tokens);
-
-                            var eval = Evaluation.Undefined;
-                            for (int i = 0; i < 1; i++)
-                                eval = evaluator.Evaluate(tree);
-
-                            if (eval.Code != EvalCode.Ok)
-                            {
-                                Console.WriteLine("Eval code: " + eval.Code);
-                            }
-                            else
-                            {
-                                double evalValue = eval.Values.First.Double;
-                                string textValue = double.IsInfinity(evalValue) ? "Infinity" : evalValue.ToString();
-                                Console.WriteLine("Eval: " + textValue);
-                            }
-                        }
-                        else
-                            Console.WriteLine("Optimize code: " + parseCode);
-                    }
-                    else
-                        Console.WriteLine("Parse code: " + parseCode);
-                }
+                //var result = ExpressionSanitizer.Sanitize(tree);
+                ////Console.WriteLine("SanitizeTokens code: " + result.Code + ", ErrorToken: " + result.ErrorToken);
+                //
+                //if (result.Code == ExpressionSanitizer.ResultCode.Ok)
+                //{
+                //    //Print(tree.Tokens);
+                //    var parseCode = ExpressionParser.Parse(tree);
+                //    if (parseCode == ExpressionParser.ResultCode.Ok)
+                //    {
+                //        var optimizeCode = ExpressionReducer.Reduce(tree);
+                //        if (optimizeCode == ExpressionReducer.ResultCode.Ok)
+                //        {
+                //            Print(tree.Tokens);
+                //
+                //            var eval = Evaluation.Undefined;
+                //            for (int i = 0; i < 1; i++)
+                //                eval = evaluator.Evaluate(tree);
+                //
+                //            if (eval.Code != EvalCode.Ok)
+                //            {
+                //                Console.WriteLine("Eval code: " + eval.Code);
+                //            }
+                //            else
+                //            {
+                //                double evalValue = eval.Values.First.Double;
+                //                string textValue = double.IsInfinity(evalValue) ? "Infinity" : evalValue.ToString();
+                //                Console.WriteLine("Eval: " + textValue);
+                //            }
+                //        }
+                //        else
+                //            Console.WriteLine("Optimize code: " + parseCode);
+                //    }
+                //    else
+                //        Console.WriteLine("Parse code: " + parseCode);
+                //}
             }
         }
 
