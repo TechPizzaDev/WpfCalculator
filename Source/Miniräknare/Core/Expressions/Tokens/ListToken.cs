@@ -7,7 +7,7 @@ namespace Miniräknare.Expressions.Tokens
     {
         public static readonly string ListStartEndPair = ListStartChar.ToString() + ListEndChar.ToString();
 
-        public ListToken(ListToken parent, List<Token> tokens) : base(parent, TokenType.List, tokens)
+        public ListToken(List<Token> tokens) : base(TokenType.List, tokens)
         {
         }
     }

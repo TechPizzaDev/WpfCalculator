@@ -2,9 +2,10 @@
     x:Class="Miniräknare.ExpressionField"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:l="clr-namespace:Miniräknare">
+    xmlns:l="clr-namespace:Miniräknare"
+    ContextMenu="{StaticResource Menu_FieldOptions}">
 
-    <Grid x:Name="MainGrid" ContextMenu="{StaticResource Menu_FieldOptions}">
+    <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -26,7 +27,7 @@
                      Margin="2,0,0,0" VerticalAlignment="Center"  />
         </StackPanel>
 
-        <Button Grid.Column="1" Margin="4,3,0,0" Style="{StaticResource Button_FieldOptions}"
+        <Button Grid.Column="1" Margin="4,5,0,0" Style="{StaticResource Button_FieldOptions}"
                 Click="OpenContextMenu" />
     </Grid>
 </UserControl>

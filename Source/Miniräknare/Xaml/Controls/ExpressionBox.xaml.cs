@@ -55,7 +55,7 @@ namespace Miniräknare
             }
         }
 
-        public Evaluation ResultValue
+        public Evaluation ResultEvaluation
         {
             get => _resultValue;
             set
@@ -268,9 +268,9 @@ namespace Miniräknare
 
             foreach (var box in checkedSet)
             {
-                var result = box.ResultValue;
+                var result = box.ResultEvaluation;
                 if (result.Code == EvalCode.ErroredReference &&
-                    ((ExpressionBoxState)result.Values.First.Enum).HasFlag(ExpressionBoxState.CyclicReferences))
+                    ((ExpressionBoxState)result.Values.Child?.Enum).HasFlag(ExpressionBoxState.CyclicReferences))
                     return CyclicReferenceType.Nested;
             }
             return CyclicReferenceType.None;
@@ -297,7 +297,6 @@ namespace Miniräknare
         {
             switch (eval.Code)
             {
-                case EvalCode.Empty:
                 case EvalCode.Ok:
                     return ExpressionBoxState.Ok;
 
@@ -315,7 +314,7 @@ namespace Miniräknare
                 case EvalCode.ErroredFunction:
                 case EvalCode.ErroredOperator:
                 case EvalCode.ErroredReference:
-                    var first = eval.Values.First;
+                    var first = eval.Values.Child.GetValueOrDefault();
                     if (first.ValueType == UnionValueType.Enum)
                     {
                         var state = (ExpressionBoxState)first.Enum;
@@ -346,7 +345,7 @@ namespace Miniräknare
             var eval = Evaluate();
             State = EvalToFieldState(eval);
 
-            ResultValue = eval.Code == EvalCode.Ok ? eval : new Evaluation(new UnionValue(0d));
+            ResultEvaluation = eval.Code == EvalCode.Ok ? eval : new Evaluation(new UnionValue(0d));
         }
 
         private Evaluation ResolveReference(ReadOnlyMemory<char> name)
@@ -358,13 +357,14 @@ namespace Miniräknare
                 return new Evaluation(
                     EvalCode.ErroredReference, UnionValue.FromEnum(field.State), name);
 
-            return field.ResultValue;
+            return field.ResultEvaluation;
         }
 
         private Evaluation ResolveFunction(
             ReadOnlyMemory<char> name, ReadOnlySpan<UnionValueCollection> arguments)
         {
-            var firstArg = (arguments.Length > 0 ? arguments[0] : default).First;
+            var firstArg = (arguments.Length > 0 ? arguments[0] : default).Child.GetValueOrDefault();
+            var secondArg = (arguments.Length > 1 ? arguments[1] : default).Child.GetValueOrDefault();
 
             if (name.Span.SequenceEqual("sin"))
             {
@@ -384,7 +384,16 @@ namespace Miniräknare
 
                 return new Evaluation(new UnionValue(Math.Cos(firstArg.Double * 0.0174532925)));
             }
-            if (name.Span.SequenceEqual("asin"))
+            else if (name.Span.SequenceEqual("tan"))
+            {
+                int expectedArgCount = 1;
+                if (arguments.Length != expectedArgCount)
+                    return new Evaluation(
+                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+
+                return new Evaluation(new UnionValue(Math.Tan(firstArg.Double) * 57.2957795));
+            }
+            if (name.Span.SequenceEqual("asin") || name.Span.SequenceEqual("arcsin"))
             {
                 int expectedArgCount = 1;
                 if (arguments.Length != expectedArgCount)
@@ -393,7 +402,7 @@ namespace Miniräknare
 
                 return new Evaluation(new UnionValue(Math.Asin(firstArg.Double) * 57.2957795));
             }
-            else if (name.Span.SequenceEqual("acos"))
+            else if (name.Span.SequenceEqual("acos") || name.Span.SequenceEqual("arccos"))
             {
                 int expectedArgCount = 1;
                 if (arguments.Length != expectedArgCount)
@@ -402,14 +411,53 @@ namespace Miniräknare
 
                 return new Evaluation(new UnionValue(Math.Acos(firstArg.Double) * 57.2957795));
             }
-            else if (name.Span.SequenceEqual("round"))
+            else if (name.Span.SequenceEqual("atan") || name.Span.SequenceEqual("arctan"))
             {
                 int expectedArgCount = 1;
                 if (arguments.Length != expectedArgCount)
                     return new Evaluation(
                         EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Round(firstArg.Double)));
+                return new Evaluation(new UnionValue(Math.Atan(firstArg.Double) * 57.2957795));
+            }
+            else if (name.Span.SequenceEqual("round"))
+            {
+                if (arguments.Length != 1 && arguments.Length != 2)
+                    return new Evaluation(EvalCode.InvalidArgumentCount);
+
+                if (arguments[0].Child == null ||
+                    secondArg.Double < 0 || secondArg.Double > 15)
+                    return new Evaluation(EvalCode.InvalidArguments);
+
+                var rounded = Math.Round(firstArg.Double, (int)Math.Floor(secondArg.Double));
+                return new Evaluation(new UnionValue(rounded));
+            }
+            else if (name.Span.SequenceEqual("length"))
+            {
+                if (arguments.Length == 0)
+                    return new Evaluation(EvalCode.InvalidArgumentCount);
+
+                var values = arguments;
+
+                // TODO: add destructure operator for functions
+                if (arguments[0].Children != null)
+                {
+                    if (arguments.Length > 1)
+                        return new Evaluation(EvalCode.InvalidArguments);
+                    values = arguments[0].Children;
+                }
+
+                double sum = 0;
+                for (int i = 0; i < values.Length; i++)
+                {
+                    var child = values[i].Child;
+                    if (!child.HasValue)
+                        return new Evaluation(EvalCode.InvalidArguments);
+
+                    sum += Math.Pow(child.Value.Double, 2);
+                }
+
+                return new Evaluation(new UnionValue(Math.Sqrt(sum)));
             }
             else if (name.Span.SequenceEqual("sqrt"))
             {
@@ -434,8 +482,8 @@ namespace Miniräknare
             if (name.Length != 1)
                 return new Evaluation(EvalCode.UnresolvedOperator, name);
 
-            var firstLeft = left.GetValueOrDefault().First.Double;
-            var firstRight = right.GetValueOrDefault().First.Double;
+            var firstLeft = (left?.Child?.Double).GetValueOrDefault();
+            var firstRight = (right?.Child?.Double).GetValueOrDefault();
 
             switch (name.Span[0])
             {
@@ -471,7 +519,7 @@ namespace Miniräknare
 
         private void ReferenceChanged(object sender, PropertyChangedEventArgs args)
         {
-            if (args.PropertyName == nameof(ResultValue) ||
+            if (args.PropertyName == nameof(ResultEvaluation) ||
                 args.PropertyName == nameof(State))
             {
                 UpdateResultValue();

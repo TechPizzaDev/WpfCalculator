@@ -4,7 +4,6 @@
     {
         Undefined,
         Ok,
-        Empty,
         
         UnresolvedReference,
         UnresolvedOperator,

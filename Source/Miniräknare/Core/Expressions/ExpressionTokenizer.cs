@@ -11,8 +11,8 @@ namespace Miniräknare.Expressions
 
         public const char SpaceChar = '_';
         public const char ListStartChar = '(';
+        public const char ListSeparatorChar = ',';
         public const char ListEndChar = ')';
-        public const char ListSeparatorChar = ';';
 
         #region Static Constructor
 
@@ -32,7 +32,7 @@ namespace Miniräknare.Expressions
             {
                 NewDef(TokenType.Operator, IsOperator, true),
                 NewDef(TokenType.Name, IsNameToken),
-                NewDef(TokenType.DecimalSeparator, c => c == '.' || c == ',', true),
+                NewDef(TokenType.DecimalSeparator, c => c == '.', true),
                 NewDef(TokenType.DecimalDigit, IsDigitToken, true),
                 decimalNumberDef,
                 NewDef(TokenType.WhiteSpace, char.IsWhiteSpace),
@@ -84,7 +84,7 @@ namespace Miniräknare.Expressions
                 if (length > 0)
                 {
                     var slice = text.Slice(lastOffset, length);
-                    output.Add(new ValueToken(null, currentType, slice));
+                    output.Add(new ValueToken(currentType, slice));
                 }
             }
 

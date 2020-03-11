@@ -3,7 +3,7 @@
                     xmlns:l="clr-namespace:Miniräknare">
 
     <ContextMenu x:Key="Menu_FieldOptions">
-        <MenuItem Header="{l:LanguageBinding Key='Other/Remove'}" />
+        <MenuItem Name="Remove" Header="{l:LanguageBinding Key='Other/Remove'}" />
     </ContextMenu>
     
 </ResourceDictionary>

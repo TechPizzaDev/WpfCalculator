@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media.Effects;
 using Miniräknare.Expressions;
 
 namespace Miniräknare
@@ -35,13 +36,11 @@ namespace Miniräknare
         public MainWindow()
         {
             InitializeComponent();
-            
+
             FieldList = FieldListView;
             FieldListView.ItemsSource = FieldItemList;
 
-            FieldItemList.Add(new ListViewItem() { Content = new FormulaField() });
-            //_fieldItemList.Add(new ListViewItem() { Content = new FormulaField() });
-            
+            AddNewFormulaField(null);
             AddNewField();
         }
 
@@ -109,6 +108,12 @@ namespace Miniräknare
 
         #region ActionButton Click handlers
 
+        private void AddNewFormulaField(MathFormula formula)
+        {
+            var field = new FormulaField();
+            FieldItemList.Add(new ListViewItem() { Content = field, ContextMenu = field.ContextMenu });
+        }
+
         private void AddNewField()
         {
             var field = new ExpressionField();
@@ -117,7 +122,8 @@ namespace Miniräknare
             var listItem = new ListViewItem
             {
                 HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                Content = field
+                Content = field,
+                ContextMenu = field.ContextMenu
             };
 
             FieldItemList.Add(listItem);
@@ -172,6 +178,14 @@ namespace Miniräknare
         {
 
             // TODO: check if there is stuff to save
+        }
+
+        private void MenuItem_View_Theme_Click(object sender, RoutedEventArgs e)
+        {
+            var inverseShaderResource = FindResource("Shader_Inverse");
+            if (!(inverseShaderResource is Effect inverseShader))
+                throw new Exception("Missing inverse shader resource.");
+            Effect = Effect == inverseShader ? null : inverseShader;
         }
     }
 }

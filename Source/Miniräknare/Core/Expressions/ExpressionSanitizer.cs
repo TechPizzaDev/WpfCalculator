@@ -286,7 +286,8 @@ namespace Miniräknare.Expressions
                     builder.Append(((ValueToken)nextToken).Value);
                     var decimalString = builder.ToString().AsMemory();
 
-                    var decimalToken = new ValueToken(token.Parent, TokenType.DecimalNumber, decimalString);
+                    var decimalToken = new ValueToken(TokenType.DecimalNumber, decimalString);
+                    decimalToken.Parent = token.Parent;
                     tokens[i] = decimalToken; // replace the current token
                     tokens.RemoveAt(i + 1); // remove the next token
 
@@ -436,7 +437,7 @@ namespace Miniräknare.Expressions
                 if (removeTokens)
                     tokens.RemoveRange(offset, length);
 
-                resultToken = new ValueToken(null, resultType, builder.ToString().AsMemory());
+                resultToken = new ValueToken(resultType, builder.ToString().AsMemory());
                 return true;
             }
             resultToken = default;

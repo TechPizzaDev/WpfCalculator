@@ -23,8 +23,8 @@ namespace Miniräknare.Expressions.Tokens
             }
         }
 
-        public FunctionToken(ListToken parent, ValueToken name, ListToken arguments) 
-            : base(parent, TokenType.Function, arguments.Children)
+        public FunctionToken(ValueToken name, ListToken arguments) 
+            : base(TokenType.Function, arguments.Children)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             if (name.Type != TokenType.Name)

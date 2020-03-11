@@ -20,6 +20,7 @@
             <Menu>
                 <MenuItem Header="{l:LanguageBinding Key='Toolbar/File'}" 
                           Style="{StaticResource ToolbarStyle}">
+                    
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/File/New'}" />
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/File/Open'}" />
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/File/Save'}" />
@@ -34,6 +35,7 @@
 
                 <MenuItem Header="{l:LanguageBinding Key='Toolbar/Tools'}" 
                           Style="{StaticResource ToolbarStyle}">
+                    
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/Tools/SpecialSymbols'}"/>
                 </MenuItem>
 
@@ -41,7 +43,7 @@
                           Style="{StaticResource ToolbarStyle}">
 
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/Settings/View'}">
-                        <MenuItem Header="{l:LanguageBinding Key='Toolbar/Settings/View/Theme'}" />
+                        <MenuItem Header="{l:LanguageBinding Key='Toolbar/Settings/View/Theme'}" Click="MenuItem_View_Theme_Click" />
                     </MenuItem>
                     
                     <MenuItem Header="Language..." Click="MenuItem_Language_Click"/>

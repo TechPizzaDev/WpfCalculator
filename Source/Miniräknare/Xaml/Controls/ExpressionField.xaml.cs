@@ -3,13 +3,20 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using System.Linq;
+using System.Collections.Generic;
+using System.Text;
+using Miniräknare.Expressions;
 
 namespace Miniräknare
 {
-    public partial class ExpressionField : UserControl
+    public partial class ExpressionField : UserControl, IHasContextMenu
     {
+        private readonly (string, RoutedEventHandler)[] _contextMenuHandlers;
+
         public const string OkShader = "Shader_StateIcon_Ok";
         public const string ErrorShader = "Shader_StateIcon_Error";
         public const string EvalErrorShader = "Shader_StateIcon_EvalError";
@@ -20,6 +27,43 @@ namespace Miniräknare
             InitializeComponent();
 
             InputBox.PropertyChanged += (s, e) => InputBox_PropertyChanged(s, e, ResultBox, StateImage);
+
+            _contextMenuHandlers = new (string, RoutedEventHandler)[]
+            {
+                ("Remove", RemoveMenuItem_Click)
+            };
+            ContextMenu.Opened += ContextMenu_Opened;
+        }
+
+        private Dictionary<string, MenuItem> _contextMenuItems;
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (_contextMenuItems == null)
+            {
+                _contextMenuItems = new Dictionary<string, MenuItem>();
+            }
+            else
+            {
+                foreach (var handler in _contextMenuHandlers)
+                    _contextMenuItems[handler.Item1].Click -= handler.Item2;
+                _contextMenuItems.Clear();
+            }
+
+            var menu = (ContextMenu)sender;
+            foreach (var item in menu.Items)
+            {
+                if (item is MenuItem menuItem)
+                    _contextMenuItems.Add(menuItem.Name, menuItem);
+            }
+
+            foreach (var handler in _contextMenuHandlers)
+                _contextMenuItems[handler.Item1].Click += handler.Item2;
+        }
+
+        private void RemoveMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine("OK");
         }
 
         public static void InputBox_PropertyChanged(
@@ -30,7 +74,9 @@ namespace Miniräknare
             switch (e.PropertyName)
             {
                 case nameof(ExpressionBox.State):
-                    resultOutput.Visibility = box.State == ExpressionBoxState.Ok ? Visibility.Visible : Visibility.Hidden;
+                    resultOutput.Visibility = box.State == ExpressionBoxState.Ok
+                        ? Visibility.Visible : Visibility.Hidden;
+
                     UpdateResultValueText(resultOutput, box);
 
                     var (image, effect) = GetStatusResources(box.State);
@@ -38,7 +84,7 @@ namespace Miniräknare
                     stateImage.Effect = effect;
                     break;
 
-                case nameof(ExpressionBox.ResultValue):
+                case nameof(ExpressionBox.ResultEvaluation):
                     UpdateResultValueText(resultOutput, box);
                     break;
             }
@@ -46,27 +92,35 @@ namespace Miniräknare
 
         public static void UpdateResultValueText(TextBox output, ExpressionBox source)
         {
-            string text = string.Empty;
-            if (source.State == ExpressionBoxState.Ok)
-            {
-                var result = source.ResultValue.Values.First;
-                if (result.ValueType == UnionValueType.Double ||
-                    result.ValueType == UnionValueType.Float)
-                {
-                    // TODO: add decimal rounding setting
+            var builder = new StringBuilder();
 
-                    var resultDouble = result.ToDouble();
-                    text = resultDouble.ToString();
-                    
-                    if(result.NumberGroup.HasFlag(NumberGroup.Imaginary))
-                        text += "i";
-                }
-                else
+            void Append(in UnionValueCollection collection, bool appendSeparator)
+            {
+                var child = collection.Child;
+                if (child != null)
                 {
-                    text = result.ToString(false);
+                    builder.Append(child.GetValueOrDefault().Double);
+                    if (appendSeparator)
+                        builder.Append(ExpressionTokenizer.ListSeparatorChar).Append(" ");
+                }
+                else if (collection.Children != null)
+                {
+                    builder.Append(ExpressionTokenizer.ListStartChar);
+
+                    var children = collection.Children;
+                    for (int i = 0; i < children.Length; i++)
+                    {
+                        Append(children[i], appendSeparator: i < children.Length - 1);
+                    }
+                    builder.Append(ExpressionTokenizer.ListEndChar);
                 }
             }
-            output.Text = text;
+
+            if (source.State == ExpressionBoxState.Ok)
+            {
+                Append(source.ResultEvaluation.Values, false);
+            }
+            output.Text = builder.ToString();
         }
 
         public static (ImageSource, ShaderEffect) GetStatusResources(ExpressionBoxState state)
@@ -109,7 +163,12 @@ namespace Miniräknare
 
         private void OpenContextMenu(object sender, RoutedEventArgs e)
         {
-            MainGrid.ContextMenu.IsOpen = true;
+            OpenContextMenu();
+        }
+
+        public void OpenContextMenu()
+        {
+            ContextMenu.IsOpen = true;
         }
     }
 }

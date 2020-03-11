@@ -5,7 +5,8 @@
     <Style x:Key="Button_FieldOptions" x:Shared="False" TargetType="Button">
         <Setter Property="Content">
             <Setter.Value>
-                <Image Source="{StaticResource Icon_FieldOptions}" />
+                <Image Source="{StaticResource Icon_FieldOptions}" 
+                       Effect="{StaticResource Shader_ActionButton}" />
             </Setter.Value>
         </Setter>
 

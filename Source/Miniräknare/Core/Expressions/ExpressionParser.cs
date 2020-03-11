@@ -69,7 +69,8 @@ namespace Miniräknare.Expressions
                     if (listStack.Count == 0)
                         return ResultCode.ListEndWithoutStart;
 
-                    var listToken = new ListToken(token.Parent, listStack[ListDepth()]);
+                    var listToken = new ListToken(listStack[ListDepth()]);
+                    listToken.Parent = token.Parent;
                     listStack.RemoveAt(ListDepth());
 
                     if (ListDepth() > -1)
@@ -133,13 +134,15 @@ namespace Miniräknare.Expressions
                     if (leftToken.Type == TokenType.Operator ||
                         leftToken.Type == TokenType.DecimalDigit ||
                         leftToken.Type == TokenType.DecimalNumber ||
-                        leftToken.Type == TokenType.List)
+                        leftToken.Type == TokenType.List ||
+                        leftToken.Type == TokenType.ListSeparator)
                         continue;
                     return ResultCode.InvalidTokenBeforeList;
                 }
 
                 var nameToken = (ValueToken)leftToken;
-                var funcToken = new FunctionToken(token.Parent, nameToken, listToken);
+                var funcToken = new FunctionToken(nameToken, listToken);
+                funcToken.Parent = token.Parent;
 
                 tokens[i - 1] = funcToken; // replace left token
                 tokens.RemoveAt(i); // remove current token
@@ -174,7 +177,8 @@ namespace Miniräknare.Expressions
 
                 var leftToken = tokens[i - 1];
                 if (leftToken.Type == TokenType.Operator ||
-                    leftToken.Type == TokenType.Name)
+                    leftToken.Type == TokenType.Name ||
+                    leftToken.Type == TokenType.ListSeparator)
                     continue;
 
                 if (leftToken.Type != TokenType.DecimalDigit &&
@@ -186,7 +190,8 @@ namespace Miniräknare.Expressions
                 if (multiplyOpDef == null)
                     return ResultCode.MissingMultiplicationDefinition;
 
-                var opToken = new ValueToken(token.Parent, TokenType.Operator, multiplyOpDef.Names[0]);
+                var opToken = new ValueToken(TokenType.Operator, multiplyOpDef.Names[0]);
+                opToken.Parent = token.Parent;
                 tokens.Insert(i, opToken);
             }
             return ResultCode.Ok;
@@ -298,11 +303,16 @@ namespace Miniräknare.Expressions
                                 int secondRight = opIndex + 2;
                                 if (secondRight < currentTokens.Count)
                                 {
-                                    rightToken = new ListToken(opToken.Parent, new List<Token>(2)
+                                    var subToken = new ListToken(new List<Token>(2)
                                     {
                                         rightToken,
                                         currentTokens[secondRight]
                                     });
+                                    subToken.Parent = opToken.Parent;
+                                    for (int j = 0; j < subToken.Count; i++)
+                                        subToken[j].Parent = subToken;
+
+                                    rightToken = subToken;
                                     currentTokens[right] = rightToken;
                                     currentTokens.RemoveAt(secondRight);
 
@@ -331,7 +341,11 @@ namespace Miniräknare.Expressions
                         resultList.Add(rightToken);
 
                     int firstIndex = opIndex - (leftToken != null ? 1 : 0);
-                    var resultToken = new ListToken(opToken.Parent, resultList);
+                    var resultToken = new ListToken(resultList);
+                    resultToken.Parent = opToken.Parent;
+                    for (int j = 0; j < resultToken.Count; j++)
+                        resultToken[j].Parent = resultToken;
+
                     currentTokens[firstIndex] = resultToken;
                     currentTokens.RemoveRange(firstIndex + 1, resultList.Count - 1);
 

@@ -43,13 +43,14 @@ namespace Miniräknare.Expressions
                 switch (valueToken.Type)
                 {
                     case TokenType.DecimalDigit:
-                        return CharUnicodeInfo.GetNumericValue(value[0]);
+                        return new Evaluation(new UnionValue(CharUnicodeInfo.GetNumericValue(value[0])));
 
                     case TokenType.DecimalNumber:
                         if (value.Length == 1)
-                            return CharUnicodeInfo.GetNumericValue(value[0]);
+                            return new Evaluation(new UnionValue(CharUnicodeInfo.GetNumericValue(value[0])));
                         else
-                            return double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                            return new Evaluation(new UnionValue(
+                                double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture)));
 
                     case TokenType.Name:
                         return ResolveReference.Invoke(valueToken.Value);
@@ -73,14 +74,24 @@ namespace Miniräknare.Expressions
         public Evaluation EvaluateList(ExpressionOptions options, List<Token> tokens)
         {
             if (tokens.Count == 0)
-            {
-                return Evaluation.Empty;
-            }
-            else if (tokens.Count == 1)
-            {
+                return Evaluation.Undefined;
+
+            if (tokens.Count == 1)
                 return Evaluate(options, tokens[0]);
-            }
-            else if (tokens.Count == 2)
+
+            if (ValidateOperatorList(
+                options, tokens,
+                out var opToken, out var leftToken, out var rightToken))
+                return EvaluateOperator(options, opToken, leftToken, rightToken);
+
+            return ListToCollection(options, tokens);
+        }
+
+        private bool ValidateOperatorList(
+            ExpressionOptions options, List<Token> tokens,
+            out ValueToken opToken, out Token leftToken, out Token rightToken)
+        {
+            if (tokens.Count == 2)
             {
                 for (int opIndex = 0; opIndex < tokens.Count; opIndex++)
                 {
@@ -95,30 +106,62 @@ namespace Miniräknare.Expressions
                         if (opDef.Associativity == OperatorSidedness.Both)
                             continue;
 
-                        var opToken = (ValueToken)token;
+                        opToken = (ValueToken)token;
                         for (int k = 0; k < opDef.Names.Length; k++)
                         {
                             var name = opDef.Names[k];
-                            if (name.Span.SequenceEqual(opToken.Value.Span))
-                            {
-                                var leftToken = opIndex == 0 ? null : tokens[0];
-                                var rightToken = opIndex == 1 ? null : tokens[1];
-                                return EvaluateOperator(options, opToken, leftToken, rightToken);
-                            }
+                            if (!name.Span.SequenceEqual(opToken.Value.Span))
+                                continue;
+
+                            leftToken = opIndex == 0 ? null : tokens[0];
+                            rightToken = opIndex == 1 ? null : tokens[1];
+                            return true;
                         }
                     }
                     break;
                 }
             }
-            else if (tokens.Count == 3)
+
+            if (tokens.Count == 3 &&
+                tokens[1] is ValueToken middleToken &&
+                middleToken.Type == TokenType.Operator)
             {
-                if (tokens[1] is ValueToken opToken)
-                    return EvaluateOperator(options, opToken, tokens[0], tokens[2]);
+                opToken = middleToken;
+                leftToken = tokens[0];
+                rightToken = tokens[2];
+                return true;
             }
-            return Evaluation.Undefined;
+
+            opToken = null;
+            leftToken = null;
+            rightToken = null;
+            return false;
         }
 
-        public Evaluation EvaluateOperator(
+        private Evaluation ListToCollection(ExpressionOptions options, List<Token> tokens)
+        {
+            int valueCount = 0;
+            for (int i = 0; i < tokens.Count; i++)
+                if (tokens[i].Type != TokenType.ListSeparator)
+                    valueCount++;
+
+            var evaluations = new UnionValueCollection[valueCount];
+            int evalIndex = 0;
+            for (int i = 0; i < tokens.Count; i++)
+            {
+                if (tokens[i].Type == TokenType.ListSeparator)
+                    continue;
+
+                var eval = Evaluate(options, tokens[i]);
+                if (eval.Code != EvalCode.Ok)
+                    return eval;
+
+                evaluations[evalIndex++] = eval.Values;
+            }
+            return new Evaluation(new UnionValueCollection(evaluations));
+        }
+
+        public static EvalCode ValidateOperatorTokens(
             ExpressionOptions options, ValueToken op, Token left, Token right)
         {
             var opDef = options.GetOperatorDefinition(op.Value);
@@ -127,13 +170,22 @@ namespace Miniräknare.Expressions
                 if (left == null && (
                     opDef.Associativity == OperatorSidedness.Both ||
                     opDef.Associativity.HasFlag(OperatorSidedness.Left)))
-                    return new Evaluation(EvalCode.OperatorMissingLeftValue);
+                    return EvalCode.OperatorMissingLeftValue;
 
                 if (right == null && (
                     opDef.Associativity == OperatorSidedness.Both ||
                     opDef.Associativity.HasFlag(OperatorSidedness.Right)))
-                    return new Evaluation(EvalCode.OperatorMissingRightValue);
+                    return EvalCode.OperatorMissingRightValue;
             }
+            return EvalCode.Ok;
+        }
+
+        public Evaluation EvaluateOperator(
+            ExpressionOptions options, ValueToken op, Token left, Token right)
+        {
+            var setCode = ValidateOperatorTokens(options, op, left, right);
+            if (setCode != EvalCode.Ok)
+                return new Evaluation(setCode);
 
             var leftEval = left != null ? Evaluate(options, left) : (Evaluation?)null;
             if (leftEval.HasValue)

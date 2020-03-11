@@ -43,7 +43,7 @@ namespace Miniräknare
             Permutations = CreatePermutations();
         }
 
-        public MathFormula(ExpressionOptions options, MathFormulaData data) 
+        public MathFormula(ExpressionOptions options, MathFormulaData data)
             : this(options, data.Formula.AsMemory())
         {
         }
@@ -67,7 +67,9 @@ namespace Miniräknare
             {
                 var input = _inputs[i];
 
+                var tmp = new List<Token>();
 
+                throw new NotImplementedException();
             }
             return permutations;
         }

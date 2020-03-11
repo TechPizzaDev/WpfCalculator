@@ -38,7 +38,18 @@ namespace Miniräknare
             _targetObject = targetProvider.TargetObject as DependencyObject;
             _targetProperty = targetProvider.TargetProperty as DependencyProperty;
 
-            if (!(App.Instance.TryFindResource(App.LanguageProviderKey) is AppLanguageProvider langProvider))
+            object langProviderResource = null;
+            if (DesignerProperties.GetIsInDesignMode(_targetObject))
+            {
+                if (_targetObject is FrameworkElement element)
+                    langProviderResource = element.TryFindResource(App.LanguageProviderKey);
+            }
+            else
+            {
+                langProviderResource = App.Instance.TryFindResource(App.LanguageProviderKey);
+            }
+
+            if (!(langProviderResource is AppLanguageProvider langProvider))
                 return _value = "[No Language Provider]";
 
             langProvider.PropertyChanged += LanguageData_PropertyChange;

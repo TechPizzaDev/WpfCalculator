@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -39,6 +40,7 @@ namespace Miniräknare
         public App()
         {
             Instance = this;
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
             _splashScreen = new SplashScreenWindow();
             MainWindow = _splashScreen;
@@ -99,7 +101,7 @@ namespace Miniräknare
                             }
                             else
                             {
-                                double evalValue = eval.Values.First.Double;
+                                double evalValue = (double)eval.Values.Child?.Double;
                                 string textValue = double.IsInfinity(evalValue) ? "Infinity" : evalValue.ToString();
                                 Console.WriteLine("Eval: " + textValue);
                             }
