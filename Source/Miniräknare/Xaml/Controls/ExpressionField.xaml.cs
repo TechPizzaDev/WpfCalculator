@@ -99,7 +99,15 @@ namespace Miniräknare
                 var child = collection.Child;
                 if (child != null)
                 {
-                    builder.Append(child.GetValueOrDefault().Double);
+                    double childValue = child.GetValueOrDefault().Double;
+
+                    // Cast to decimal to provide "more precise" answers.
+                    if (childValue > (double)decimal.MaxValue ||
+                        childValue < (double)decimal.MinValue)
+                        builder.Append(childValue);
+                    else
+                        builder.Append((decimal)childValue);
+
                     if (appendSeparator)
                         builder.Append(ExpressionTokenizer.ListSeparatorChar).Append(" ");
                 }

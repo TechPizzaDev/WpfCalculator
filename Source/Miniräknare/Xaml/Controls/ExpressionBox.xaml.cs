@@ -420,6 +420,16 @@ namespace Miniräknare
 
                 return new Evaluation(new UnionValue(Math.Atan(firstArg.Double) * 57.2957795));
             }
+            else if (name.Span.SequenceEqual("lg"))
+            {
+                if (arguments.Length != 1)
+                    return new Evaluation(EvalCode.InvalidArgumentCount);
+
+                if (arguments[0].Child == null)
+                    return new Evaluation(EvalCode.InvalidArguments);
+
+                return new Evaluation(new UnionValue(Math.Log10(firstArg.Double)));
+            }
             else if (name.Span.SequenceEqual("round"))
             {
                 if (arguments.Length != 1 && arguments.Length != 2)
