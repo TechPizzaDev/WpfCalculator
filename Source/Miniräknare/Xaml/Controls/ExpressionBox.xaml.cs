@@ -79,7 +79,17 @@ namespace Miniräknare
         public string VariableName
         {
             get => NameBox.Text;
-            set => NameBox.Text = value;
+            set
+            {
+                if (_lastVariableName == null)
+                    _lastVariableName = value;
+
+                if (NameBox.Text != value)
+                {
+                    NameBox.Text = value;
+                    ValidateName();
+                }
+            }
         }
 
         public string TextValue
@@ -107,7 +117,6 @@ namespace Miniräknare
         {
             InitializeComponent();
 
-            NameBox.TextChanged += NameBox_TextChanged;
             ValueBox.TextChanged += ValueBox_TextChanged;
 
             State = ExpressionBoxState.Indeterminate;
@@ -128,31 +137,6 @@ namespace Miniräknare
         }
 
         #endregion
-
-        private void NameBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            var box = (TextBox)sender;
-            if (ValidateName(box.Text.AsMemory(), out ReadOnlyMemory<char> newName))
-            {
-                if (_lastVariableName != null)
-                    MainWindow.GlobalExpressions.Remove(_lastVariableName.AsMemory());
-
-                if (!newName.IsEmpty)
-                    MainWindow.GlobalExpressions.Add(newName, this);
-
-                var newNameString = newName.ToString();
-                _lastVariableName = newNameString;
-                box.Text = newNameString;
-                InvokePropertyChanged(nameof(VariableName));
-
-                foreach (var globalBox in MainWindow.GlobalExpressions.Values)
-                    globalBox.UpdateResultValue();
-            }
-            else
-            {
-                box.Text = _lastVariableName;
-            }
-        }
 
         private void ValueBox_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -214,7 +198,7 @@ namespace Miniräknare
             return eval;
         }
 
-        public static bool ValidateName(
+        public static bool IsValidName(
             ReadOnlyMemory<char> newName,
             out ReadOnlyMemory<char> validatedName)
         {
@@ -548,13 +532,40 @@ namespace Miniräknare
 
         private void NameBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Enter && sender is TextBox textBox)
+            if (e.Key == Key.Enter)
             {
-                // Unfocus the text box and call it's binding.
                 Keyboard.ClearFocus();
+                ValidateName();
+            }
+        }
 
-                var binding = BindingOperations.GetBindingExpression(textBox, TextBox.TextProperty);
-                binding?.UpdateSource();
+        private void NameBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ValidateName();
+        }
+
+        private void ValidateName()
+        {
+            if (IsValidName(VariableName.AsMemory(), out ReadOnlyMemory<char> newName))
+            {
+                if (_lastVariableName != null)
+                    MainWindow.GlobalExpressions.Remove(_lastVariableName.AsMemory());
+
+                if (!newName.IsEmpty)
+                    MainWindow.GlobalExpressions.Add(newName, this);
+
+                var newNameString = newName.ToString();
+                _lastVariableName = newNameString;
+                
+                VariableName = newNameString;
+                InvokePropertyChanged(nameof(VariableName));
+
+                foreach (var globalBox in MainWindow.GlobalExpressions.Values)
+                    globalBox.UpdateResultValue();
+            }
+            else
+            {
+                VariableName = _lastVariableName;
             }
         }
 

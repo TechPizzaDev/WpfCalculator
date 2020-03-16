@@ -14,7 +14,7 @@
                  FontSize="14" FontWeight="Medium"
                  BorderBrush="{x:Null}" Background="{x:Null}" AcceptsTab="False" IsTabStop="False" 
                  VerticalAlignment="Center" HorizontalContentAlignment="Center" Margin="0,0,4,0"
-                 KeyDown="NameBox_KeyDown" />
+                 KeyDown="NameBox_KeyDown" LostFocus="NameBox_LostFocus" />
 
         <TextBox Grid.Column="1" x:Name="ValueBox"
                  FontSize="24" FontFamily="Consolas" VerticalContentAlignment="Center" 

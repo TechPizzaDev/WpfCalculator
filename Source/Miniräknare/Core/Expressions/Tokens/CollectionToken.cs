@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
 
 namespace Miniräknare.Expressions.Tokens
 {
-    [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(), nq}",
-        Name = "{" + nameof(GetNameDisplay) + "(), nq}")]
     public abstract class CollectionToken : Token, IList<Token>
     {
         public List<Token> Children { get; }
@@ -20,6 +17,21 @@ namespace Miniräknare.Expressions.Tokens
             set => Children[index] = value;
         }
 
+        internal override string DebuggerDisplay
+        {
+            get
+            {
+                var builder = new StringBuilder();
+                builder.Append(base.DebuggerDisplay);
+                builder.Append(" (").Append(Count).Append("): \"");
+
+                ToStringCore(builder);
+
+                builder.Append("\"");
+                return builder.ToString();
+            }
+        }
+
         public CollectionToken(TokenType type, List<Token> children) : base(type)
         {
             Children = children ?? throw new ArgumentNullException(nameof(children));
@@ -29,29 +41,14 @@ namespace Miniräknare.Expressions.Tokens
 
         public override string ToString()
         {
-            return ToStringCore().ToString();
+            return ToStringCore(new StringBuilder()).ToString();
         }
 
-        private string GetNameDisplay()
+        protected virtual StringBuilder ToStringCore(StringBuilder builder)
         {
-            return Type + " (" + Count + ")";
-        }
-
-        private string GetDebuggerDisplay()
-        {
-            var builder = ToStringCore();
-            return builder.ToString();
-        }
-
-        protected virtual StringBuilder ToStringCore()
-        {
-            var builder = new StringBuilder();
-            builder.Append(ExpressionTokenizer.ListStartChar);
-
             foreach (var token in Children)
                 builder.Append(token.ToString());
 
-            builder.Append(ExpressionTokenizer.ListEndChar);
             return builder;
         }
 

@@ -90,12 +90,12 @@
                                                         <ColumnDefinition Width="*" />
                                                     </Grid.ColumnDefinitions>
 
-                                                    <Image Grid.Column="0" Margin="1" Source="{StaticResource Icon_SearchGlass}"
-                                                           VerticalAlignment="Bottom"/>
-                                                    
-                                                    <TextBox Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                                                             FontSize="15" VerticalContentAlignment="Center" Margin="0,2,1,0"
-                                                             Height="26" MaxWidth="254" />
+                                                    <Image Grid.Column="0" Source="{StaticResource Icon_SearchGlass}"
+                                                           Margin="1" VerticalAlignment="Bottom"/>
+
+                                                    <TextBox Grid.Column="2" Margin="0,2,1,0" Height="26" MaxWidth="254"
+                                                             HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                                                             FontSize="15" VerticalContentAlignment="Center" />
                                                 </Grid>
                                             </l:EnabledContentPresenter>
                                         </ControlTemplate>

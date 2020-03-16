@@ -69,6 +69,16 @@ namespace Miniräknare
 
                 var tmp = new List<Token>();
 
+                for (int j = 0; j < _tree.Tokens.Count; j++)
+                {
+                    var token = _tree.Tokens[j];
+                    if (token is ListToken list)
+                    {
+                        Console.WriteLine(list.Children[0].Parent);
+                        break;
+                    }
+                }
+
                 throw new NotImplementedException();
             }
             return permutations;

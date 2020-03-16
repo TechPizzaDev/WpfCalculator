@@ -102,11 +102,11 @@ namespace Miniräknare
                     double childValue = child.GetValueOrDefault().Double;
 
                     // Cast to decimal to provide "more precise" answers.
-                    if (childValue > (double)decimal.MaxValue ||
-                        childValue < (double)decimal.MinValue)
-                        builder.Append(childValue);
-                    else
+                    if (childValue > (double)decimal.MinValue &&
+                        childValue < (double)decimal.MaxValue)
                         builder.Append((decimal)childValue);
+                    else
+                        builder.Append(childValue);
 
                     if (appendSeparator)
                         builder.Append(ExpressionTokenizer.ListSeparatorChar).Append(" ");
