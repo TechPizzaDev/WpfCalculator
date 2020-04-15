@@ -113,14 +113,14 @@ namespace Miniräknare
                 }
                 else if (collection.Children != null)
                 {
-                    builder.Append(ExpressionTokenizer.ListStartChar);
+                    builder.Append(ExpressionTokenizer.ListOpeningChar);
 
                     var children = collection.Children;
                     for (int i = 0; i < children.Length; i++)
                     {
                         Append(children[i], appendSeparator: i < children.Length - 1);
                     }
-                    builder.Append(ExpressionTokenizer.ListEndChar);
+                    builder.Append(ExpressionTokenizer.ListClosingChar);
                 }
             }
 

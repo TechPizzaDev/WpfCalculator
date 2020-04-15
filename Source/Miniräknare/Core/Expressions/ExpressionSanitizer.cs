@@ -60,7 +60,7 @@ namespace Miniräknare.Expressions
 
         public static SanitizeResult Sanitize(ExpressionTree tree)
         {
-            return Sanitize(tree.Tokens);
+            return Sanitize(tree.Tokens.Children);
         }
 
         #region RemoveWhiteSpaces
@@ -287,7 +287,6 @@ namespace Miniräknare.Expressions
                     var decimalString = builder.ToString().AsMemory();
 
                     var decimalToken = new ValueToken(TokenType.DecimalNumber, decimalString);
-                    decimalToken.Parent = token.Parent;
                     tokens[i] = decimalToken; // replace the current token
                     tokens.RemoveAt(i + 1); // remove the next token
 

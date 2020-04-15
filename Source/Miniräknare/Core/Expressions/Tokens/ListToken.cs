@@ -5,9 +5,14 @@ namespace Miniräknare.Expressions.Tokens
 {
     public class ListToken : CollectionToken
     {
-        public static readonly string ListStartEndPair = ListStartChar.ToString() + ListEndChar.ToString();
+        public static readonly string ListStartEndPair =
+            ListOpeningChar.ToString() + ListClosingChar.ToString();
 
         public ListToken(List<Token> tokens) : base(TokenType.List, tokens)
+        {
+        }
+
+        public ListToken() : this(new List<Token>())
         {
         }
     }

@@ -25,7 +25,7 @@ namespace Miniräknare.Expressions.Tokens
                 builder.Append(base.DebuggerDisplay);
                 builder.Append(" (").Append(Count).Append("): \"");
 
-                ToStringCore(builder);
+                ToStringCore(builder, false);
 
                 builder.Append("\"");
                 return builder.ToString();
@@ -37,17 +37,29 @@ namespace Miniräknare.Expressions.Tokens
             Children = children ?? throw new ArgumentNullException(nameof(children));
         }
 
+        public void RemoveRange(int index, int count)
+        {
+            Children.RemoveRange(index, count);
+        }
+
         #region ToString
 
         public override string ToString()
         {
-            return ToStringCore(new StringBuilder()).ToString();
+            return ToStringCore(new StringBuilder(), true).ToString();
         }
 
-        protected virtual StringBuilder ToStringCore(StringBuilder builder)
+        protected virtual StringBuilder ToStringCore(
+            StringBuilder builder, bool isolate)
         {
+            if (isolate)
+                builder.Append(ExpressionTokenizer.ListOpeningChar);
+
             foreach (var token in Children)
                 builder.Append(token.ToString());
+
+            if (isolate)
+                builder.Append(ExpressionTokenizer.ListClosingChar);
 
             return builder;
         }

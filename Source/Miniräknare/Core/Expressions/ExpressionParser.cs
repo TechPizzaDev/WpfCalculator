@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using Miniräknare.Expressions.Tokens;
 
 namespace Miniräknare.Expressions
@@ -33,16 +34,17 @@ namespace Miniräknare.Expressions
 
             ResultCode code;
             if ((code = MakeLists(tokens)) != ResultCode.Ok ||
-                (code = MakeFunctions(tokens, options)) != ResultCode.Ok ||
-                (code = MakeImplicitMultiplications(tokens, options)) != ResultCode.Ok ||
-                (code = MakeOperatorGroups(tokens, options)) != ResultCode.Ok)
+                (code = MakeFunctions(options, tokens)) != ResultCode.Ok ||
+                (code = MakeImplicitMultiplications(options, tokens)) != ResultCode.Ok ||
+                (code = MakeOperatorGroups(options, tokens)) != ResultCode.Ok ||
+                (code = AssignParents(options, tokens)) != ResultCode.Ok)
                 return code;
             return code;
         }
 
         public static ResultCode Parse(ExpressionTree tree)
         {
-            return Parse(tree.ExpressionOptions, tree.Tokens);
+            return Parse(tree.ExpressionOptions, tree.Tokens.Children);
         }
 
         #region MakeLists
@@ -57,20 +59,19 @@ namespace Miniräknare.Expressions
                 var token = tokens[i];
                 var currentType = token.Type;
 
-                if (currentType == TokenType.ListStart)
+                if (currentType == TokenType.ListOpening)
                 {
                     listStack.Add(new List<Token>());
 
                     // Remove the ListStart token.
                     tokens.RemoveAt(i--);
                 }
-                else if (currentType == TokenType.ListEnd)
+                else if (currentType == TokenType.ListClosing)
                 {
                     if (listStack.Count == 0)
                         return ResultCode.ListEndWithoutStart;
 
                     var listToken = new ListToken(listStack[ListDepth()]);
-                    listToken.Parent = token.Parent;
                     listStack.RemoveAt(ListDepth());
 
                     if (ListDepth() > -1)
@@ -111,7 +112,7 @@ namespace Miniräknare.Expressions
 
         #region MakeFunctions
 
-        private static ResultCode MakeFunctions(List<Token> tokens, ExpressionOptions options)
+        private static ResultCode MakeFunctions(ExpressionOptions options, List<Token> tokens)
         {
             // Loop from the end so we can call "MakeFunctions" recursively.
             for (int i = tokens.Count; i-- > 0;)
@@ -122,7 +123,7 @@ namespace Miniräknare.Expressions
 
                 var listToken = (ListToken)token;
                 ResultCode code;
-                if ((code = MakeFunctions(listToken.Children, options)) != ResultCode.Ok)
+                if ((code = MakeFunctions(options, listToken.Children)) != ResultCode.Ok)
                     return code;
 
                 if (i - 1 < 0)
@@ -142,7 +143,6 @@ namespace Miniräknare.Expressions
 
                 var nameToken = (ValueToken)leftToken;
                 var funcToken = new FunctionToken(nameToken, listToken);
-                funcToken.Parent = token.Parent;
 
                 tokens[i - 1] = funcToken; // replace left token
                 tokens.RemoveAt(i); // remove current token
@@ -155,15 +155,15 @@ namespace Miniräknare.Expressions
         #region MakeImplicitMultiplications
 
         private static ResultCode MakeImplicitMultiplications(
-            List<Token> tokens, ExpressionOptions options)
+            ExpressionOptions options, List<Token> tokens)
         {
             for (int i = 0; i < tokens.Count; i++)
             {
                 var token = tokens[i];
                 if (token is CollectionToken collectionToken)
                 {
-                    ResultCode code;
-                    if ((code = MakeImplicitMultiplications(collectionToken.Children, options)) != ResultCode.Ok)
+                    var code = MakeImplicitMultiplications(options, collectionToken.Children);
+                    if (code != ResultCode.Ok)
                         return code;
                 }
                 else if (token.Type != TokenType.Name)
@@ -191,7 +191,6 @@ namespace Miniräknare.Expressions
                     return ResultCode.MissingMultiplicationDefinition;
 
                 var opToken = new ValueToken(TokenType.Operator, multiplyOpDef.Names[0]);
-                opToken.Parent = token.Parent;
                 tokens.Insert(i, opToken);
             }
             return ResultCode.Ok;
@@ -199,9 +198,9 @@ namespace Miniräknare.Expressions
 
         #endregion
 
-        #region MakeOperationsGroups
+        #region MakeOperatorGroups
 
-        private static ResultCode MakeOperatorGroups(List<Token> tokens, ExpressionOptions options)
+        private static ResultCode MakeOperatorGroups(ExpressionOptions options, List<Token> tokens)
         {
             var listStack = new Stack<List<Token>>();
             listStack.Push(tokens);
@@ -308,9 +307,6 @@ namespace Miniräknare.Expressions
                                         rightToken,
                                         currentTokens[secondRight]
                                     });
-                                    subToken.Parent = opToken.Parent;
-                                    for (int j = 0; j < subToken.Count; i++)
-                                        subToken[j].Parent = subToken;
 
                                     rightToken = subToken;
                                     currentTokens[right] = rightToken;
@@ -332,20 +328,19 @@ namespace Miniräknare.Expressions
                         sideTokenCount++;
                     if (rightToken != null)
                         sideTokenCount++;
-                    var resultList = new List<Token>(1 + sideTokenCount);
 
-                    if (leftToken != null)
-                        resultList.Add(leftToken);
+                    // Try to skip making a 1-item list.
+                    int resultCount = 1 + sideTokenCount;
+                    if (resultCount == currentTokens.Count)
+                        continue;
+
+                    var resultList = new List<Token>(resultCount);
+                    resultList.AddNonNull(leftToken);
                     resultList.Add(opToken);
-                    if (rightToken != null)
-                        resultList.Add(rightToken);
+                    resultList.AddNonNull(rightToken);
 
                     int firstIndex = opIndex - (leftToken != null ? 1 : 0);
                     var resultToken = new ListToken(resultList);
-                    resultToken.Parent = opToken.Parent;
-                    for (int j = 0; j < resultToken.Count; j++)
-                        resultToken[j].Parent = resultToken;
-
                     currentTokens[firstIndex] = resultToken;
                     currentTokens.RemoveRange(firstIndex + 1, resultList.Count - 1);
 
@@ -353,6 +348,19 @@ namespace Miniräknare.Expressions
                     opShifts.Add((opIndex, nextShift));
                 }
             }
+            return ResultCode.Ok;
+        }
+
+        #endregion
+
+        #region AssignParents
+
+        public static ResultCode AssignParents(ExpressionOptions options, List<Token> root)
+        {
+            var stack = new List<List<Token>>();
+
+
+
             return ResultCode.Ok;
         }
 

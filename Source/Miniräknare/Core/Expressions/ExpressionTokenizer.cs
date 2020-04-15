@@ -10,9 +10,9 @@ namespace Miniräknare.Expressions
         private static TokenDefinition[] _tokenDefinitions;
 
         public const char SpaceChar = '_';
-        public const char ListStartChar = '(';
+        public const char ListOpeningChar = '(';
         public const char ListSeparatorChar = ',';
-        public const char ListEndChar = ')';
+        public const char ListClosingChar = ')';
 
         #region Static Constructor
 
@@ -37,8 +37,8 @@ namespace Miniräknare.Expressions
                 decimalNumberDef,
                 NewDef(TokenType.WhiteSpace, char.IsWhiteSpace),
                 NewDef(TokenType.Space, IsSpaceToken),
-                NewDef(TokenType.ListStart, c => c == ListStartChar, true),
-                NewDef(TokenType.ListEnd, c => c == ListEndChar, true),
+                NewDef(TokenType.ListOpening, c => c == ListOpeningChar, true),
+                NewDef(TokenType.ListClosing, c => c == ListClosingChar, true),
                 NewDef(TokenType.ListSeparator, c => c == ListSeparatorChar, true)
             };
         }

@@ -22,7 +22,7 @@ namespace Miniräknare
         #region IExpressionTree
 
         public ExpressionOptions ExpressionOptions => _tree.ExpressionOptions;
-        public IReadOnlyList<Token> Tokens => _tree.Tokens;
+        public IReadOnlyList<Token> Tokens => _tree.Tokens.Children;
 
         #endregion
 
@@ -62,26 +62,32 @@ namespace Miniräknare
 
         private MathFormula[] CreatePermutations()
         {
+            // TODO: put this into a Solve() func
+
             var permutations = new MathFormula[_inputs.Count];
             for (int i = 0; i < permutations.Length; i++)
             {
-                var input = _inputs[i];
+                var target = _inputs[i];
 
-                var tmp = new List<Token>();
-
-                for (int j = 0; j < _tree.Tokens.Count; j++)
-                {
-                    var token = _tree.Tokens[j];
-                    if (token is ListToken list)
-                    {
-                        Console.WriteLine(list.Children[0].Parent);
-                        break;
-                    }
-                }
+                var tree = CreateTokenHierarchy(target);
 
                 throw new NotImplementedException();
             }
             return permutations;
+        }
+
+        private List<Token> CreateTokenHierarchy(Token target)
+        {
+            var tree = new List<Token>();
+            tree.Add(target);
+
+            Token parent = target;
+            while((parent = parent.Parent) != null)
+            {
+                tree.Add(parent);
+            }
+
+            return tree;
         }
     }
 }

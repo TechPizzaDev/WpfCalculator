@@ -7,17 +7,17 @@ namespace Miniräknare.Expressions
     public class ExpressionTree : IExpressionTree
     {
         public ExpressionOptions ExpressionOptions { get; }
-        public List<Token> Tokens { get; }
+        public ListToken Tokens { get; }
 
-        IReadOnlyList<Token> IExpressionTree.Tokens => Tokens;
+        IReadOnlyList<Token> IExpressionTree.Tokens => Tokens.Children;
 
-        public ExpressionTree(ExpressionOptions options, List<Token> tokens)
+        public ExpressionTree(ExpressionOptions options, ListToken tokens)
         {
             ExpressionOptions = options ?? throw new ArgumentNullException(nameof(options));
             Tokens = tokens ?? throw new ArgumentNullException(nameof(tokens));
         }
 
-        public ExpressionTree(ExpressionOptions options) : this(options, new List<Token>())
+        public ExpressionTree(ExpressionOptions options) : this(options, new ListToken())
         {
         }
     }

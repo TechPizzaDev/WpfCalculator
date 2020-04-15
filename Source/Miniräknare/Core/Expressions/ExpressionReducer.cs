@@ -11,7 +11,7 @@ namespace Miniräknare.Expressions
             Ok
         }
 
-        public static ResultCode Reduce(List<Token> tokens, ExpressionOptions options)
+        public static ResultCode Reduce(ExpressionOptions options, List<Token> tokens)
         {
             // TODO: the reducer can currently break expressions pretty hard, so fix it
             throw new NotImplementedException();
@@ -20,17 +20,17 @@ namespace Miniräknare.Expressions
             if (options == null) throw new ArgumentNullException(nameof(options));
 
             ResultCode code;
-            if ((code = ReduceLists(tokens, options)) != ResultCode.Ok)
+            if ((code = ReduceLists(options, tokens)) != ResultCode.Ok)
                 return code;
             return code;
         }
 
         public static ResultCode Reduce(ExpressionTree tree)
         {
-            return Reduce(tree.Tokens, tree.ExpressionOptions);
+            return Reduce(tree.ExpressionOptions, tree.Tokens.Children);
         }
 
-        private static ResultCode ReduceLists(List<Token> tokens, ExpressionOptions options)
+        private static ResultCode ReduceLists(ExpressionOptions options, List<Token> tokens)
         {
             var listStack = new Stack<List<Token>>();
             listStack.Push(tokens);

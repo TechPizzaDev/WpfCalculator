@@ -33,12 +33,10 @@ namespace Miniräknare.Expressions.Tokens
             ArgumentList = arguments ?? throw new ArgumentNullException(nameof(arguments));
         }
 
-        protected override StringBuilder ToStringCore(StringBuilder builder)
+        protected override StringBuilder ToStringCore(StringBuilder builder, bool isolate)
         {
             builder.Append(Name);
-            builder.Append(ExpressionTokenizer.ListStartChar);
-            base.ToStringCore(builder);
-            builder.Append(ExpressionTokenizer.ListEndChar);
+            base.ToStringCore(builder, true);
             return builder;
         }
     }

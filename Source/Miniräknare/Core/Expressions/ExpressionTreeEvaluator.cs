@@ -68,7 +68,7 @@ namespace Miniräknare.Expressions
 
         public Evaluation EvaluateTree(ExpressionTree tree)
         {
-            return EvaluateList(tree.ExpressionOptions, tree.Tokens);
+            return EvaluateList(tree.ExpressionOptions, tree.Tokens.Children);
         }
 
         public Evaluation EvaluateList(ExpressionOptions options, List<Token> tokens)
