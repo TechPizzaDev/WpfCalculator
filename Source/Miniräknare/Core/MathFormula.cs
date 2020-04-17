@@ -69,14 +69,14 @@ namespace Miniräknare
             {
                 var target = _inputs[i];
 
-                var tree = CreateTokenHierarchy(target);
+                var tree = CreateTokenTreePath(target);
 
                 throw new NotImplementedException();
             }
             return permutations;
         }
 
-        private List<Token> CreateTokenHierarchy(Token target)
+        private List<Token> CreateTokenTreePath(Token target)
         {
             var tree = new List<Token>();
             tree.Add(target);

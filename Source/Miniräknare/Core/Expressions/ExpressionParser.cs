@@ -328,12 +328,8 @@ namespace Miniräknare.Expressions
                         sideTokenCount++;
                     if (rightToken != null)
                         sideTokenCount++;
-
-                    // Try to skip making a 1-item list.
+                    
                     int resultCount = 1 + sideTokenCount;
-                    if (resultCount == currentTokens.Count)
-                        continue;
-
                     var resultList = new List<Token>(resultCount);
                     resultList.AddNonNull(leftToken);
                     resultList.Add(opToken);
