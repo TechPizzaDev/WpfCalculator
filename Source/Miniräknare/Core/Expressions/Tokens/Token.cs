@@ -7,7 +7,7 @@ namespace Miniräknare.Expressions.Tokens
     [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ", nq}")]
     public abstract class Token
     {
-        public ListToken Parent { get; set; }
+        public CollectionToken Parent { get; set; }
         public TokenType Type { get; }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

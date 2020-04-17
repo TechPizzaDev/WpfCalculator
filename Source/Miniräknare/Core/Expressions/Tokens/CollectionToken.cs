@@ -49,16 +49,24 @@ namespace Miniräknare.Expressions.Tokens
             return ToStringCore(new StringBuilder(), true).ToString();
         }
 
-        protected virtual StringBuilder ToStringCore(
-            StringBuilder builder, bool isolate)
+        public virtual StringBuilder ToStringCore(StringBuilder builder, bool enclose)
         {
-            if (isolate)
+            if (enclose)
                 builder.Append(ExpressionTokenizer.ListOpeningChar);
+            
+            for (int i = 0; i < Children.Count; i++)
+            {
+                var token = Children[i];
+                if (token is ListToken listToken)
+                    listToken.ToStringCore(builder, true);
+                else
+                    builder.Append(token.ToString());
 
-            foreach (var token in Children)
-                builder.Append(token.ToString());
+                if (token.Type == TokenType.ListSeparator && i < Children.Count - 1)
+                    builder.Append(' ');
+            }
 
-            if (isolate)
+            if (enclose)
                 builder.Append(ExpressionTokenizer.ListClosingChar);
 
             return builder;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Miniräknare.Expressions.Tokens
@@ -6,16 +7,15 @@ namespace Miniräknare.Expressions.Tokens
     public class FunctionToken : CollectionToken
     {
         public ValueToken Name { get; }
-        public ListToken ArgumentList { get; }
 
         public int ArgumentCount
         {
             get
             {
                 int count = 0;
-                for (int i = 0; i < ArgumentList.Count; i++)
+                for (int i = 0; i < Children.Count; i++)
                 {
-                    if (ArgumentList[i].Type == TokenType.ListSeparator)
+                    if (Children[i].Type == TokenType.ListSeparator)
                         continue;
                     count++;
                 }
@@ -23,17 +23,15 @@ namespace Miniräknare.Expressions.Tokens
             }
         }
 
-        public FunctionToken(ValueToken name, ListToken arguments) 
-            : base(TokenType.Function, arguments.Children)
+        public FunctionToken(ValueToken name, List<Token> arguments)
+            : base(TokenType.Function, arguments)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             if (name.Type != TokenType.Name)
                 throw new ArgumentException("Invalid token type.", nameof(name));
-
-            ArgumentList = arguments ?? throw new ArgumentNullException(nameof(arguments));
         }
 
-        protected override StringBuilder ToStringCore(StringBuilder builder, bool isolate)
+        public override StringBuilder ToStringCore(StringBuilder builder, bool enclose)
         {
             builder.Append(Name);
             base.ToStringCore(builder, true);

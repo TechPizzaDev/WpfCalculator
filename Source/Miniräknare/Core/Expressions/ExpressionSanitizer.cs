@@ -52,8 +52,7 @@ namespace Miniräknare.Expressions
             if ((result = RemoveWhiteSpaces(tokens)).Code != ResultCode.Ok ||
                 (result = ValidateTypesInGroups(builder, tokens)).Code != ResultCode.Ok ||
                 (result = MergeGroupsOfSingles(builder, tokens)).Code != ResultCode.Ok ||
-                (result = MergeGroupsOfMultiples(builder, tokens)).Code != ResultCode.Ok ||
-                (result = ValidateFunctionArguments(tokens)).Code != ResultCode.Ok)
+                (result = MergeGroupsOfMultiples(builder, tokens)).Code != ResultCode.Ok)
                 return result;
             return result;
         }
@@ -298,51 +297,6 @@ namespace Miniräknare.Expressions
 
             End:
                 lastToken = token;
-            }
-            return SanitizeResult.Ok;
-        }
-
-        #endregion
-
-        #region ValidateFunctionArguments
-
-        private static SanitizeResult ValidateFunctionArguments(List<Token> tokens)
-        {
-            // TODO: remove recursion
-
-            static SanitizeResult ValidateFunction(FunctionToken function)
-            {
-                TokenType? lastArgType = null;
-                for (int i = 0; i < function.ArgumentList.Count; i++)
-                {
-                    var argToken = function.ArgumentList[i];
-                    if (argToken.Type == TokenType.ListSeparator)
-                    {
-                        if (!lastArgType.HasValue || 
-                            lastArgType == TokenType.ListSeparator)
-                            return new SanitizeResult(ResultCode.UnexpectedListSeparator, argToken);
-
-                        function.ArgumentList.RemoveAt(i--);
-                    }
-                    lastArgType = argToken.Type;
-                }
-                return SanitizeResult.Ok;
-            }
-
-            SanitizeResult result;
-            for (int i = 0; i < tokens.Count; i++)
-            {
-                var currentToken = tokens[i];
-                if (currentToken is FunctionToken function)
-                {
-                    if ((result = ValidateFunction(function)).Code != ResultCode.Ok)
-                        return result;
-                }
-
-                // This works on functions and lists.
-                if (currentToken is CollectionToken collection)
-                    if ((result = ValidateFunctionArguments(collection.Children)).Code != ResultCode.Ok)
-                        return result;
             }
             return SanitizeResult.Ok;
         }

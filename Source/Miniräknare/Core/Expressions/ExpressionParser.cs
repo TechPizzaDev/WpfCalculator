@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using Miniräknare.Expressions.Tokens;
 
@@ -31,6 +32,8 @@ namespace Miniräknare.Expressions
 
             if (tokens.Count == 0)
                 return ResultCode.NoTokens;
+
+            // TODO: check for valid placement of list separators
 
             ResultCode code;
             if ((code = MakeLists(tokens)) != ResultCode.Ok ||
@@ -114,39 +117,74 @@ namespace Miniräknare.Expressions
 
         private static ResultCode MakeFunctions(ExpressionOptions options, List<Token> tokens)
         {
-            // Loop from the end so we can call "MakeFunctions" recursively.
-            for (int i = tokens.Count; i-- > 0;)
+            var stack = new Stack<List<Token>>();
+            stack.Push(tokens);
+
+            var argumentAccumulator = new List<Token>();
+            var argumentListAccumulator = new List<Token>();
+
+            while (stack.Count > 0)
             {
-                var token = tokens[i];
-                if (token.Type != TokenType.List)
-                    continue;
+                bool hasList = false;
+                var list = stack.Pop();
 
-                var listToken = (ListToken)token;
-                ResultCode code;
-                if ((code = MakeFunctions(options, listToken.Children)) != ResultCode.Ok)
-                    return code;
-
-                if (i - 1 < 0)
-                    continue; // We reached the list's beginning.
-
-                var leftToken = tokens[i - 1];
-                if (leftToken.Type != TokenType.Name)
+                for (int i = list.Count; i-- > 0;)
                 {
-                    if (leftToken.Type == TokenType.Operator ||
-                        leftToken.Type == TokenType.DecimalDigit ||
-                        leftToken.Type == TokenType.DecimalNumber ||
-                        leftToken.Type == TokenType.List ||
-                        leftToken.Type == TokenType.ListSeparator)
-                        continue;
-                    return ResultCode.InvalidTokenBeforeList;
+                    var token = list[i];
+
+                    if (hasList)
+                    {
+                        hasList = false;
+
+                        if (token.Type == TokenType.Operator ||
+                            token.Type == TokenType.DecimalDigit ||
+                            token.Type == TokenType.DecimalNumber ||
+                            token.Type == TokenType.List)
+                            continue;
+
+                        if (token.Type != TokenType.Name)
+                            return ResultCode.InvalidTokenBeforeList;
+
+                        void FlushArgumentAccumulator()
+                        {
+                            if (argumentAccumulator.Count == 0)
+                                return;
+
+                            argumentListAccumulator.Add(new ListToken(argumentAccumulator));
+                            argumentAccumulator = new List<Token>();
+                        }
+
+                        var arguments = (ListToken)list[i + 1];
+                        foreach (var argument in arguments)
+                        {
+                            if (argument.Type == TokenType.ListSeparator)
+                            {
+                                FlushArgumentAccumulator();
+                                argumentListAccumulator.Add(argument);
+                            }
+                            else
+                            {
+                                argumentAccumulator.Add(argument);
+                            }
+                        }
+                        FlushArgumentAccumulator();
+
+                        var name = (ValueToken)token;
+                        var func = new FunctionToken(name, argumentListAccumulator);
+                        argumentListAccumulator = new List<Token>();
+
+                        list[i] = func;
+                        list.RemoveAt(i + 1);
+                    }
+
+                    if (token is ListToken listToken)
+                    {
+                        hasList = true;
+                        stack.Push(listToken.Children);
+                    }
                 }
-
-                var nameToken = (ValueToken)leftToken;
-                var funcToken = new FunctionToken(nameToken, listToken);
-
-                tokens[i - 1] = funcToken; // replace left token
-                tokens.RemoveAt(i); // remove current token
             }
+
             return ResultCode.Ok;
         }
 
@@ -328,8 +366,12 @@ namespace Miniräknare.Expressions
                         sideTokenCount++;
                     if (rightToken != null)
                         sideTokenCount++;
-                    
+
+                    // Try to skip making a 1-item list.
                     int resultCount = 1 + sideTokenCount;
+                    if (resultCount == currentTokens.Count)
+                        continue;
+
                     var resultList = new List<Token>(resultCount);
                     resultList.AddNonNull(leftToken);
                     resultList.Add(opToken);
@@ -353,9 +395,24 @@ namespace Miniräknare.Expressions
 
         public static ResultCode AssignParents(ExpressionOptions options, List<Token> root)
         {
-            var stack = new List<List<Token>>();
+            var stack = new Stack<CollectionToken>();
 
+            // Tokens in the root list have 'null' parent.
+            foreach (var token in root)
+                if (token is CollectionToken collection)
+                    stack.Push(collection);
 
+            while (stack.Count > 0)
+            {
+                var parent = stack.Pop();
+                foreach (var token in parent)
+                {
+                    token.Parent = parent;
+
+                    if (token is CollectionToken collection)
+                        stack.Push(collection);
+                }
+            }
 
             return ResultCode.Ok;
         }

@@ -69,7 +69,7 @@ namespace Miniräknare
             {
                 var target = _inputs[i];
 
-                var tree = CreateTokenTreePath(target);
+                var path = CreateTokenTreePath(target);
 
                 throw new NotImplementedException();
             }

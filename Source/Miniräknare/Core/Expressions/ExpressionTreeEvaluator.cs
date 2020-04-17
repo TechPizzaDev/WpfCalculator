@@ -210,12 +210,13 @@ namespace Miniräknare.Expressions
         {
             var argValues = new UnionValueCollection[function.ArgumentCount];
             int valueIndex = 0;
-            for (int i = 0; i < function.ArgumentList.Count; i++)
+            for (int i = 0; i < function.Children.Count; i++)
             {
-                if (function.ArgumentList[i].Type == TokenType.ListSeparator)
+                var arg = function.Children[i];
+                if (arg.Type == TokenType.ListSeparator)
                     continue;
 
-                var eval = Evaluate(options, function.ArgumentList[i]);
+                var eval = Evaluate(options, arg);
                 if (eval.Code != EvalCode.Ok)
                     return eval;
 
