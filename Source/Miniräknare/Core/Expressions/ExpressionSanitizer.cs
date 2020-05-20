@@ -59,7 +59,7 @@ namespace Miniräknare.Expressions
 
         public static SanitizeResult Sanitize(ExpressionTree tree)
         {
-            return Sanitize(tree.Tokens.Children);
+            return Sanitize(tree.Tokens);
         }
 
         #region RemoveWhiteSpaces

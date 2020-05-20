@@ -5,7 +5,7 @@ namespace Miniräknare.Expressions
 {
     public interface IExpressionTree
     {
-        public ExpressionOptions ExpressionOptions { get; }
+        public ExpressionOptions Options { get; }
         public IReadOnlyList<Token> Tokens { get; }
     }
 }

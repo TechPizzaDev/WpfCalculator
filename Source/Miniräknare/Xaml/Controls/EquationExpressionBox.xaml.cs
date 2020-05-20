@@ -3,11 +3,11 @@ using System.Windows.Controls;
 
 namespace Miniräknare
 {
-    public partial class FormulaExpressionBox : UserControl
+    public partial class EquationExpressionBox : UserControl
     {
-        public FormulaField ParentField { get; }
+        public EquationField ParentField { get; }
 
-        public FormulaExpressionBox(FormulaField parentField)
+        public EquationExpressionBox(EquationField parentField)
         {
             InitializeComponent();
 

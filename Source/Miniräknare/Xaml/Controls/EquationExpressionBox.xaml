@@ -1,5 +1,5 @@
 ﻿<UserControl
-    x:Class="Miniräknare.FormulaExpressionBox"
+    x:Class="Miniräknare.EquationExpressionBox"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:l="clr-namespace:Miniräknare">

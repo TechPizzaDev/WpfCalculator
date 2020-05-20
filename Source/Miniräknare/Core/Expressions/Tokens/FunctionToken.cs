@@ -34,8 +34,22 @@ namespace Miniräknare.Expressions.Tokens
         public override StringBuilder ToStringCore(StringBuilder builder, bool enclose)
         {
             builder.Append(Name);
-            base.ToStringCore(builder, true);
+            builder.Append(ExpressionTokenizer.ListOpeningChar);
+            for (int i = 0; i < Children.Count; i++)
+            {
+                var token = Children[i];
+                if (token is ListToken listToken)
+                    listToken.ToStringCore(builder, false);
+                else
+                    builder.Append(token.ToString());
+            }
+            builder.Append(ExpressionTokenizer.ListClosingChar);
             return builder;
+        }
+
+        public override Token Clone()
+        {
+            return new FunctionToken((ValueToken)Name.Clone(), new List<Token>(Children));
         }
     }
 }

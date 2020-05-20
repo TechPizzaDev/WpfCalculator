@@ -25,6 +25,11 @@ namespace Miniräknare.Expressions.Tokens
             return true;
         }
 
+        public override Token Clone()
+        {
+            return new ValueToken(TokenType.Name, Value);
+        }
+
         public override string ToString()
         {
             return Value.ToString();

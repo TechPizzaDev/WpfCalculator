@@ -42,6 +42,25 @@ namespace Miniräknare.Expressions.Tokens
             Children.RemoveRange(index, count);
         }
 
+        public override bool IsOrContains(Token other)
+        {
+            // TODO: make stack based
+
+            if (base.IsOrContains(other))
+                return true;
+
+            foreach(var child in Children)
+            {
+                if (child == other)
+                    return true;
+
+                if (child is CollectionToken)
+                    if (child.IsOrContains(other))
+                        return true;
+            }
+            return false;
+        }
+
         #region ToString
 
         public override string ToString()
@@ -61,9 +80,6 @@ namespace Miniräknare.Expressions.Tokens
                     listToken.ToStringCore(builder, true);
                 else
                     builder.Append(token.ToString());
-
-                if (token.Type == TokenType.ListSeparator && i < Children.Count - 1)
-                    builder.Append(' ');
             }
 
             if (enclose)

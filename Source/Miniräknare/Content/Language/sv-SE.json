@@ -42,7 +42,7 @@
 			}
 		},
 
-		"Formulas": {
+		"Equations": {
 			"_names": {
 				"Force": "Kraft",
 				"Chemistry": "Kemi",
@@ -88,7 +88,7 @@
 			"Remove": "Ta bort",
 
 			"Loading": {
-				"InternalFormulas": "Laddar interna formler..."
+				"CoreEquations": "Laddar centrala ekvationer..."
 			}
 		}
 	}

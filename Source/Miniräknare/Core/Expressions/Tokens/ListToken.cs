@@ -15,5 +15,10 @@ namespace Miniräknare.Expressions.Tokens
         public ListToken() : this(new List<Token>())
         {
         }
+
+        public override Token Clone()
+        {
+            return new ListToken(new List<Token>(Children));
+        }
     }
 }

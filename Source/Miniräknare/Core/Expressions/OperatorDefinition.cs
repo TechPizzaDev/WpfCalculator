@@ -12,10 +12,10 @@ namespace Miniräknare.Expressions
         public OperatorSidedness Associativity { get; }
 
         public OperatorDefinition(
-            char[] names, 
             int precedence,
             OperatorType type,
-            OperatorSidedness associativity)
+            OperatorSidedness associativity,
+            params char[] names)
         {
             if (names == null) throw new ArgumentNullException(nameof(names));
             if (names.Length == 0) throw new ArgumentException(nameof(names));
@@ -24,15 +24,6 @@ namespace Miniräknare.Expressions
             Precedence = precedence;
             Type = type;
             Associativity = associativity;
-        }
-
-        public OperatorDefinition(
-            char name,
-            int priority,
-            OperatorType type,
-            OperatorSidedness sidedness) :
-            this(new[] { name }, priority, type, sidedness)
-        {
         }
     }
 }

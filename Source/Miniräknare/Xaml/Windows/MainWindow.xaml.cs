@@ -40,8 +40,43 @@ namespace Miniräknare
             FieldList = FieldListView;
             FieldListView.ItemsSource = FieldItemList;
 
-            AddNewFormulaField(null);
+            AddNewEquationField(null);
             AddNewField();
+
+            var menuFieldOptions = (ContextMenu)FindResource("Menu_FieldOptions");
+            menuFieldOptions.Opened += MenuFieldOptions_Opened;
+            menuFieldOptions.Closed += MenuFieldOptions_Closed;
+        }
+
+        private IContextMenuOperand TryGetFieldFromContextMenu(ContextMenu menu)
+        {
+            var target = menu.PlacementTarget;
+            if (menu.PlacementTarget is ListViewItem listItem)
+                target = listItem.Content as UIElement;
+
+            return target as IContextMenuOperand;
+        }
+
+        private void MenuFieldOptions_Opened(object sender, RoutedEventArgs e)
+        {
+            var menu = (ContextMenu)sender;
+            var field = TryGetFieldFromContextMenu(menu);
+            if (field != null)
+            {
+                foreach (var menuItem in menu.Items.OfType<MenuItem>())
+                    field.RegisterContextMenuItem(menuItem);
+            }
+        }
+
+        private void MenuFieldOptions_Closed(object sender, RoutedEventArgs e)
+        {
+            var menu = (ContextMenu)sender;
+            var field = TryGetFieldFromContextMenu(menu);
+            if (field != null)
+            {
+                foreach (var menuItem in menu.Items.OfType<MenuItem>())
+                    field.UnregisterContextMenuItem(menuItem);
+            }
         }
 
         #region GenerateFieldName
@@ -108,9 +143,9 @@ namespace Miniräknare
 
         #region ActionButton Click handlers
 
-        private void AddNewFormulaField(MathFormula formula)
+        private void AddNewEquationField(EquationSet equation)
         {
-            var field = new FormulaField();
+            var field = new EquationField();
             FieldItemList.Add(new ListViewItem() { Content = field, ContextMenu = field.ContextMenu });
         }
 

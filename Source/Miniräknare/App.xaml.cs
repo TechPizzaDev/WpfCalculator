@@ -21,11 +21,11 @@ namespace Miniräknare
         public const string LanguageProviderKey = "LanguageProvider";
         public const string FallbackLanguage = "en-US.json";
 
-        public const string FormulasPath = "Content/Formulas";
+        public const string EquationsPath = "Content/Equations";
         public const string LanguagePath = "Content/Language";
 
-        public static ResourceUri LoadingFormulasMessage { get; } =
-            new ResourceUri("Other/Loading/InternalFormulas");
+        public static ResourceUri LoadingEquationsMessage { get; } =
+            new ResourceUri("Other/Loading/CoreEquations");
 
         private SplashScreenWindow _splashScreen;
         private AppLanguageProvider _languageProvider;
@@ -142,8 +142,8 @@ namespace Miniräknare
                     InitializeLanguageProvider();
                     _splashScreen.DispatchProgress(10);
 
-                    _splashScreen.DispatchProgressTip(_languageProvider.GetValue(LoadingFormulasMessage));
-                    LoadFormulas((x) => _splashScreen.DispatchProgress(10 + x * 90));
+                    _splashScreen.DispatchProgressTip(_languageProvider.GetValue(LoadingEquationsMessage));
+                    LoadEquations((x) => _splashScreen.DispatchProgress(10 + x * 90));
 
                     GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
 
@@ -170,9 +170,9 @@ namespace Miniräknare
 
         #endregion
 
-        #region Formulas
+        #region Equations
 
-        private void LoadFormulas(Action<double> onProgress)
+        private void LoadEquations(Action<double> onProgress)
         {
             using var resourceReader = ResourceHelper.GetResourceReader(ResourceAssembly);
             var enumerator = resourceReader.GetEnumerator();
@@ -181,7 +181,7 @@ namespace Miniräknare
             {
                 var entry = enumerator.Entry;
                 if (entry.Key is string key &&
-                    key.StartsWith(FormulasPath, StringComparison.OrdinalIgnoreCase) &&
+                    key.StartsWith(EquationsPath, StringComparison.OrdinalIgnoreCase) &&
                     entry.Value is Stream stream)
                 {
                     pairs.Add(new KeyValuePair<string, Stream>(key, stream));
@@ -197,8 +197,10 @@ namespace Miniräknare
                     var pair = pairs[i];
                     var stream = pair.Value;
 
-                    var formulaData = MathFormulaData.Load(stream);
-                    var formula = new MathFormula(ExpressionOptions.Default, formulaData);
+                    var equationData = EquationSetData.Load(stream);
+                    var equation = new EquationSet(ExpressionOptions.Default, equationData);
+
+                    // TODO
                 }
                 catch (Exception ex)
                 {

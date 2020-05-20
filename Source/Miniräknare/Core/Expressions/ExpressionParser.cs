@@ -47,7 +47,7 @@ namespace Miniräknare.Expressions
 
         public static ResultCode Parse(ExpressionTree tree)
         {
-            return Parse(tree.ExpressionOptions, tree.Tokens.Children);
+            return Parse(tree.Options, tree.Tokens);
         }
 
         #region MakeLists

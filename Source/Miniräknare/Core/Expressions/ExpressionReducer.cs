@@ -27,7 +27,7 @@ namespace Miniräknare.Expressions
 
         public static ResultCode Reduce(ExpressionTree tree)
         {
-            return Reduce(tree.ExpressionOptions, tree.Tokens.Children);
+            return Reduce(tree.Options, tree.Tokens);
         }
 
         private static ResultCode ReduceLists(ExpressionOptions options, List<Token> tokens)

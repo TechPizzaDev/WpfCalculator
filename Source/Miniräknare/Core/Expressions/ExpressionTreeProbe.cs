@@ -15,7 +15,7 @@ namespace Miniräknare.Expressions
 
         public void Probe(ExpressionTree tree)
         {
-            Probe(tree.Tokens.Children);
+            Probe(tree.Tokens);
         }
 
         public void Probe(List<Token> tokens)

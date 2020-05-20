@@ -17,5 +17,12 @@ namespace Miniräknare.Expressions.Tokens
         {
             Type = type;
         }
+
+        public abstract Token Clone();
+
+        public virtual bool IsOrContains(Token other)
+        {
+            return this == other;
+        }
     }
 }

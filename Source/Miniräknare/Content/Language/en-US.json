@@ -38,11 +38,11 @@
 		"ActionButtons": {
 			"Hover": {
 				"AddNewField": "Add new field",
-				"AddNewFunctionField": "Add new formula field"
+				"AddNewEquationField": "Add new equation field"
 			}
 		},
 
-		"Formulas": {
+		"Equations": {
 			"_names": {
 				"Force": "Force",
 				"Chemistry": "Chemistry",
@@ -88,7 +88,7 @@
 			"Remove": "Remove",
 
 			"Loading": {
-				"InternalFormulas": "Loading internal formulas..."
+				"CoreEquations": "Loading core equations..."
 			}
 		}
 	}
