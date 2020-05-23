@@ -1,0 +1,69 @@
+﻿<Window x:Class="WpfCalculator.LanguageWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Title="Language" 
+        Height="400" Width="500"
+        Loaded="Window_Loaded" 
+        Closed="Window_Closed" 
+        StateChanged="Window_StateChanged">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="0" /> <!-- Height="45" -->
+            <RowDefinition Height="*" />
+            <RowDefinition Height="45" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+            
+            <!-- TextBox Grid.Column="0" Margin="10,10,0,0" HorizontalAlignment="Stretch"
+                     VerticalContentAlignment="Center" FontSize="14"
+                     Visibility="Hidden" IsEnabled="False" / -->
+        </Grid>
+
+        <ListView Grid.Row="1" x:Name="LanguageList" Background="Transparent" Margin="10,10,10,0"
+                  HorizontalContentAlignment="Stretch" SizeChanged="LanguageList_SizeChanged"
+                  SelectionMode="Single" SelectionChanged="LanguageList_SelectionChanged"
+                  MouseDown="LanguageList_MouseDown" MouseDoubleClick="LanguageList_MouseDoubleClick">
+
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Local Name">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid Height="24">
+                                    <TextBlock Text="{Binding Path=Language.LocalName}" VerticalAlignment="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    
+                    <GridViewColumn Header="English Name">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid Height="24">
+                                    <TextBlock Text="{Binding Path=Language.EnglishName}" VerticalAlignment="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,10,10"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Button Content="Apply" IsDefault="True" Click="ApplyButton_Click" Width="60" Height="25" Margin="0,0,10,0" />
+            <Button Content="Cancel" IsCancel="True" Click="CancelButton_Click" Width="60" Height="25" />
+        </StackPanel>
+    </Grid>
+</Window>

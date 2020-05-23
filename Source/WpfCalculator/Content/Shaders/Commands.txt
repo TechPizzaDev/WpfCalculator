@@ -1,0 +1,2 @@
+.\fxc /T ps_2_0 /E main /Fo "C:\Projects\Skola\WpfCalculator\Source\WpfCalculator\Content\Shaders\SpriteEffect.fxc" "C:\Projects\Skola\WpfCalculator\Source\WpfCalculator\Content\Shaders\SpriteEffect.fx"
+.\fxc /T ps_2_0 /E main /Fo "C:\Projects\Skola\WpfCalculator\Source\WpfCalculator\Content\Shaders\InverseEffect.fxc" "C:\Projects\Skola\WpfCalculator\Source\WpfCalculator\Content\Shaders\InverseEffect.fx"
