@@ -24,7 +24,10 @@ namespace Miniräknare
         {
             InitializeComponent();
 
-            InputBox.PropertyChanged += (s, e) => InputBox_PropertyChanged(s, e, ResultBox, StateImage);
+            InputBox.PropertyChanged += (s, e) =>
+            {
+                InputBox_PropertyChanged(s, e, ResultBox, StateImage);
+            };
         }
 
         public static void InputBox_PropertyChanged(
@@ -91,6 +94,7 @@ namespace Miniräknare
             {
                 Append(source.ResultEvaluation.Values, false);
             }
+
             output.Text = builder.ToString();
         }
 

@@ -14,7 +14,6 @@ namespace Miniräknare
 
         public static EquationSetData Load(Stream stream)
         {
-            stream.Seek(0, SeekOrigin.Begin);
             return App.Serializer.Deserialize<EquationSetData>(stream);
         }
     }

@@ -181,14 +181,14 @@ namespace Miniräknare
             {
                 var entry = enumerator.Entry;
                 if (entry.Key is string key &&
-                    key.StartsWith(EquationsPath, StringComparison.OrdinalIgnoreCase) &&
-                    entry.Value is Stream stream)
+                    entry.Value is Stream stream &&
+                    key.StartsWith(EquationsPath, StringComparison.OrdinalIgnoreCase))
                 {
                     pairs.Add(new KeyValuePair<string, Stream>(key, stream));
                 }
             }
 
-            var tmpStringBuilder = new StringBuilder();
+            var tmpBuilder = new StringBuilder();
             var tmpTokenList = new List<Token>();
             for (int i = 0; i < pairs.Count; i++)
             {
@@ -197,8 +197,10 @@ namespace Miniräknare
                     var pair = pairs[i];
                     var stream = pair.Value;
 
+                    stream.Seek(0, SeekOrigin.Begin);
+
                     var equationData = EquationSetData.Load(stream);
-                    var equation = new EquationSet(ExpressionOptions.Default, equationData);
+                    var equationSet = new EquationSet(ExpressionOptions.Default, equationData);
 
                     // TODO
                 }

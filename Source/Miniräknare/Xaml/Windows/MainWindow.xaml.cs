@@ -21,7 +21,7 @@ namespace Miniräknare
 
     public partial class MainWindow : Window
     {
-        private static readonly ReadOnlyMemory<char> _alphabet = "abcdefghijklmnopqrstuvwxyz".AsMemory();
+        private static readonly ReadOnlyString _alphabet = "abcdefghijklmnopqrstuvwxyz";
 
         private BindingList<ListViewItem> FieldItemList { get; } =
             new BindingList<ListViewItem>();
@@ -81,7 +81,7 @@ namespace Miniräknare
 
         #region GenerateFieldName
 
-        private ReadOnlyMemory<char> GenerateFieldName()
+        private ReadOnlyString GenerateFieldName()
         {
             const int maxLength = 10;
             var alphabet = _alphabet.Span;
@@ -220,7 +220,8 @@ namespace Miniräknare
             var inverseShaderResource = FindResource("Shader_Inverse");
             if (!(inverseShaderResource is Effect inverseShader))
                 throw new Exception("Missing inverse shader resource.");
-            Effect = Effect == inverseShader ? null : inverseShader;
+
+            Effect = Effect != inverseShader ? inverseShader : null;
         }
     }
 }

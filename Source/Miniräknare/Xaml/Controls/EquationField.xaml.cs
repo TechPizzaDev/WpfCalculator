@@ -32,6 +32,7 @@ namespace Miniräknare
         private void TextValue_KeyDown(KeyEventArgs e, int currentIndex)
         {
             EquationExpressionBox box = null;
+
             if (e.Key == Key.Up && currentIndex > 0)
                 box = EquationList.Items[currentIndex - 1] as EquationExpressionBox;
             else if (e.Key == Key.Down && currentIndex < EquationList.Items.Count - 1)

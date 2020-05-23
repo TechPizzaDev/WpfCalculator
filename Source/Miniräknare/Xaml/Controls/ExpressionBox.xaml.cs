@@ -199,10 +199,10 @@ namespace Miniräknare
         }
 
         public static bool IsValidName(
-            ReadOnlyMemory<char> newName,
-            out ReadOnlyMemory<char> validatedName)
+            ReadOnlyString newName,
+            out ReadOnlyString validatedName)
         {
-            validatedName = newName.Trim();
+            validatedName = newName.Chars.Trim();
 
             if (validatedName.IsEmpty)
                 return true;
@@ -546,10 +546,10 @@ namespace Miniräknare
 
         private void ValidateName()
         {
-            if (IsValidName(VariableName.AsMemory(), out ReadOnlyMemory<char> newName))
+            if (IsValidName(VariableName, out ReadOnlyString newName))
             {
                 if (_lastVariableName != null)
-                    MainWindow.GlobalExpressions.Remove(_lastVariableName.AsMemory());
+                    MainWindow.GlobalExpressions.Remove(_lastVariableName);
 
                 if (!newName.IsEmpty)
                     MainWindow.GlobalExpressions.Add(newName, this);

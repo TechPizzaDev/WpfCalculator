@@ -13,6 +13,10 @@ namespace Miniräknare.Expressions.Tokens
             Value = value;
         }
 
+        public ValueToken(TokenType type, ReadOnlyString value) : this(type, value.Chars)
+        {
+        }
+
         public bool ConsistsOfDigits()
         {
             var span = Value.Span;

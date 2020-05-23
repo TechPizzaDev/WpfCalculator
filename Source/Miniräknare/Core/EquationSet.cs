@@ -17,7 +17,7 @@ namespace Miniräknare
             SanitizeResult.Code == ExpressionSanitizer.ResultCode.Ok &&
             ParseCode == ExpressionParser.ResultCode.Ok;
 
-        public ReadOnlyMemory<ExpressionTree> Permutations { get; }
+        public ReadOnlyMemory<(ReadOnlyString Target, ExpressionTree Tree)> Permutations { get; }
 
         #region IExpressionTree
 
@@ -72,12 +72,12 @@ namespace Miniräknare
             return inputs;
         }
 
-        private ExpressionTree[] CreatePermutations()
+        private (ReadOnlyString Target, ExpressionTree Tree)[] CreatePermutations()
         {
             // TODO: put this into a Solve() func
 
             var options = _tree.Options;
-            var permutations = new ExpressionTree[_inputs.Count];
+            var permutations = new (ReadOnlyString Target, ExpressionTree Tree)[_inputs.Count];
 
             for (int i = 0; i < permutations.Length; i++)
             {
@@ -156,13 +156,13 @@ namespace Miniräknare
                 }
 
                 var resultTree = new ExpressionTree(options, result.Children);
-                permutations[i] = resultTree;
+                permutations[i] = (target.Value, resultTree);
             }
 
             return permutations;
         }
 
-        private ReadOnlyMemory<char> FindInverseFunction(ReadOnlySpan<char> name)
+        private ReadOnlyString FindInverseFunction(ReadOnlySpan<char> name)
         {
             var options = _tree.Options;
 
@@ -171,7 +171,7 @@ namespace Miniräknare
                 return "arcsin".AsMemory();
             }
 
-            return ReadOnlyMemory<char>.Empty;
+            return ReadOnlyString.Empty;
         }
 
         private List<Token> CreateTokenTreePath(Token target)

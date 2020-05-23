@@ -9,9 +9,9 @@ namespace Miniräknare
 
         public EquationExpressionBox(EquationField parentField)
         {
-            InitializeComponent();
-
             ParentField = parentField ?? throw new ArgumentNullException(nameof(parentField));
+
+            InitializeComponent();
 
             InputBox.ShowName = false;
             InputBox.PropertyChanged += (s, e) =>
