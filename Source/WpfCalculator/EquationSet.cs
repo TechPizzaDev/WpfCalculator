@@ -168,7 +168,7 @@ namespace WpfCalculator
 
             if (name.SequenceEqual("sin"))
             {
-                return "arcsin".AsMemory();
+                return "arcsin";
             }
 
             return ReadOnlyString.Empty;

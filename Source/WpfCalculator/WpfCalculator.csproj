@@ -30,6 +30,7 @@
   <ItemGroup>
     <Compile Remove="MathScriptActionBase.cs" />
     <Compile Remove="MathScriptFactory.cs" />
+    <Compile Remove="Utils\MissingInputException.cs" />
   </ItemGroup>
 
   <ItemGroup>

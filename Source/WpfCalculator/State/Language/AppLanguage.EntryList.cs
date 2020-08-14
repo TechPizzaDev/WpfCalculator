@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
@@ -19,7 +20,7 @@ namespace WpfCalculator
                         foreach (var nameToken in property.Value)
                         {
                             var nameProp = (JProperty)nameToken;
-                            var nameEntry = new EntryValue(nameProp.Name, nameProp.Value.ToObject<string>());
+                            var nameEntry = new EntryValue(nameProp.Name, nameProp.Value.ToObject<string>() ?? "");
                             list.Names.Add(nameEntry.Key, nameEntry);
                         }
                     }
@@ -32,7 +33,7 @@ namespace WpfCalculator
                 }
                 else
                 {
-                    list.Values.Add(key, new EntryValue(key, value.ToObject<string>()));
+                    list.Values.Add(key, new EntryValue(key, value.ToObject<string>() ?? ""));
                 }
             }
         }
@@ -50,44 +51,46 @@ namespace WpfCalculator
                 SubLists = new Dictionary<string, EntryList>();
             }
 
-            public bool TryGet(ResourceUri uri, out Entry entry)
+            public bool TryGet(ResourceUri uri, [MaybeNullWhen(false)] out Entry entry)
             {
-                static bool RecursiveGet(EntryList list, ResourceUri uri, int segmentIndex, out Entry entry)
-                {
-                    string segment = uri.Segments[segmentIndex];
-
-                    // Only try to get values when we're at the last segment.
-                    if (segmentIndex == uri.Segments.Length - 1)
-                    {
-                        if (list.Names.TryGetValue(segment, out var nameEntry))
-                        {
-                            entry = nameEntry;
-                            return true;
-                        }
-                        if (list.Values.TryGetValue(segment, out var valueEntry))
-                        {
-                            entry = valueEntry;
-                            return true;
-                        }
-                    }
-
-                    // If getting a value fails, we fallback and try to return a list.
-                    if (list.SubLists.TryGetValue(segment, out var listEntry))
-                    {
-                        if (segmentIndex + 1 >= uri.Segments.Length)
-                        {
-                            entry = null;
-                            return false;
-                        }
-                        return RecursiveGet(listEntry, uri, segmentIndex + 1, out entry);
-                    }
-
-                    entry = default;
-                    return false;
-                }
-
                 return RecursiveGet(this, uri, segmentIndex: 0, out entry);
             }
+
+            private static bool RecursiveGet(
+                EntryList list, ResourceUri uri, int segmentIndex, [MaybeNullWhen(false)] out Entry entry)
+            {
+                string segment = uri.Segments[segmentIndex];
+
+                // Only try to get values when we're at the last segment.
+                if (segmentIndex == uri.Segments.Length - 1)
+                {
+                    if (list.Names.TryGetValue(segment, out var nameEntry))
+                    {
+                        entry = nameEntry;
+                        return true;
+                    }
+                    if (list.Values.TryGetValue(segment, out var valueEntry))
+                    {
+                        entry = valueEntry;
+                        return true;
+                    }
+                }
+
+                // If getting a value fails, we fallback and try to return a list.
+                if (list.SubLists.TryGetValue(segment, out var listEntry))
+                {
+                    if (segmentIndex + 1 >= uri.Segments.Length)
+                    {
+                        entry = null;
+                        return false;
+                    }
+                    return RecursiveGet(listEntry, uri, segmentIndex + 1, out entry);
+                }
+
+                entry = default;
+                return false;
+            }
+
         }
     }
 }

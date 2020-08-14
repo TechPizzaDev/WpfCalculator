@@ -4,11 +4,11 @@ namespace WpfCalculator
 {
     public class AppStateProvider : INotifyPropertyChanged
     {
-        private AppState _state;
+        private AppState? _state;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public AppState State
+        public AppState? State
         {
             get => _state;
             set

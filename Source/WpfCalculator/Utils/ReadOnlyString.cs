@@ -22,7 +22,7 @@ namespace WpfCalculator
             return Chars.Span.SequenceEqual(other.Chars.Span);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is ReadOnlyString str ? Equals(str) : false;
         }

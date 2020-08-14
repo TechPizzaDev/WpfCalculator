@@ -9,8 +9,20 @@ namespace WpfCalculator
         public static ResourceReader GetResourceReader(Assembly resourceAssembly)
         {
             var resourceNames = resourceAssembly.GetManifestResourceNames();
-            var resourceStream = resourceAssembly.GetManifestResourceStream(resourceNames[0]);
-            return new ResourceReader(resourceStream);
+            foreach (string name in resourceNames)
+            {
+                if (name.EndsWith(".resources", StringComparison.OrdinalIgnoreCase))
+                {
+                    var resourceStream = resourceAssembly.GetManifestResourceStream(name);
+                    if (resourceStream == null)
+                        throw new ArgumentException(
+                            $"Failed to get manifest resource stream for \"{name}\".",
+                            nameof(resourceAssembly));
+
+                    return new ResourceReader(resourceStream);
+                }
+            }
+            throw new ArgumentException("Failed to find resources in assembly.", nameof(resourceAssembly));
         }
 
         public static Uri MakePackUri(string relativeFile)

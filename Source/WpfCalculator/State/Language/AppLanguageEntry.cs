@@ -19,7 +19,7 @@ namespace WpfCalculator
             Stream = stream ?? throw new ArgumentNullException(nameof(stream));
             IsVisible = true;
 
-            _languageRef = new WeakReference<AppLanguage>(null);
+            _languageRef = new WeakReference<AppLanguage>(null!);
         }
 
         public AppLanguage GetLanguage()
@@ -34,7 +34,7 @@ namespace WpfCalculator
 
         public void UnloadLanguage()
         {
-            _languageRef.SetTarget(null);
+            _languageRef.SetTarget(null!);
         }
     }
 }

@@ -11,34 +11,37 @@ namespace WpfCalculator
 {
     public class LanguageBinding : MarkupExtension
     {
-        private PropertyPath _keyProperty;
-        private object _value;
+        private PropertyPath? _keyProperty;
+        private object? _value;
 
-        private DependencyObject _targetObject;
-        private DependencyProperty _targetProperty;
+        private DependencyObject? _targetObject;
+        private DependencyProperty? _targetProperty;
 
-        public PropertyPath Key
+        public PropertyPath? Key
         {
             get => _keyProperty;
             set
             {
                 _keyProperty = value;
-                Uri = new ResourceUri(_keyProperty.Path);
+                Uri = _keyProperty != null ? new ResourceUri(_keyProperty.Path) : null;
             }
         }
 
-        public ResourceUri Uri { get; private set; }
+        public ResourceUri? Uri { get; private set; }
 
-        public override object ProvideValue(IServiceProvider serviceProvider)
+        public override object? ProvideValue(IServiceProvider serviceProvider)
         {
             if (serviceProvider == null)
                 return null;
 
             var targetProvider = serviceProvider.GetService<IProvideValueTarget>();
+            if (targetProvider == null)
+                throw new ArgumentException($"Missing {nameof(IProvideValueTarget)} service.", nameof(serviceProvider));
+
             _targetObject = targetProvider.TargetObject as DependencyObject;
             _targetProperty = targetProvider.TargetProperty as DependencyProperty;
 
-            object langProviderResource = null;
+            object? langProviderResource = null;
             if (DesignerProperties.GetIsInDesignMode(_targetObject))
             {
                 if (_targetObject is FrameworkElement element)
@@ -56,7 +59,7 @@ namespace WpfCalculator
             Refresh(langProvider);
 
             // TODO: add options for turning this on/off
-            if (DesignerProperties.GetIsInDesignMode(_targetObject))
+            if (DesignerProperties.GetIsInDesignMode(_targetObject) && Uri != null)
             {
                 var block = new TextBlock();
 
@@ -98,6 +101,12 @@ namespace WpfCalculator
 
         private void Refresh(AppLanguageProvider languageProvider)
         {
+            if (Uri == null)
+            {
+                _value = "[Null Key]";
+                return;
+            }
+
             try
             {
                 _value = languageProvider.GetValue(Uri);

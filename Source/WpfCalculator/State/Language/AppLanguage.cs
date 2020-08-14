@@ -17,10 +17,10 @@ namespace WpfCalculator
         public EntryList Entries { get; }
 
         [JsonIgnore]
-        public string ResourceKey { get; set; }
+        public string? ResourceKey { get; set; }
 
         [JsonIgnore]
-        public string CultureKey { get; set; }
+        public string? CultureKey { get; set; }
 
         [JsonConstructor]
         public AppLanguage(string englishName, string localName, EntryList entries)
@@ -30,28 +30,34 @@ namespace WpfCalculator
             Entries = entries ?? throw new ArgumentNullException(nameof(entries));
         }
 
-        protected virtual void SetKeys(string key)
+        protected virtual void SetKeys(string resourceKey)
         {
-            ResourceKey = key;
-            CultureKey = Path.GetFileNameWithoutExtension(key);
+            ResourceKey = resourceKey;
+            CultureKey = Path.GetFileNameWithoutExtension(resourceKey);
         }
 
-        public static AppLanguage Load(string key, Stream stream)
+        public static AppLanguage Load(string resourceKey, Stream stream)
         {
             stream.Seek(0, SeekOrigin.Begin);
-            var languageObject = App.Serializer.Deserialize<JObject>(stream);
 
-            JToken entries = languageObject[nameof(entries)];
+            var languageObject = App.Serializer.Deserialize<JObject>(stream);
+            if (languageObject == null)
+                throw new InvalidDataException("Null language object.");
+
+            JToken? entries = languageObject[nameof(entries)];
+            if (entries == null)
+                throw new InvalidDataException("Missing entries.");
+            
             var entryList = new EntryList(nameof(entries));
 
             var language = new AppLanguage(
-                languageObject["englishName"].ToObject<string>(),
-                languageObject["localName"].ToObject<string>(),
+                languageObject["englishName"]?.ToObject<string>() ?? "",
+                languageObject["localName"]?.ToObject<string>() ?? "",
                 entryList);
 
             PopulateEntryList(entries, entryList);
 
-            language.SetKeys(key);
+            language.SetKeys(resourceKey);
             return language;
         }
 
@@ -67,8 +73,8 @@ namespace WpfCalculator
                     key.StartsWith(App.LanguagePath, StringComparison.OrdinalIgnoreCase) &&
                     key.EndsWith(FileExtension))
                 {
-                    var stream = entry.Value as Stream;
-                    yield return new KeyValuePair<string, Stream>(key, stream);
+                    if (entry.Value is Stream stream)
+                        yield return new KeyValuePair<string, Stream>(key, stream);
                 }
             }
         }

@@ -4,12 +4,12 @@ namespace WpfCalculator
 {
     public class AppLanguageProvider : INotifyPropertyChanged
     {
-        private AppLanguage _fallbackLanguage;
-        private AppLanguage _language;
+        private AppLanguage? _fallbackLanguage;
+        private AppLanguage? _language;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public AppLanguage FallbackLanguage
+        public AppLanguage? FallbackLanguage
         {
             get => _fallbackLanguage;
             set
@@ -22,7 +22,7 @@ namespace WpfCalculator
             }
         }
 
-        public AppLanguage Language
+        public AppLanguage? Language
         {
             get => _language;
             set
@@ -37,7 +37,7 @@ namespace WpfCalculator
 
         public string GetValue(ResourceUri uri)
         {
-            static int GetValue(AppLanguage language, ResourceUri uri, out string value)
+            static int GetValue(AppLanguage? language, ResourceUri uri, out string value)
             {
                 if (language == null)
                 {

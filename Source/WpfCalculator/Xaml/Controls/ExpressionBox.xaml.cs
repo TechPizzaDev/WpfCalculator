@@ -16,8 +16,7 @@ namespace WpfCalculator
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        private string _lastVariableName;
-
+        private string? _lastVariableName;
         private ExpressionTree _expressionTree;
         private ExpressionTreeProbe _probe;
         private ExpressionTreeEvaluator _evaluator;
@@ -27,7 +26,6 @@ namespace WpfCalculator
         private Evaluation _currentEval = Evaluation.Empty;
 
         public AppState State { get; }
-
         public HashSet<ExpressionBox> References { get; } = new HashSet<ExpressionBox>();
 
         #region Notifying Properties
@@ -539,7 +537,8 @@ namespace WpfCalculator
             }
             else
             {
-                VariableName = _lastVariableName;
+                if (_lastVariableName != null)
+                    VariableName = _lastVariableName;
             }
         }
 
@@ -548,7 +547,7 @@ namespace WpfCalculator
             // TODO: implement this
             return;
 
-            var isText = e.SourceDataObject.GetDataPresent(DataFormats.Html, true);
+            bool isText = e.SourceDataObject.GetDataPresent(DataFormats.Html, true);
             if (!isText)
                 return;
 

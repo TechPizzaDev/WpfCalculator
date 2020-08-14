@@ -19,6 +19,8 @@ namespace WpfCalculator
 {
     public partial class App : Application
     {
+        public const string LatinAlphabet = "abcdefghijklmnopqrstuvwxyz";
+
         public const string LanguageProviderKey = "LanguageProvider";
         public const string StateProviderKey = "StateProvider";
 
@@ -35,7 +37,7 @@ namespace WpfCalculator
             Formatting = Formatting.Indented
         };
 
-        public static App Instance { get; private set; }
+        public static App Instance => (App)Current;
 
         private SplashScreenWindow _splashScreen;
 
@@ -44,7 +46,6 @@ namespace WpfCalculator
 
         public App()
         {
-            Instance = this;
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
             _splashScreen = new SplashScreenWindow();
@@ -106,7 +107,7 @@ namespace WpfCalculator
                             }
                             else
                             {
-                                double evalValue = eval.Result.Value<double>();
+                                double evalValue = (eval.Result?.Value<double>()).GetValueOrDefault();
                                 string textValue = double.IsInfinity(evalValue) ? "Infinity" : evalValue.ToString();
                                 Console.WriteLine("Eval: " + textValue);
                             }
@@ -126,7 +127,7 @@ namespace WpfCalculator
             throw new NotImplementedException();
         }
 
-        public static Evaluation ResolveFunction(string name, object[] arguments)
+        public static Evaluation ResolveFunction(string name, object?[] arguments)
         {
             return new EError(EErrorCode.UnknownFunction).SetName(name);
         }
@@ -156,7 +157,7 @@ namespace WpfCalculator
                     Dispatcher.Invoke(() =>
                     {
                         _splashScreen.ProgressTip = string.Empty;
-                        
+
                         var mainWindow = new MainWindow();
                         MainWindow = mainWindow;
                         mainWindow.Show();

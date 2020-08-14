@@ -7,10 +7,10 @@ namespace WpfCalculator
 {
     public class AppState
     {
-        private static readonly ReadOnlyString _latinAlphabet = "abcdefghijklmnopqrstuvwxyz";
-
         public Dictionary<ReadOnlyString, ExpressionBox> Expressions { get; } =
             new Dictionary<ReadOnlyString, ExpressionBox>();
+
+
 
         public bool IsValidName(ReadOnlyString newName, out ReadOnlyString validatedName)
         {
@@ -61,7 +61,7 @@ namespace WpfCalculator
         public ReadOnlyString GenerateFieldName()
         {
             const int maxLength = 10;
-            var alphabet = _latinAlphabet.Span;
+            var alphabet = App.LatinAlphabet;
             int targetIndex = alphabet.Length;
 
             int length = 1;
@@ -75,8 +75,8 @@ namespace WpfCalculator
             do
             {
                 for (int i = 0; i < length; i++)
-                    nameBuffer[maxLength - i - 1] = alphabet[indices[maxLength - i - 1]];
-                name = nameBuffer.AsMemory(maxLength - length, length);
+                    nameBuffer[nameBuffer.Length - 1 - i] = alphabet[indices[indices.Length - 1 - i]];
+                name = nameBuffer.AsMemory(nameBuffer.Length - length, length);
 
                 if (!Expressions.ContainsKey(name))
                     break;
