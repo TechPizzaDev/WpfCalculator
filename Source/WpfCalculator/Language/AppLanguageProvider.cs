@@ -7,7 +7,7 @@ namespace WpfCalculator
         private AppLanguage _fallbackLanguage;
         private AppLanguage _language;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         public AppLanguage FallbackLanguage
         {

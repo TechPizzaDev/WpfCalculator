@@ -6,7 +6,7 @@ namespace WpfCalculator.Expressions
     public struct ExpressionTreeProbe
     {
         public delegate void ProbeReferenceDelegate(ValueToken reference);
-        public delegate void ProbeOperatorDelegate(ValueToken op, Token left, Token right);
+        public delegate void ProbeOperatorDelegate(ValueToken op, Token? left, Token? right);
         public delegate void ProbeFunctionDelegate(FunctionToken function);
 
         public event ProbeReferenceDelegate ProbeReference;

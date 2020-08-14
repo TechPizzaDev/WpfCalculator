@@ -29,6 +29,7 @@ namespace WpfCalculator
         public ColorObject(Color color)
         {
             _color = color;
+
             Brush = new SolidColorBrush(_color);
         }
 

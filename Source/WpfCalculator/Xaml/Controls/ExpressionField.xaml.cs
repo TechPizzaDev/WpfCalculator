@@ -1,14 +1,12 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
-using System.Linq;
-using System.Collections.Generic;
-using System.Text;
+using Newtonsoft.Json.Linq;
 using WpfCalculator.Expressions;
 
 namespace WpfCalculator
@@ -36,21 +34,24 @@ namespace WpfCalculator
             TextBox resultOutput,
             Image stateImage)
         {
-            var box = sender as ExpressionBox;
+            if (!(sender is ExpressionBox box))
+                return;
+
             switch (e.PropertyName)
             {
-                case nameof(ExpressionBox.State):
-                    resultOutput.Visibility = box.State == ExpressionBoxState.Ok
-                        ? Visibility.Visible : Visibility.Hidden;
+                case nameof(ExpressionBox.Error):
+                    resultOutput.Visibility = box.Error == null
+                        ? Visibility.Visible
+                        : Visibility.Hidden;
 
-                    UpdateResultValueText(resultOutput, box);
-
-                    var (image, effect) = GetStatusResources(box.State);
+                    var (image, effect) = GetStatusResources(box.Error);
                     stateImage.Source = image;
                     stateImage.Effect = effect;
+
+                    UpdateResultValueText(resultOutput, box);
                     break;
 
-                case nameof(ExpressionBox.ResultEvaluation):
+                case nameof(ExpressionBox.CurrentEvaluation):
                     UpdateResultValueText(resultOutput, box);
                     break;
             }
@@ -60,66 +61,74 @@ namespace WpfCalculator
         {
             var builder = new StringBuilder();
 
-            void Append(in UnionValueCollection collection, bool appendSeparator)
+            void Append(JToken token, bool appendSeparator)
             {
-                var child = collection.Child;
-                if (child != null)
+                if (token.IsNumber())
                 {
-                    double childValue = child.GetValueOrDefault().Double;
+                    double value = token.Value<double>();
 
                     // Cast to decimal to provide "more precise" answers.
-                    if (childValue > (double)decimal.MinValue &&
-                        childValue < (double)decimal.MaxValue)
-                        builder.Append((decimal)childValue);
+                    if (value > (double)decimal.MinValue &&
+                        value < (double)decimal.MaxValue)
+                        builder.Append((decimal)value);
                     else
-                        builder.Append(childValue);
+                        builder.Append(value);
 
                     if (appendSeparator)
                         builder.Append(ExpressionTokenizer.ListSeparatorChar).Append(" ");
                 }
-                else if (collection.Children != null)
+                else if (token is JArray array)
                 {
                     builder.Append(ExpressionTokenizer.ListOpeningChar);
 
-                    var children = collection.Children;
-                    for (int i = 0; i < children.Length; i++)
+                    for (int i = 0; i < array.Count; i++)
                     {
-                        Append(children[i], appendSeparator: i < children.Length - 1);
+                        Append(array[i], appendSeparator: i < array.Count - 1);
                     }
                     builder.Append(ExpressionTokenizer.ListClosingChar);
                 }
+                else
+                {
+                    builder.Append(token);
+                }
             }
 
-            if (source.State == ExpressionBoxState.Ok)
+            if (source.Result != null)
             {
-                Append(source.ResultEvaluation.Values, false);
+                Append(source.Result, false);
             }
 
             output.Text = builder.ToString();
         }
 
-        public static (ImageSource, ShaderEffect) GetStatusResources(ExpressionBoxState state)
+        public static (ImageSource?, ShaderEffect?) GetStatusResources(EError? error)
         {
-            if (state == ExpressionBoxState.Indeterminate)
-                return (null, null);
+            // TODO: add type remapping (and map empty to ok)
+            if (error.ContainsError(EErrorCode.Empty))
+                error = null;
 
             string shaderName;
-            if (state.HasFlag(ExpressionBoxState.NestedError))
+            if (error != null && error.InnerError != null)
             {
+                while (error.InnerError != null)
+                    error = error.InnerError;
+
                 shaderName = NestedErrorShader;
             }
             else
             {
-                switch (state)
+                switch (error?.Id)
                 {
-                    case ExpressionBoxState.SyntaxError:
-                    case ExpressionBoxState.CyclicReferences:
+                    case nameof(EErrorCode.SyntaxError):
+                    case nameof(EErrorCode.CyclicReference):
                         shaderName = ErrorShader;
                         break;
 
-                    case ExpressionBoxState.UnknownWord:
-                    case ExpressionBoxState.UnknownFunction:
-                    case ExpressionBoxState.InvalidArguments:
+                    case nameof(EErrorCode.UnknownFunction):
+                    case nameof(EErrorCode.UnknownOperator):
+                    case nameof(EErrorCode.UnknownReference):
+                    case nameof(EErrorCode.InvalidArguments):
+                    case nameof(EErrorCode.InvalidArgumentCount):
                         shaderName = EvalErrorShader;
                         break;
 
@@ -130,8 +139,15 @@ namespace WpfCalculator
             }
             var shader = App.Instance.MainWindow.FindResource(shaderName) as ShaderEffect;
 
-            string imageName = "Icon_Field_" + (state & ~ExpressionBoxState.NestedError);
-            var image = App.Instance.MainWindow.FindResource(imageName) as ImageSource;
+            string imageId = error?.Id ?? "Ok";
+            if (imageId == "InvalidArgumentCount")
+                imageId = "InvalidArguments";
+
+            string imageName = "Icon_Field_" + imageId;
+            var image = App.Instance.MainWindow.TryFindResource(imageName) as ImageSource;
+
+            if (image == null)
+                Debug.WriteLine("Failed to find image resource for error \"" + imageId + "\"");
 
             return (image, shader);
         }

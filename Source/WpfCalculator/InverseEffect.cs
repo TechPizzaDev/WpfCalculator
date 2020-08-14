@@ -42,6 +42,7 @@ namespace WpfCalculator
         {
             if (isChecking)
                 return false;
+
             return base.FreezeCore(isChecking);
         }
     }

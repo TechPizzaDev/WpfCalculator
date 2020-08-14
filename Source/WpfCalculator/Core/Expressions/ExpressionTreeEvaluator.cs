@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using Newtonsoft.Json.Linq;
 using WpfCalculator.Expressions.Tokens;
 
 namespace WpfCalculator.Expressions
@@ -9,14 +11,9 @@ namespace WpfCalculator.Expressions
     {
         // TODO: remove recursion
 
-        public delegate Evaluation ResolveReferenceDelegate(
-            ReadOnlyMemory<char> name);
-
-        public delegate Evaluation ExecuteOperatorDelegate(
-            ReadOnlyMemory<char> name, UnionValueCollection? left, UnionValueCollection? right);
-
-        public delegate Evaluation ExecuteFunctionDelegate(
-            ReadOnlyMemory<char> name, ReadOnlySpan<UnionValueCollection> arguments);
+        public delegate Evaluation ResolveReferenceDelegate(string name);
+        public delegate Evaluation ExecuteOperatorDelegate(string name, JToken? left, JToken? right);
+        public delegate Evaluation ExecuteFunctionDelegate(string name, params JToken?[] arguments);
 
         public ResolveReferenceDelegate ResolveReference { get; }
         public ExecuteOperatorDelegate ExecuteOperator { get; }
@@ -39,31 +36,33 @@ namespace WpfCalculator.Expressions
 
             if (token is ValueToken valueToken)
             {
-                var value = valueToken.Value.Span;
+                string value = valueToken.Value;
                 switch (valueToken.Type)
                 {
                     case TokenType.DecimalDigit:
-                        return new Evaluation(new UnionValue(CharUnicodeInfo.GetNumericValue(value[0])));
+                        return new Evaluation(CharUnicodeInfo.GetNumericValue(value[0]));
 
                     case TokenType.DecimalNumber:
                         if (value.Length == 1)
-                            return new Evaluation(new UnionValue(CharUnicodeInfo.GetNumericValue(value[0])));
+                            return new Evaluation(CharUnicodeInfo.GetNumericValue(value[0]));
                         else
-                            return new Evaluation(new UnionValue(
-                                double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture)));
+                        {
+                            var parsed = double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                            return new Evaluation(parsed);
+                        }
 
                     case TokenType.Name:
                         return ResolveReference.Invoke(valueToken.Value);
 
                     default:
-                        return Evaluation.Undefined;
+                        return new Evaluation(EErrorCode.SyntaxError);
                 }
             }
             else if (token is FunctionToken funcToken)
             {
                 return EvaluateFunction(options, funcToken);
             }
-            return Evaluation.Undefined;
+            return new Evaluation(EErrorCode.Undefined);
         }
 
         public Evaluation EvaluateTree(ExpressionTree tree)
@@ -74,7 +73,7 @@ namespace WpfCalculator.Expressions
         public Evaluation EvaluateList(ExpressionOptions options, List<Token> tokens)
         {
             if (tokens.Count == 0)
-                return Evaluation.Undefined;
+                return new Evaluation(EErrorCode.Empty);
 
             if (tokens.Count == 1)
                 return Evaluate(options, tokens[0]);
@@ -89,7 +88,9 @@ namespace WpfCalculator.Expressions
 
         private bool ValidateOperatorList(
             ExpressionOptions options, List<Token> tokens,
-            out ValueToken opToken, out Token leftToken, out Token rightToken)
+            [MaybeNullWhen(false)] out ValueToken opToken, 
+            out Token? leftToken, 
+            out Token? rightToken)
         {
             if (tokens.Count == 2)
             {
@@ -110,7 +111,7 @@ namespace WpfCalculator.Expressions
                         for (int k = 0; k < opDef.Names.Length; k++)
                         {
                             var name = opDef.Names[k];
-                            if (!name.Span.SequenceEqual(opToken.Value.Span))
+                            if (!name.Span.SequenceEqual(opToken.Value))
                                 continue;
 
                             leftToken = opIndex == 0 ? null : tokens[0];
@@ -145,7 +146,7 @@ namespace WpfCalculator.Expressions
                 if (tokens[i].Type != TokenType.ListSeparator)
                     valueCount++;
 
-            var evaluations = new UnionValueCollection[valueCount];
+            var evaluations = new object?[valueCount];
             int evalIndex = 0;
             for (int i = 0; i < tokens.Count; i++)
             {
@@ -153,16 +154,16 @@ namespace WpfCalculator.Expressions
                     continue;
 
                 var eval = Evaluate(options, tokens[i]);
-                if (eval.Code != EvalCode.Ok)
+                if (eval.Error != null)
                     return eval;
 
-                evaluations[evalIndex++] = eval.Values;
+                evaluations[evalIndex++] = eval.Result;
             }
-            return new Evaluation(new UnionValueCollection(evaluations));
+            return new Evaluation(evaluations);
         }
 
-        public static EvalCode ValidateOperatorTokens(
-            ExpressionOptions options, ValueToken op, Token left, Token right)
+        public static EError? ValidateOperatorTokens(
+            ExpressionOptions options, ValueToken op, Token? left, Token? right)
         {
             var opDef = options.GetOperatorDefinition(op.Value);
             if (opDef != null)
@@ -170,45 +171,37 @@ namespace WpfCalculator.Expressions
                 if (left == null && (
                     opDef.Associativity == OperatorSidedness.Both ||
                     opDef.Associativity.HasFlag(OperatorSidedness.Left)))
-                    return EvalCode.OperatorMissingLeftValue;
+                    return EErrorCode.OperatorMissingLeftValue;
 
                 if (right == null && (
                     opDef.Associativity == OperatorSidedness.Both ||
                     opDef.Associativity.HasFlag(OperatorSidedness.Right)))
-                    return EvalCode.OperatorMissingRightValue;
+                    return EErrorCode.OperatorMissingRightValue;
             }
-            return EvalCode.Ok;
+            return null;
         }
 
         public Evaluation EvaluateOperator(
-            ExpressionOptions options, ValueToken op, Token left, Token right)
+            ExpressionOptions options, ValueToken op, Token? left, Token? right)
         {
-            var setCode = ValidateOperatorTokens(options, op, left, right);
-            if (setCode != EvalCode.Ok)
-                return new Evaluation(setCode);
+            var validationError = ValidateOperatorTokens(options, op, left, right);
+            if (validationError != null)
+                return validationError;
 
-            var leftEval = left != null ? Evaluate(options, left) : (Evaluation?)null;
-            if (leftEval.HasValue)
-            {
-                var leftEvalValue = leftEval.Value;
-                if (leftEvalValue.Code != EvalCode.Ok)
-                    return leftEvalValue;
-            }
+            var leftEval = left != null ? Evaluate(options, left) : null;
+            if (leftEval?.Error != null)
+                return leftEval;
 
-            var rightEval = right != null ? Evaluate(options, right) : (Evaluation?)null;
-            if (rightEval.HasValue)
-            {
-                var rightEvalValue = rightEval.Value;
-                if (rightEvalValue.Code != EvalCode.Ok)
-                    return rightEvalValue;
-            }
+            var rightEval = right != null ? Evaluate(options, right) : null;
+            if (rightEval?.Error != null)
+                return rightEval;
 
-            return ExecuteOperator.Invoke(op.Value, leftEval?.Values, rightEval?.Values);
+            return ExecuteOperator.Invoke(op.Value, leftEval?.Result, rightEval?.Result);
         }
 
         public Evaluation EvaluateFunction(ExpressionOptions options, FunctionToken function)
         {
-            var argValues = new UnionValueCollection[function.ArgumentCount];
+            var arguments = new JToken?[function.ArgumentCount];
             int valueIndex = 0;
             for (int i = 0; i < function.Children.Count; i++)
             {
@@ -217,13 +210,13 @@ namespace WpfCalculator.Expressions
                     continue;
 
                 var eval = Evaluate(options, arg);
-                if (eval.Code != EvalCode.Ok)
+                if (eval.Error != null)
                     return eval;
 
-                argValues[valueIndex] = eval.Values;
+                arguments[valueIndex] = eval.Result;
                 valueIndex++;
             }
-            return ExecuteFunction.Invoke(function.Name.Value, argValues);
+            return ExecuteFunction.Invoke(function.Name.Value, arguments);
         }
     }
 }

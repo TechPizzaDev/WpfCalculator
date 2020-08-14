@@ -10,6 +10,7 @@
             </Style>
             
             <l:AppLanguageProvider x:Key="LanguageProvider" />
+            <l:AppStateProvider x:Key="StateProvider" />
 
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Xaml/Shaders.xaml" />

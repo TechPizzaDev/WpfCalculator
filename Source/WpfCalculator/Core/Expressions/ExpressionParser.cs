@@ -27,8 +27,10 @@ namespace WpfCalculator.Expressions
 
         public static ResultCode Parse(ExpressionOptions options, List<Token> tokens)
         {
-            if (tokens == null) throw new ArgumentNullException(nameof(tokens));
-            if (options == null) throw new ArgumentNullException(nameof(options));
+            if (tokens == null)
+                throw new ArgumentNullException(nameof(tokens));
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
 
             if (tokens.Count == 0)
                 return ResultCode.NoTokens;
@@ -301,8 +303,8 @@ namespace WpfCalculator.Expressions
                             opIndex += shift;
                     }
 
-                    Token leftToken = null;
-                    Token rightToken = null;
+                    Token? leftToken = null;
+                    Token? rightToken = null;
 
                     int left = opIndex - 1;
                     if (opDef?.Associativity != OperatorSidedness.Right)
@@ -321,11 +323,11 @@ namespace WpfCalculator.Expressions
                         continue;
 
                     int right = opIndex + 1;
-                    if (opDef?.Associativity != OperatorSidedness.Left)
+                    if (opDef != null && opDef.Associativity != OperatorSidedness.Left)
                     {
                         if (right >= currentTokens.Count)
                         {
-                            if ((bool)opDef?.Associativity.HasFlag(OperatorSidedness.Right))
+                            if (opDef.Associativity.HasFlag(OperatorSidedness.Right))
                                 return ResultCode.OperatorMissingRightValue;
                         }
                         else
@@ -373,9 +375,11 @@ namespace WpfCalculator.Expressions
                         continue;
 
                     var resultList = new List<Token>(resultCount);
-                    resultList.AddNonNull(leftToken);
+                    if (leftToken != null)
+                        resultList.Add(leftToken);
                     resultList.Add(opToken);
-                    resultList.AddNonNull(rightToken);
+                    if (rightToken != null)
+                        resultList.Add(rightToken);
 
                     int firstIndex = opIndex - (leftToken != null ? 1 : 0);
                     var resultToken = new ListToken(resultList);

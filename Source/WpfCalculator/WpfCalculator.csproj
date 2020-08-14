@@ -6,6 +6,7 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon />
     <StartupObject />
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,9 +14,11 @@
     <EmbeddedResource Remove="DragDropManager\**" />
     
     <None Remove="Content\Language\**" />
+    
     <None Remove="DragDropManager\**" />
     
     <Page Remove="Content\Language\**" />
+    
     <Page Remove="DragDropManager\**" />
   </ItemGroup>
 
@@ -25,8 +28,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Core\MathScriptActionBase.cs" />
-    <Compile Remove="Core\MathScriptFactory.cs" />
+    <Compile Remove="MathScriptActionBase.cs" />
+    <Compile Remove="MathScriptFactory.cs" />
   </ItemGroup>
 
   <ItemGroup>

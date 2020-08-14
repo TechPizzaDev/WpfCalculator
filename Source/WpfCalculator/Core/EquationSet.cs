@@ -132,7 +132,7 @@ namespace WpfCalculator
                     }
                     else if (pathToken is FunctionToken pathFunc)
                     {
-                        var funcName = pathFunc.Name.Value.Span;
+                        var funcName = pathFunc.Name.Value;
                         var inverseFuncName = FindInverseFunction(funcName);
                         if (inverseFuncName.IsEmpty)
                             throw new NotSupportedException(

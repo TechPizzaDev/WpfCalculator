@@ -4,13 +4,13 @@ namespace WpfCalculator.Expressions.Tokens
 {
     public class ValueToken : Token
     {
-        public ReadOnlyMemory<char> Value { get; }
+        public string Value { get; }
 
         internal override string DebuggerDisplay => base.DebuggerDisplay + ": \"" + ToString() + "\"";
 
         public ValueToken(TokenType type, ReadOnlyMemory<char> value) : base(type)
         {
-            Value = value;
+            Value = value.ToString();
         }
 
         public ValueToken(TokenType type, ReadOnlyString value) : this(type, value.Chars)
@@ -19,7 +19,7 @@ namespace WpfCalculator.Expressions.Tokens
 
         public bool ConsistsOfDigits()
         {
-            var span = Value.Span;
+            var span = Value.AsSpan();
             for (int i = 0; i < span.Length; i++)
             {
                 char c = span[i];

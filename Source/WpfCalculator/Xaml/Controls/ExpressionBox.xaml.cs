@@ -4,8 +4,8 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
+using Newtonsoft.Json.Linq;
 using WpfCalculator.Expressions;
 using WpfCalculator.Expressions.Tokens;
 
@@ -14,18 +14,21 @@ namespace WpfCalculator
     [DefaultBindingProperty(nameof(TextValue))]
     public partial class ExpressionBox : UserControl, INotifyPropertyChanged
     {
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         private string _lastVariableName;
 
         private ExpressionTree _expressionTree;
         private ExpressionTreeProbe _probe;
         private ExpressionTreeEvaluator _evaluator;
-        private HashSet<ExpressionBox> _references;
-
         private bool _showName;
-        private ExpressionBoxState _state;
-        private Evaluation _resultValue;
+        private Evaluation _textParseEval = Evaluation.Empty;
+        private Evaluation _expressionEval = Evaluation.Empty;
+        private Evaluation _currentEval = Evaluation.Empty;
+
+        public AppState State { get; }
+
+        public HashSet<ExpressionBox> References { get; } = new HashSet<ExpressionBox>();
 
         #region Notifying Properties
 
@@ -42,31 +45,21 @@ namespace WpfCalculator
             }
         }
 
-        public ExpressionBoxState State
+        public Evaluation CurrentEvaluation
         {
-            get => _state;
+            get => _currentEval;
             set
             {
-                if (_state != value)
-                {
-                    _state = value;
-                    InvokePropertyChanged();
-                }
+                _currentEval = value;
+                InvokePropertyChanged();
+
+                InvokePropertyChanged(nameof(Result));
+                InvokePropertyChanged(nameof(Error));
             }
         }
 
-        public Evaluation ResultEvaluation
-        {
-            get => _resultValue;
-            set
-            {
-                if (!_resultValue.Equals(value))
-                {
-                    _resultValue = value;
-                    InvokePropertyChanged();
-                }
-            }
-        }
+        public JToken? Result => _currentEval.Result;
+        public EError? Error => _currentEval.Error;
 
         #endregion
 
@@ -106,7 +99,7 @@ namespace WpfCalculator
                 if (_expressionTree != value)
                 {
                     _expressionTree = value;
-                    UpdateResultValue();
+                    Evaluate();
                 }
             }
         }
@@ -116,24 +109,21 @@ namespace WpfCalculator
         public ExpressionBox()
         {
             InitializeComponent();
+            State = App.Instance.StateProvider.State ??
+                throw new InvalidOperationException("App instance is missing state provider.");
 
             ValueBox.TextChanged += ValueBox_TextChanged;
-
-            State = ExpressionBoxState.Indeterminate;
             IsVariableNameEnabled = true;
             ShowName = true;
 
             _expressionTree = new ExpressionTree(ExpressionOptions.Default);
-
-            _probe = new ExpressionTreeProbe();
-            _probe.ProbeReference += ProbeReference;
-
             _evaluator = new ExpressionTreeEvaluator(
                 ResolveReference,
                 ResolveOperator,
                 ResolveFunction);
 
-            _references = new HashSet<ExpressionBox>();
+            _probe = new ExpressionTreeProbe();
+            _probe.ProbeReference += ProbeReference;
         }
 
         #endregion
@@ -142,294 +132,274 @@ namespace WpfCalculator
         {
             InvokePropertyChanged(nameof(TextValue));
 
-            State = ParseTextValue();
-            if (State == ExpressionBoxState.Ok)
-                UpdateResultValue();
+            _textParseEval = ParseTextValue();
+
+            Evaluate();
         }
 
-        public ExpressionBoxState ParseTextValue()
+        public Evaluation ParseTextValue()
         {
             if (ExpressionTree == null)
-                return ExpressionBoxState.Indeterminate;
+                return new EError(EErrorCode.Undefined);
 
             ExpressionTree.Tokens.Clear();
             ExpressionTokenizer.Tokenize(TextValue.AsMemory(), ExpressionTree.Tokens);
 
             var sanitizeResult = ExpressionSanitizer.Sanitize(ExpressionTree);
             if (sanitizeResult.Code != ExpressionSanitizer.ResultCode.Ok)
-                return ExpressionBoxState.SyntaxError;
+                return new EError(EErrorCode.SyntaxError);
 
             var parseCode = ExpressionParser.Parse(ExpressionTree);
             switch (parseCode)
             {
                 case ExpressionParser.ResultCode.Ok:
                 case ExpressionParser.ResultCode.NoTokens:
-                    return ExpressionBoxState.Ok;
+                    return new Evaluation(true);
 
                 default:
                     // TODO: add more exact error object
-                    return ExpressionBoxState.SyntaxError;
+                    return new EError(EErrorCode.SyntaxError);
             }
         }
 
-        public Evaluation Evaluate()
+        private void ClearReferences()
+        {
+            foreach (var field in References)
+                field.PropertyChanged -= ReferenceChanged;
+            References.Clear();
+        }
+
+        public Evaluation EvaluateExpressionTree()
         {
             if (ExpressionTree == null)
-                return Evaluation.Undefined;
+                return new Evaluation(EErrorCode.Empty);
 
-            foreach (var field in _references)
-                field.PropertyChanged -= ReferenceChanged;
-            _references.Clear();
-
+            ClearReferences();
             _probe.Probe(ExpressionTree);
 
-            var cyclicReferences = HasCyclicReferences(VariableName, _references);
-            if (cyclicReferences != CyclicReferenceType.None)
+            var cyclicRefEval = CheckForCyclicReferences(VariableName, References);
+            if (cyclicRefEval != null)
             {
-                var newState = cyclicReferences == CyclicReferenceType.Nested
-                    ? ExpressionBoxState.CyclicReferencesNested
-                    : ExpressionBoxState.CyclicReferences;
-
-                return new Evaluation(
-                    EvalCode.ErroredReference, UnionValue.FromEnum(newState), VariableName.AsMemory());
+                ClearReferences();
+                return cyclicRefEval;
             }
 
             var eval = _evaluator.EvaluateTree(ExpressionTree);
             return eval;
         }
 
-        public static bool IsValidName(
-            ReadOnlyString newName,
-            out ReadOnlyString validatedName)
-        {
-            validatedName = newName.Chars.Trim();
-
-            if (validatedName.IsEmpty)
-                return true;
-
-            var nameSpan = validatedName.Span;
-            for (int i = 0; i < nameSpan.Length; i++)
-            {
-                char c = nameSpan[i];
-                if (!(
-                    ExpressionTokenizer.IsNameToken(c) ||
-                    ExpressionTokenizer.IsSpaceToken(c) ||
-                    (i > 0 && ExpressionTokenizer.IsDigitToken(c))))
-                    return false;
-            }
-
-            if (MainWindow.GlobalExpressions.ContainsKey(validatedName))
-                return false;
-
-            return true;
-        }
-
-        private static CyclicReferenceType HasCyclicReferences(
+        private static Evaluation? CheckForCyclicReferences(
             string baseName, IEnumerable<ExpressionBox> baseReferences)
         {
             var checkedSet = new HashSet<ExpressionBox>();
 
-            CyclicReferenceType Core(string name, IEnumerable<ExpressionBox> references)
+            Evaluation? Core(bool isBase, string name, IEnumerable<ExpressionBox> references)
             {
                 foreach (var reference in references)
                 {
                     if (name == reference.VariableName)
-                        return CyclicReferenceType.Base;
+                    {
+                        var error = new EError(EErrorCode.CyclicReference).SetName(name);
+                        return isBase ? error : new EError(EErrorCode.ErroredReference, error).SetName(name);
+                    }
 
                     if (checkedSet.Add(reference))
                     {
-                        var core = Core(name, reference._references);
-                        if (core != CyclicReferenceType.None)
-                            return core;
+                        var eval = Core(isBase: false, name, reference.References);
+                        if (eval != null)
+                            return eval;
                     }
                 }
-                return CyclicReferenceType.None;
+                return null;
             }
 
-            var baseCore = Core(baseName, baseReferences);
-            if (baseCore != CyclicReferenceType.None)
-                return baseCore;
+            var initialEval = Core(isBase: true, baseName, baseReferences);
+            if (initialEval != null)
+                return initialEval;
 
             foreach (var box in checkedSet)
             {
-                var result = box.ResultEvaluation;
-                if (result.Code == EvalCode.ErroredReference &&
-                    ((ExpressionBoxState)result.Values.Child?.Enum).HasFlag(ExpressionBoxState.CyclicReferences))
-                    return CyclicReferenceType.Nested;
+                var boxError = box.Error;
+                if (boxError.ContainsError(EErrorCode.CyclicReference))
+                    return new EError(EErrorCode.ErroredReference, boxError).SetName(box.VariableName);
             }
-            return CyclicReferenceType.None;
-        }
-
-        public enum CyclicReferenceType
-        {
-            None,
-            Base,
-            Nested
+            return null;
         }
 
         private void ProbeReference(ValueToken name)
         {
-            if (!MainWindow.GlobalExpressions.TryGetValue(name.Value, out var expression))
+            if (!State.Expressions.TryGetValue(name.Value, out var expression))
                 return;
 
-            if (_references.Add(expression))
+            if (References.Add(expression))
                 expression.PropertyChanged += ReferenceChanged;
         }
 
-
-        private ExpressionBoxState EvalToFieldState(Evaluation eval)
+        public void Evaluate(bool isReevaluatingState = false)
         {
-            switch (eval.Code)
+            Evaluation nextEval;
+
+            if (_textParseEval.Error != null)
             {
-                case EvalCode.Ok:
-                    return ExpressionBoxState.Ok;
+                nextEval = _textParseEval;
+            }
+            else
+            {
+                _expressionEval = EvaluateExpressionTree();
+                nextEval = _expressionEval;
+            }
 
-                case EvalCode.UnresolvedFunction:
-                    return ExpressionBoxState.UnknownFunction;
+            var lastEval = _currentEval;
+            CurrentEvaluation = nextEval;
 
-                case EvalCode.InvalidArguments:
-                case EvalCode.InvalidArgumentCount:
-                    return ExpressionBoxState.InvalidArguments;
+            if (lastEval.Error != null)
+            {
+                if (nextEval.Error == null)
+                {
+                    var resolvedError = lastEval.Error;
+                    Console.WriteLine(VariableName + ": error resolved: " + resolvedError.Id);
 
-                case EvalCode.UnresolvedOperator:
-                case EvalCode.UnresolvedReference:
-                    return ExpressionBoxState.UnknownWord;
+                    if (!isReevaluatingState)
+                        EvaluateExpressionsIfCyclicReference(resolvedError);
+                }
+                else
+                {
+                    var lastError = lastEval.Error;
 
-                case EvalCode.ErroredFunction:
-                case EvalCode.ErroredOperator:
-                case EvalCode.ErroredReference:
-                    var first = eval.Values.Child.GetValueOrDefault();
-                    if (first.ValueType == UnionValueType.Enum)
-                    {
-                        var state = (ExpressionBoxState)first.Enum;
-                        state &= ~ExpressionBoxState.NestedError;
-                        switch (state)
-                        {
-                            case ExpressionBoxState.CyclicReferences:
-                                if (eval.UnresolvedName.Span.SequenceEqual(VariableName))
-                                    return state;
-                                return state | ExpressionBoxState.NestedError;
+                    Console.WriteLine(
+                        VariableName + ": last/next error: " + lastError.Id + "/" + nextEval.Error.Id);
 
-                            case ExpressionBoxState.UnknownWord:
-                            case ExpressionBoxState.UnknownFunction:
-                            case ExpressionBoxState.SyntaxError:
-                                return state | ExpressionBoxState.NestedError;
-                        }
-                    }
-                    return ExpressionBoxState.Indeterminate;
-
-                case EvalCode.Undefined:
-                default:
-                    return ExpressionBoxState.SyntaxError;
+                    if (!isReevaluatingState)
+                        EvaluateExpressionsIfCyclicReference(lastError);
+                }
+            }
+            else
+            {
+                if (nextEval.Error != null)
+                {
+                    Console.WriteLine(VariableName + ": new error: " + nextEval.Error.Id);
+                }
             }
         }
 
-        public void UpdateResultValue()
+        private void EvaluateExpressionsIfCyclicReference(EError error)
         {
-            var eval = Evaluate();
-            State = EvalToFieldState(eval);
-
-            ResultEvaluation = eval.Code == EvalCode.Ok ? eval : new Evaluation(new UnionValue(0d));
+            // Cyclic references are cleared when detected,
+            // so we have to notify expressions.
+            if (error.ContainsError(EErrorCode.CyclicReference))
+                State.EvaluateErroredExpressions();
         }
 
-        private Evaluation ResolveReference(ReadOnlyMemory<char> name)
+        private Evaluation ResolveReference(string name)
         {
-            if (!MainWindow.GlobalExpressions.TryGetValue(name, out var field))
-                return new Evaluation(EvalCode.UnresolvedReference, name);
+            if (!State.Expressions.TryGetValue(name, out var field))
+                return new EError(EErrorCode.UnknownReference).SetName(name);
 
-            if (field.State != ExpressionBoxState.Ok)
-                return new Evaluation(
-                    EvalCode.ErroredReference, UnionValue.FromEnum(field.State), name);
+            if (field.Error != null)
+                return new EError(EErrorCode.ErroredReference, field.Error).SetName(name);
 
-            return field.ResultEvaluation;
+            return field.CurrentEvaluation;
         }
 
-        private Evaluation ResolveFunction(
-            ReadOnlyMemory<char> name, ReadOnlySpan<UnionValueCollection> arguments)
+        private Evaluation ResolveFunction(string name, JToken?[] arguments)
         {
-            var firstArg = (arguments.Length > 0 ? arguments[0] : default).Child.GetValueOrDefault();
-            var secondArg = (arguments.Length > 1 ? arguments[1] : default).Child.GetValueOrDefault();
+            var arg1 = arguments.Length > 0 ? arguments[0] : default;
+            var arg2 = arguments.Length > 1 ? arguments[1] : default;
 
-            if (name.Span.SequenceEqual("sin"))
+            if (name.Equals("sin", StringComparison.OrdinalIgnoreCase))
             {
                 int expectedArgCount = 1;
                 if (arguments.Length != expectedArgCount)
-                    return new Evaluation(
-                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+                {
+                    var error = new EError(EErrorCode.InvalidArgumentCount);
+                    error.Data["MinCount"] = expectedArgCount;
+                    error.Data["MaxCount"] = expectedArgCount;
+                    error.Data["Count"] = arguments.Length;
+                    return error;
+                }
 
-                return new Evaluation(new UnionValue(Math.Sin(firstArg.Double * 0.0174532925)));
+                if (!arg1.IsNumber())
+                {
+                    var error = new EError(EErrorCode.InvalidArguments);
+                    error.Data["Signature"] = "float"; // TODO: create signature object
+                    return error;
+                }
+
+                return new Evaluation(Math.Sin(arg1.Value<double>() * 0.0174532925));
             }
+
+            /*
             else if (name.Span.SequenceEqual("cos"))
             {
                 int expectedArgCount = 1;
                 if (arguments.Length != expectedArgCount)
                     return new Evaluation(
-                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+                        EvalErrorCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Cos(firstArg.Double * 0.0174532925)));
+                return new Evaluation(new UnionValue(Math.Cos(arg1.Double * 0.0174532925)));
             }
             else if (name.Span.SequenceEqual("tan"))
             {
                 int expectedArgCount = 1;
                 if (arguments.Length != expectedArgCount)
                     return new Evaluation(
-                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+                        EvalErrorCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Tan(firstArg.Double) * 57.2957795));
+                return new Evaluation(new UnionValue(Math.Tan(arg1.Double) * 57.2957795));
             }
             if (name.Span.SequenceEqual("asin") || name.Span.SequenceEqual("arcsin"))
             {
                 int expectedArgCount = 1;
                 if (arguments.Length != expectedArgCount)
                     return new Evaluation(
-                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+                        EvalErrorCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Asin(firstArg.Double) * 57.2957795));
+                return new Evaluation(new UnionValue(Math.Asin(arg1.Double) * 57.2957795));
             }
             else if (name.Span.SequenceEqual("acos") || name.Span.SequenceEqual("arccos"))
             {
                 int expectedArgCount = 1;
                 if (arguments.Length != expectedArgCount)
                     return new Evaluation(
-                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+                        EvalErrorCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Acos(firstArg.Double) * 57.2957795));
+                return new Evaluation(new UnionValue(Math.Acos(arg1.Double) * 57.2957795));
             }
             else if (name.Span.SequenceEqual("atan") || name.Span.SequenceEqual("arctan"))
             {
                 int expectedArgCount = 1;
                 if (arguments.Length != expectedArgCount)
                     return new Evaluation(
-                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+                        EvalErrorCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                return new Evaluation(new UnionValue(Math.Atan(firstArg.Double) * 57.2957795));
+                return new Evaluation(new UnionValue(Math.Atan(arg1.Double) * 57.2957795));
             }
             else if (name.Span.SequenceEqual("lg"))
             {
                 if (arguments.Length != 1)
-                    return new Evaluation(EvalCode.InvalidArgumentCount);
+                    return new Evaluation(EvalErrorCode.InvalidArgumentCount);
 
                 if (arguments[0].Child == null)
-                    return new Evaluation(EvalCode.InvalidArguments);
+                    return new Evaluation(EvalErrorCode.InvalidArguments);
 
-                return new Evaluation(new UnionValue(Math.Log10(firstArg.Double)));
+                return new Evaluation(new UnionValue(Math.Log10(arg1.Double)));
             }
             else if (name.Span.SequenceEqual("round"))
             {
                 if (arguments.Length != 1 && arguments.Length != 2)
-                    return new Evaluation(EvalCode.InvalidArgumentCount);
+                    return new Evaluation(EvalErrorCode.InvalidArgumentCount);
 
                 if (arguments[0].Child == null ||
-                    secondArg.Double < 0 || secondArg.Double > 15)
-                    return new Evaluation(EvalCode.InvalidArguments);
+                    arg2.Double < 0 || arg2.Double > 15)
+                    return new Evaluation(EvalErrorCode.InvalidArguments);
 
-                var rounded = Math.Round(firstArg.Double, (int)Math.Floor(secondArg.Double));
+                var rounded = Math.Round(arg1.Double, (int)Math.Floor(arg2.Double));
                 return new Evaluation(new UnionValue(rounded));
             }
             else if (name.Span.SequenceEqual("length"))
             {
                 if (arguments.Length == 0)
-                    return new Evaluation(EvalCode.InvalidArgumentCount);
+                    return new Evaluation(EvalErrorCode.InvalidArgumentCount);
 
                 var values = arguments;
 
@@ -437,7 +407,7 @@ namespace WpfCalculator
                 if (arguments[0].Children != null)
                 {
                     if (arguments.Length > 1)
-                        return new Evaluation(EvalCode.InvalidArguments);
+                        return new Evaluation(EvalErrorCode.InvalidArguments);
                     values = arguments[0].Children;
                 }
 
@@ -446,7 +416,7 @@ namespace WpfCalculator
                 {
                     var child = values[i].Child;
                     if (!child.HasValue)
-                        return new Evaluation(EvalCode.InvalidArguments);
+                        return new Evaluation(EvalErrorCode.InvalidArguments);
 
                     sum += Math.Pow(child.Value.Double, 2);
                 }
@@ -458,46 +428,51 @@ namespace WpfCalculator
                 int expectedArgCount = 1;
                 if (arguments.Length != expectedArgCount)
                     return new Evaluation(
-                        EvalCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
+                        EvalErrorCode.InvalidArgumentCount, new UnionValue(expectedArgCount));
 
-                double input = firstArg.Double;
+                double input = arg1.Double;
                 if (input < 0)
-                    return new Evaluation(EvalCode.InvalidArguments);
+                    return new Evaluation(EvalErrorCode.InvalidArguments);
 
                 double result = Math.Sqrt(input);
                 return new Evaluation(new UnionValue(result));
-            }
-            return new Evaluation(EvalCode.UnresolvedFunction, name);
+            }*/
+
+            return new EError(EErrorCode.UnknownFunction).SetName(name);
         }
 
-        public static Evaluation ResolveOperator(
-            ReadOnlyMemory<char> name, UnionValueCollection? left, UnionValueCollection? right)
+        public static Evaluation ResolveOperator(string name, JToken? left, JToken? right)
         {
             if (name.Length != 1)
-                return new Evaluation(EvalCode.UnresolvedOperator, name);
+                return new EError(EErrorCode.UnknownOperator).SetName(name);
 
-            var firstLeft = (left?.Child?.Double).GetValueOrDefault();
-            var firstRight = (right?.Child?.Double).GetValueOrDefault();
+            var left1 = (left?.Value<double>()).GetValueOrDefault();
+            var right1 = (right?.Value<double>()).GetValueOrDefault();
 
-            switch (name.Span[0])
+            switch (name[0])
             {
-                case '+': return firstLeft + firstRight;
+                case '+':
+                    return left1 + right1;
 
                 case '-':
                 case '–':
-                    return firstLeft - firstRight;
+                    return left1 - right1;
 
-                case '*': return firstLeft * firstRight;
+                case '*':
+                    return left1 * right1;
 
                 case ':':
-                case '/': return firstLeft / firstRight;
+                case '/':
+                    return left1 / right1;
 
-                case '%': return firstLeft % firstRight;
+                case '%':
+                    return left1 % right1;
 
-                case '^': return Math.Pow(firstLeft, firstRight);
+                case '^':
+                    return Math.Pow(left1, right1);
 
                 case '!':
-                    double number = firstLeft;
+                    double number = left1;
                     double result = 1;
                     while (number != 1)
                     {
@@ -507,16 +482,16 @@ namespace WpfCalculator
                     return result;
 
                 default:
-                    return new Evaluation(EvalCode.UnresolvedOperator, name);
+                    return new EError(EErrorCode.UnknownOperator).SetName(name);
             }
         }
 
         private void ReferenceChanged(object sender, PropertyChangedEventArgs args)
         {
-            if (args.PropertyName == nameof(ResultEvaluation) ||
-                args.PropertyName == nameof(State))
+            if (args.PropertyName == nameof(Result) ||
+                args.PropertyName == nameof(Error))
             {
-                UpdateResultValue();
+                Evaluate();
             }
         }
 
@@ -546,22 +521,21 @@ namespace WpfCalculator
 
         private void ValidateName()
         {
-            if (IsValidName(VariableName, out ReadOnlyString newName))
+            if (State.IsValidName(VariableName, out ReadOnlyString newName))
             {
                 if (_lastVariableName != null)
-                    MainWindow.GlobalExpressions.Remove(_lastVariableName);
+                    State.Expressions.Remove(_lastVariableName);
 
                 if (!newName.IsEmpty)
-                    MainWindow.GlobalExpressions.Add(newName, this);
+                    State.Expressions.Add(newName, this);
 
                 var newNameString = newName.ToString();
                 _lastVariableName = newNameString;
-                
+
                 VariableName = newNameString;
                 InvokePropertyChanged(nameof(VariableName));
 
-                foreach (var globalBox in MainWindow.GlobalExpressions.Values)
-                    globalBox.UpdateResultValue();
+                State.EvaluateErroredExpressions();
             }
             else
             {

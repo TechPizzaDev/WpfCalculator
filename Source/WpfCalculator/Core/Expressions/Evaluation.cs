@@ -1,57 +1,60 @@
 ﻿using System;
+using System.Diagnostics;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace WpfCalculator.Expressions
 {
-    public readonly struct Evaluation : IEquatable<Evaluation>
+    [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ", nq}")]
+    [JsonObject]
+    public class Evaluation
     {
-        public static Evaluation Undefined { get; } = new Evaluation(EvalCode.Undefined);
+        public static Evaluation Empty { get; } = new Evaluation(EError.Empty);
 
-        public EvalCode Code { get; }
-        public UnionValueCollection Values { get; }
-        public ReadOnlyMemory<char> UnresolvedName { get; }
+        public JToken? Result { get; }
+        public EError? Error { get; }
 
-        public Evaluation(
-            EvalCode code, UnionValueCollection values, ReadOnlyMemory<char> unresolvedName)
+        private string JsonView => ToJson(Formatting.Indented);
+        
+        internal string DebuggerDisplay =>
+            Error != null ? $"{nameof(Evaluation)}<{Error.Id}>" :
+            Result != null ? $"{nameof(Evaluation)}({Result})" :
+            nameof(Evaluation);
+
+        [JsonConstructor]
+        public Evaluation(JToken? result, EError? error = null)
         {
-            Code = code;
-            Values = values;
-            UnresolvedName = unresolvedName;
+            Result = result;
+            Error = error;
         }
 
-        public Evaluation(EvalCode code, UnionValueCollection values) :
-            this(code, values, ReadOnlyMemory<char>.Empty)
-        {
-        }
-
-        public Evaluation(EvalCode code, ReadOnlyMemory<char> unresolvedName)
-            : this(code, default, unresolvedName)
-        {
-        }
-
-        public Evaluation(EvalCode code) : this(code, ReadOnlyMemory<char>.Empty)
+        public Evaluation(object? result, EError? error = null) :
+            this(result != null ? JToken.FromObject(result) : null, error)
         {
         }
 
-        public Evaluation(UnionValueCollection values) 
-            : this(EvalCode.Ok, values, ReadOnlyMemory<char>.Empty)
+        public Evaluation(EError error) : this(null, error ?? throw new ArgumentNullException(nameof(error)))
         {
         }
 
-        public bool Equals(Evaluation other)
+        public Evaluation(EErrorCode code, EError? innerError = null) :
+            this(null, new EError(code, innerError))
         {
-            return Code == other.Code
-                && Values.Equals(other.Values)
-                && UnresolvedName.Span.SequenceEqual(other.UnresolvedName.Span);
         }
 
-        public static implicit operator Evaluation(double value)
+        public string ToJson(Formatting formatting = Formatting.None)
         {
-            return new Evaluation(new UnionValue(value));
+            return JsonConvert.SerializeObject(this, formatting, JsonHelper.IgnoreNullSettings);
         }
 
-        public static implicit operator Evaluation(float value)
+        public static implicit operator Evaluation(EError error)
         {
-            return new Evaluation(new UnionValue(value));
+            return new Evaluation(error);
+        }
+
+        public static implicit operator Evaluation(double result)
+        {
+            return new Evaluation(result);
         }
     }
 }

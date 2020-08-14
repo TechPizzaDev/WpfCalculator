@@ -231,7 +231,7 @@ namespace WpfCalculator.Expressions
                     if (t.Type == TokenType.DecimalDigit)
                         return true;
                     if (t.Type == TokenType.DecimalNumber)
-                        return MatchesTypes(((ValueToken)t).Value.Span, DecimalNumberComponents);
+                        return MatchesTypes(((ValueToken)t).Value, DecimalNumberComponents);
                     return false;
                 }
                 if (IsDigitOrDigitNumber(token))
@@ -247,7 +247,7 @@ namespace WpfCalculator.Expressions
                         {
                             if (tokens[j] is ValueToken vt)
                             {
-                                bool hasSeparator = HasType(vt.Value.Span, DecimalSeparatorTypes);
+                                bool hasSeparator = HasType(vt.Value, DecimalSeparatorTypes);
                                 if (hasSeparator && separatorEncountered)
                                     return new SanitizeResult(ResultCode.MultipleDecimalSeparators, token);
                                 separatorEncountered |= hasSeparator;

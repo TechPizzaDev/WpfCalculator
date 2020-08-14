@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -8,14 +8,13 @@ namespace WpfCalculator
 {
     public partial class EquationField : UserControl, IContextMenuOperand, IHasContextMenu
     {
-        private List<EquationExpressionBox> _equationExpressionBoxes;
+        private BindingList<EquationExpressionBox> _equationExpressionBoxes;
 
         public EquationField()
         {
             InitializeComponent();
 
-            _equationExpressionBoxes = new List<EquationExpressionBox>();
-            EquationList.ItemsSource = _equationExpressionBoxes;
+            _equationExpressionBoxes = new BindingList<EquationExpressionBox>();
 
             int count = 3;
             for (int i = 0; i < count; i++)
@@ -25,13 +24,17 @@ namespace WpfCalculator
                 int currentIndex = i;
                 equation.InputBox.PreviewKeyDown += (s, e) => TextValue_KeyDown(e, currentIndex);
 
+                equation.InputBox.Evaluate();
+
                 _equationExpressionBoxes.Add(equation);
             }
+
+            EquationList.ItemsSource = _equationExpressionBoxes;
         }
 
         private void TextValue_KeyDown(KeyEventArgs e, int currentIndex)
         {
-            EquationExpressionBox box = null;
+            EquationExpressionBox? box = null;
 
             if (e.Key == Key.Up && currentIndex > 0)
                 box = EquationList.Items[currentIndex - 1] as EquationExpressionBox;

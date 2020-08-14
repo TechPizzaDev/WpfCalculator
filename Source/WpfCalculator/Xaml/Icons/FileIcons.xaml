@@ -17,8 +17,8 @@
     <!--#region Icons/Field/-->
 
     <BitmapImage x:Key="Icon_Field_Ok" UriSource="/Content/Icons/Field/ResultArrow.png" />
-    <BitmapImage x:Key="Icon_Field_CyclicReferences" UriSource="/Content/Icons/Field/CyclicReferences.png" />
-    <BitmapImage x:Key="Icon_Field_UnknownWord" UriSource="/Content/Icons/Field/UnknownWord.png" />
+    <BitmapImage x:Key="Icon_Field_CyclicReference" UriSource="/Content/Icons/Field/CyclicReference.png" />
+    <BitmapImage x:Key="Icon_Field_UnknownReference" UriSource="/Content/Icons/Field/UnknownReference.png" />
     <BitmapImage x:Key="Icon_Field_UnknownFunction" UriSource="/Content/Icons/Field/UnknownFunction.png" />
     <BitmapImage x:Key="Icon_Field_SyntaxError" UriSource="/Content/Icons/Field/SyntaxError.png" />
     <BitmapImage x:Key="Icon_Field_InvalidArguments" UriSource="/Content/Icons/Field/InvalidArguments.png" />

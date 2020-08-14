@@ -13,29 +13,34 @@ using System.Windows.Media;
 using WpfCalculator.Expressions;
 using WpfCalculator.Expressions.Tokens;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace WpfCalculator
 {
     public partial class App : Application
     {
         public const string LanguageProviderKey = "LanguageProvider";
-        public const string FallbackLanguage = "en-US.json";
+        public const string StateProviderKey = "StateProvider";
 
         public const string EquationsPath = "Content/Equations";
         public const string LanguagePath = "Content/Language";
 
+        public const string FallbackLanguage = "en-US.json";
+
         public static ResourceUri LoadingEquationsMessage { get; } =
             new ResourceUri("Other/Loading/CoreEquations");
-
-        private SplashScreenWindow _splashScreen;
-        private AppLanguageProvider _languageProvider;
-
-        public static App Instance { get; private set; }
 
         public static JsonSerializer Serializer { get; } = new JsonSerializer()
         {
             Formatting = Formatting.Indented
         };
+
+        public static App Instance { get; private set; }
+
+        private SplashScreenWindow _splashScreen;
+
+        public AppLanguageProvider LanguageProvider { get; private set; }
+        public AppStateProvider StateProvider { get; private set; }
 
         public App()
         {
@@ -91,17 +96,17 @@ namespace WpfCalculator
                                 ExpressionBox.ResolveOperator,
                                 ResolveFunction);
 
-                            var eval = Evaluation.Undefined;
+                            var eval = new Evaluation(EErrorCode.Empty);
                             for (int i = 0; i < 1; i++)
                                 eval = evaluator.EvaluateTree(tree);
 
-                            if (eval.Code != EvalCode.Ok)
+                            if (eval.Error == null)
                             {
-                                Console.WriteLine("Eval code: " + eval.Code);
+                                Console.WriteLine("Eval error: " + eval.Error);
                             }
                             else
                             {
-                                double evalValue = (double)eval.Values.Child?.Double;
+                                double evalValue = eval.Result.Value<double>();
                                 string textValue = double.IsInfinity(evalValue) ? "Infinity" : evalValue.ToString();
                                 Console.WriteLine("Eval: " + textValue);
                             }
@@ -115,16 +120,15 @@ namespace WpfCalculator
             }
         }
 
-        public static Evaluation ResolveReference(ReadOnlyMemory<char> name)
+        public static Evaluation ResolveReference(string name)
         {
-            return new Evaluation(EvalCode.UnresolvedReference);
+            return new EError(EErrorCode.UnknownReference).SetName(name);
             throw new NotImplementedException();
         }
 
-        public static Evaluation ResolveFunction(
-            ReadOnlyMemory<char> name, ReadOnlySpan<UnionValueCollection> arguments)
+        public static Evaluation ResolveFunction(string name, object[] arguments)
         {
-            return new Evaluation(EvalCode.UnresolvedFunction);
+            return new EError(EErrorCode.UnknownFunction).SetName(name);
         }
 
         #endregion
@@ -142,15 +146,17 @@ namespace WpfCalculator
                     InitializeLanguageProvider();
                     _splashScreen.DispatchProgress(10);
 
-                    _splashScreen.DispatchProgressTip(_languageProvider.GetValue(LoadingEquationsMessage));
+                    _splashScreen.DispatchProgressTip(LanguageProvider.GetValue(LoadingEquationsMessage));
                     LoadEquations((x) => _splashScreen.DispatchProgress(10 + x * 90));
+
+                    InitializeStateProvider();
 
                     GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
 
                     Dispatcher.Invoke(() =>
                     {
-                        _splashScreen.ProgressTip = null;
-
+                        _splashScreen.ProgressTip = string.Empty;
+                        
                         var mainWindow = new MainWindow();
                         MainWindow = mainWindow;
                         mainWindow.Show();
@@ -169,6 +175,15 @@ namespace WpfCalculator
         }
 
         #endregion
+
+        public void InitializeStateProvider()
+        {
+            StateProvider = (AppStateProvider)FindResource(StateProviderKey);
+            if (StateProvider == null)
+                throw new Exception("Could not find state provider.");
+
+            StateProvider.State = new AppState();
+        }
 
         #region Equations
 
@@ -218,8 +233,8 @@ namespace WpfCalculator
 
         private void InitializeLanguageProvider()
         {
-            _languageProvider = FindResource(LanguageProviderKey) as AppLanguageProvider;
-            if (_languageProvider == null)
+            LanguageProvider = (AppLanguageProvider)FindResource(LanguageProviderKey);
+            if (LanguageProvider == null)
                 throw new Exception("Could not find language provider.");
 
             var languages = AppLanguage.GetEmbeddedLanguages(ResourceAssembly);
@@ -232,8 +247,8 @@ namespace WpfCalculator
 
             // TODO: load main language based on settings file
 
-            _languageProvider.Language = AppLanguage.Load(langEntry.Key, langEntry.Value);
-            _languageProvider.FallbackLanguage = AppLanguage.Load(fallbackLangEntry.Key, fallbackLangEntry.Value);
+            LanguageProvider.Language = AppLanguage.Load(langEntry.Key, langEntry.Value);
+            LanguageProvider.FallbackLanguage = AppLanguage.Load(fallbackLangEntry.Key, fallbackLangEntry.Value);
         }
 
         #endregion
