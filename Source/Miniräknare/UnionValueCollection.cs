@@ -1,9 +1,11 @@
-﻿namespace Miniräknare
+﻿using System;
+
+namespace Miniräknare
 {
     public readonly struct UnionValueCollection
     {
         public UnionValue? Child { get; }
-        public UnionValueCollection[] Children { get; }
+        public ReadOnlyMemory<UnionValueCollection> Children { get; }
 
         public UnionValueCollection(UnionValue? child)
         {
@@ -11,7 +13,7 @@
             Children = default;
         }
 
-        public UnionValueCollection(UnionValueCollection[] children)
+        public UnionValueCollection(ReadOnlyMemory<UnionValueCollection> children)
         {
             Child = default;
             Children = children;
@@ -22,7 +24,7 @@
             return new UnionValueCollection(value);
         }
 
-        public static implicit operator UnionValueCollection(UnionValueCollection[] children)
+        public static implicit operator UnionValueCollection(ReadOnlyMemory<UnionValueCollection> children)
         {
             return new UnionValueCollection(children);
         }

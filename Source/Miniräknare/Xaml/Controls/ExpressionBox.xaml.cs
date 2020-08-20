@@ -433,12 +433,13 @@ namespace Miniräknare
 
                 var values = arguments;
 
-                // TODO: add destructure operator for functions
-                if (arguments[0].Children != null)
+                // TODO: add destructure/spread operator for arrays to convert them into arguments
+                //       (javascript: "f(...array)")
+                if (!arguments[0].Children.IsEmpty)
                 {
                     if (arguments.Length > 1)
                         return new Evaluation(EvalCode.InvalidArguments);
-                    values = arguments[0].Children;
+                    values = arguments[0].Children.Span;
                 }
 
                 double sum = 0;
