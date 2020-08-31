@@ -1,0 +1,26 @@
+                                                            
+                                                            <!--#region Old items-->
+                                                            
+                                                            <MenuItem Header="{l:LanguageBinding Key='Equations/Force'}" IsEnabled="False"/>
+                                                            <!--#region Krafter-->
+                                                            <MenuItem Header="{l:LanguageBinding Key='Equations/Force/Solidity'}">
+                                                                <MenuItem Header="{l:LanguageBinding Key='Equations/Force/Solidity/Tension'}">
+                                                                    <MenuItem Header="{l:LanguageBinding Key='Equations/Force/Solidity/Tension/Drag'}" />
+                                                                    <MenuItem Header="{l:LanguageBinding Key='Equations/Force/Solidity/Tension/Shear'}" />
+                                                                    <MenuItem Header="{l:LanguageBinding Key='Equations/Force/Solidity/Tension/Edge'}" />
+                                                                </MenuItem>
+                                                            </MenuItem>
+                                                            <!--#endregion-->
+
+                                                            <Separator/>
+
+                                                            <MenuItem Header="{l:LanguageBinding Key='Equations/Chemistry'}" IsEnabled="False" />
+                                                            <!--#region Kemi-->
+                                                            <MenuItem Header="{l:LanguageBinding Key='Equations/Chemistry/Molecule'}">
+                                                                <MenuItem Header="{l:LanguageBinding Key='Equations/Chemistry/Molecule/Mass'}" />
+                                                            </MenuItem>
+                                                            <!--#endregion-->
+
+                                                            <MenuItem Header="{l:LanguageBinding Key='Equations/Other'}" IsEnabled="False" Visibility="Collapsed" />
+
+                                                            <!--#endregion-->

@@ -5,7 +5,7 @@ namespace Miniräknare
     public readonly struct UnionValueCollection
     {
         public UnionValue? Child { get; }
-        public ReadOnlyMemory<UnionValueCollection> Children { get; }
+        public UnionValueCollection[] Children { get; }
 
         public UnionValueCollection(UnionValue? child)
         {
@@ -13,7 +13,7 @@ namespace Miniräknare
             Children = default;
         }
 
-        public UnionValueCollection(ReadOnlyMemory<UnionValueCollection> children)
+        public UnionValueCollection(UnionValueCollection[] children)
         {
             Child = default;
             Children = children;
@@ -24,7 +24,7 @@ namespace Miniräknare
             return new UnionValueCollection(value);
         }
 
-        public static implicit operator UnionValueCollection(ReadOnlyMemory<UnionValueCollection> children)
+        public static implicit operator UnionValueCollection(UnionValueCollection[] children)
         {
             return new UnionValueCollection(children);
         }

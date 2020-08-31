@@ -435,11 +435,11 @@ namespace Miniräknare
 
                 // TODO: add destructure/spread operator for arrays to convert them into arguments
                 //       (javascript: "f(...array)")
-                if (!arguments[0].Children.IsEmpty)
+                if (arguments[0].Children != null)
                 {
                     if (arguments.Length > 1)
                         return new Evaluation(EvalCode.InvalidArguments);
-                    values = arguments[0].Children.Span;
+                    values = arguments[0].Children;
                 }
 
                 double sum = 0;

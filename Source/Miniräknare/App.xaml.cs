@@ -21,21 +21,25 @@ namespace Miniräknare
         public const string LanguageProviderKey = "LanguageProvider";
         public const string FallbackLanguage = "en-US.json";
 
-        public const string EquationsPath = "Content/Equations";
-        public const string LanguagePath = "Content/Language";
+        public const string ContentPath = "Content";
+        public const string EquationsPath = ContentPath + "/Equations";
+        public const string LanguagePath = ContentPath + "/Language";
 
         public static ResourceUri LoadingEquationsMessage { get; } =
             new ResourceUri("Other/Loading/CoreEquations");
-
-        private SplashScreenWindow _splashScreen;
-        private AppLanguageProvider _languageProvider;
-
-        public static App Instance { get; private set; }
 
         public static JsonSerializer Serializer { get; } = new JsonSerializer()
         {
             Formatting = Formatting.Indented
         };
+
+        public static App Instance { get; private set; }
+
+        private SplashScreenWindow _splashScreen;
+        private AppLanguageProvider _languageProvider;
+
+        public Dictionary<string, EquationSet> Equations { get; } =
+            new Dictionary<string, EquationSet>();
 
         public App()
         {
@@ -202,7 +206,7 @@ namespace Miniräknare
                     var equationData = EquationSetData.Load(stream);
                     var equationSet = new EquationSet(ExpressionOptions.Default, equationData);
 
-                    // TODO
+                    Equations.Add(pair.Key, equationSet);
                 }
                 catch (Exception ex)
                 {

@@ -20,7 +20,7 @@
             <Menu>
                 <MenuItem Header="{l:LanguageBinding Key='Toolbar/File'}" 
                           Style="{StaticResource ToolbarStyle}">
-                    
+
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/File/New'}" />
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/File/Open'}" />
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/File/Save'}" />
@@ -35,7 +35,7 @@
 
                 <MenuItem Header="{l:LanguageBinding Key='Toolbar/Tools'}" 
                           Style="{StaticResource ToolbarStyle}">
-                    
+
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/Tools/SpecialSymbols'}"/>
                 </MenuItem>
 
@@ -43,9 +43,10 @@
                           Style="{StaticResource ToolbarStyle}">
 
                     <MenuItem Header="{l:LanguageBinding Key='Toolbar/Settings/View'}">
-                        <MenuItem Header="{l:LanguageBinding Key='Toolbar/Settings/View/Theme'}" Click="MenuItem_View_Theme_Click" />
+                        <MenuItem Header="{l:LanguageBinding Key='Toolbar/Settings/View/Theme'}"
+                                  Click="MenuItem_View_Theme_Click" />
                     </MenuItem>
-                    
+
                     <MenuItem Header="Language..." Click="MenuItem_Language_Click"/>
                 </MenuItem>
             </Menu>
@@ -67,14 +68,14 @@
                     <Button Click="AddNewField_Click" VerticalAlignment="Top" Margin="3,3,3,0"
                             ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewField'}">
 
-                        <Image Source="/Content/Icons/Action/AddNewField.png"
+                        <Image Source="{StaticResource Icon_Action_AddNewField}"
                                Effect="{StaticResource Shader_ActionButton}" />
                     </Button>
-                    
-                    <Button Click="AddNewFunctionField_Click" VerticalAlignment="Top" Margin="3,3,3,0"
-                            ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewFunctionField'}">
 
-                        <Image Source="/Content/Icons/Action/AddNewFunctionField.png"
+                    <Button Click="AddNewEquationField_Click" VerticalAlignment="Top" Margin="3,3,3,0"
+                            ToolTip="{l:LanguageBinding Key='ActionButtons/Hover/AddNewEquationField'}">
+
+                        <Image Source="{StaticResource Icon_Action_AddNewEquationField}"
                                Effect="{StaticResource Shader_ActionButton}"/>
 
                         <Button.ContextMenu>
@@ -95,7 +96,8 @@
 
                                                     <TextBox Grid.Column="2" Margin="0,2,1,0" Height="26" MaxWidth="254"
                                                              HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                                                             FontSize="15" VerticalContentAlignment="Center" />
+                                                             FontSize="15" VerticalContentAlignment="Center"
+                                                             TextChanged="SearchBox_TextChanged"/>
                                                 </Grid>
                                             </l:EnabledContentPresenter>
                                         </ControlTemplate>
@@ -104,27 +106,63 @@
 
                                 <Separator Margin="-30,5,0,0" />
 
-                                <MenuItem Header="{l:LanguageBinding Key='Equations/Force'}" IsEnabled="False"/>
-                                <!--#region Krafter-->
-                                <MenuItem Header="{l:LanguageBinding Key='Equations/Force/Solidity'}">
-                                    <MenuItem Header="{l:LanguageBinding Key='Equations/Force/Solidity/Tension'}">
-                                        <MenuItem Header="{l:LanguageBinding Key='Equations/Force/Solidity/Tension/Drag'}" />
-                                        <MenuItem Header="{l:LanguageBinding Key='Equations/Force/Solidity/Tension/Shear'}" />
-                                        <MenuItem Header="{l:LanguageBinding Key='Equations/Force/Solidity/Tension/Edge'}" />
-                                    </MenuItem>
+                                <MenuItem IsEnabled="False" Name="ActionItemPickerMenuItem">
+                                    <MenuItem.Template>
+                                        <ControlTemplate>
+                                            <l:EnabledContentPresenter>
+                                                <Grid Margin="35,0,0,0" Name="Action_ItemPickerGrid"
+                                                      Loaded="Action_ItemPickerGrid_Loaded">
+                                                    
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                    </Grid.RowDefinitions>
+
+                                                    <ScrollViewer Grid.Row="0" Name="Action_SearchResultViewer" IsEnabled="false">
+                                                        <Menu>
+                                                            <Menu.Resources>
+                                                                <Style TargetType="{x:Type MenuItem}">
+                                                                    <Style.Triggers>
+                                                                        <Trigger Property="Role" Value="TopLevelHeader">
+                                                                            <Setter Property="Template" Value="{DynamicResource {ComponentResourceKey ResourceId=SubmenuHeaderTemplateKey, TypeInTargetAssembly={x:Type MenuItem}}}"/>
+                                                                        </Trigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Menu.Resources>
+
+                                                            <Menu.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <VirtualizingStackPanel Orientation="Vertical"/>
+                                                                </ItemsPanelTemplate>
+                                                            </Menu.ItemsPanel>
+                                                        </Menu>
+                                                    </ScrollViewer>
+
+                                                    <ScrollViewer Grid.Row="1" Name="Action_StaticChoiceViewer">
+                                                        <Menu>
+                                                            <Menu.Resources>
+                                                                <Style TargetType="{x:Type MenuItem}">
+                                                                    <Style.Triggers>
+                                                                        <Trigger Property="Role" Value="TopLevelHeader">
+                                                                            <Setter Property="Template" Value="{DynamicResource {ComponentResourceKey ResourceId=SubmenuHeaderTemplateKey, TypeInTargetAssembly={x:Type MenuItem}}}"/>
+                                                                        </Trigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Menu.Resources>
+
+                                                            <Menu.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <VirtualizingStackPanel Orientation="Vertical"/>
+                                                                </ItemsPanelTemplate>
+                                                            </Menu.ItemsPanel>
+                                                        </Menu>
+                                                    </ScrollViewer>
+
+                                                </Grid>
+                                            </l:EnabledContentPresenter>
+                                        </ControlTemplate>
+                                    </MenuItem.Template>
                                 </MenuItem>
-                                <!--#endregion-->
-
-                                <Separator/>
-
-                                <MenuItem Header="{l:LanguageBinding Key='Equations/Chemistry'}" IsEnabled="False" />
-                                <!--#region Kemi-->
-                                <MenuItem Header="{l:LanguageBinding Key='Equations/Chemistry/Molecule'}">
-                                    <MenuItem Header="{l:LanguageBinding Key='Equations/Chemistry/Molecule/Mass'}" />
-                                </MenuItem>
-                                <!--#endregion-->
-
-                                <MenuItem Header="{l:LanguageBinding Key='Equations/Other'}" IsEnabled="False" Visibility="Collapsed" />
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
