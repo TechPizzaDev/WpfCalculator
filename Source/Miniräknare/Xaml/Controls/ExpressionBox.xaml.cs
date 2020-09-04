@@ -454,6 +454,34 @@ namespace Miniräknare
 
                 return new Evaluation(new UnionValue(Math.Sqrt(sum)));
             }
+            else if (name.Span.SequenceEqual("sum"))
+            {
+                if (arguments.Length == 0)
+                    return new Evaluation(EvalCode.InvalidArgumentCount);
+
+                var values = arguments;
+
+                // TODO: add destructure/spread operator for arrays to convert them into arguments
+                //       (javascript: "f(...array)")
+                if (arguments[0].Children != null)
+                {
+                    if (arguments.Length > 1)
+                        return new Evaluation(EvalCode.InvalidArguments);
+                    values = arguments[0].Children;
+                }
+
+                double sum = 0;
+                for (int i = 0; i < values.Length; i++)
+                {
+                    var child = values[i].Child;
+                    if (!child.HasValue)
+                        return new Evaluation(EvalCode.InvalidArguments);
+
+                    sum += child.Value.Double;
+                }
+
+                return new Evaluation(new UnionValue(sum));
+            }
             else if (name.Span.SequenceEqual("sqrt"))
             {
                 int expectedArgCount = 1;
