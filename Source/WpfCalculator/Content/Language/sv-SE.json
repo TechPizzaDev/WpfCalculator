@@ -38,7 +38,7 @@
 		"ActionButtons": {
 			"Hover": {
 				"AddNewField": "Lägg till nytt fält",
-				"AddNewFunctionField": "Lägg till nytt formelfält"
+				"AddNewEquationField": "Lägg till nytt ekvationsfält"
 			}
 		},
 

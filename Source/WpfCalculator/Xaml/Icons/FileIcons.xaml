@@ -9,8 +9,8 @@
     
     <!--#region Icons/Action/-->
 
-    <BitmapImage x:Key="Icon_Action_Ok" UriSource="/Content/Icons/Action/AddNewField.png" />
-    <BitmapImage x:Key="Icon_Action_CyclicReferences" UriSource="/Content/Icons/Action/AddNewFunctionField.png" />
+    <BitmapImage x:Key="Icon_Action_AddNewField" UriSource="/Content/Icons/Action/AddNewField.png" />
+    <BitmapImage x:Key="Icon_Action_AddNewEquationField" UriSource="/Content/Icons/Action/AddNewEquationField.png" />
 
     <!--#endregion-->
 

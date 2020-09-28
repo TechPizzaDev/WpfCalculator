@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -36,19 +37,28 @@ namespace WpfCalculator
                     list.Values.Add(key, new EntryValue(key, value.ToObject<string>() ?? ""));
                 }
             }
+
+            foreach (var name in list.Names)
+            {
+                if (list.SubLists.TryGetValue(name.Key, out var subList))
+                {
+                    subList.Name = name.Value;
+                }
+            }
         }
 
         public class EntryList : Entry
         {
+            public EntryValue Name { get; set; }
             public Dictionary<string, EntryValue> Names { get; }
             public Dictionary<string, EntryValue> Values { get; }
             public Dictionary<string, EntryList> SubLists { get; }
 
             public EntryList(string key) : base(key)
             {
-                Names = new Dictionary<string, EntryValue>();
-                Values = new Dictionary<string, EntryValue>();
-                SubLists = new Dictionary<string, EntryList>();
+                Names = new Dictionary<string, EntryValue>(StringComparer.OrdinalIgnoreCase);
+                Values = new Dictionary<string, EntryValue>(StringComparer.OrdinalIgnoreCase);
+                SubLists = new Dictionary<string, EntryList>(StringComparer.OrdinalIgnoreCase);
             }
 
             public bool TryGet(ResourceUri uri, [MaybeNullWhen(false)] out Entry entry)

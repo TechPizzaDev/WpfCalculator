@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
     <ApplicationIcon />
     <StartupObject />
     <Nullable>enable</Nullable>
@@ -34,6 +35,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Content\Equations\Force\Solidity\Tension\Edge.json" />
+    <None Remove="Content\Equations\Force\Solidity\Tension\Shear.json" />
     <None Remove="Content\Shaders\Commands.txt" />
     <Resource Remove="Content\Shaders\Commands.txt" />
   </ItemGroup>

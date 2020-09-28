@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -9,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Effects;
 using WpfCalculator.Expressions;
 
@@ -104,11 +106,9 @@ namespace WpfCalculator
             AddNewField(State);
         }
 
-        private void AddNewFunctionField_Click(object sender, RoutedEventArgs e)
+        private void AddNewEquationField_Click(object sender, RoutedEventArgs e)
         {
-            if (!(sender is Button button))
-                return;
-
+            var button = (Button)sender;
             button.ContextMenu.IsOpen = true;
         }
 
@@ -161,6 +161,136 @@ namespace WpfCalculator
                 throw new Exception("Missing inverse shader resource.");
 
             Effect = Effect != inverseShader ? inverseShader : null;
+        }
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var box = (TextBox)sender;
+            string query = box.Text;
+            var equations = App.Instance.Equations;
+            var languageProvider = (AppLanguageProvider)box.FindResource(App.LanguageProviderKey);
+
+            bool checkFallbackLanguage = true;
+            bool searchByName = true;
+            bool searchByKey = true;
+            bool searchByPath = true;
+            var keyComparison = StringComparison.OrdinalIgnoreCase;
+
+            var primaryLanguage = languageProvider.Language;
+            var fallbackLanguage = languageProvider.FallbackLanguage;
+
+            var included = new Dictionary<(string, string[]), AppLanguage.Entry>();
+            var translatedNames = new List<string?>();
+
+            foreach (string equationKey in equations.Keys)
+            {
+                string[] keySegments = equationKey
+                    .Substring(App.ContentPath.Length)
+                    .Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+                string specificEquationKey = equationKey
+                    .Substring(App.EquationsPath.Length).TrimStart('/');
+
+                string valueKey = Path.GetFileNameWithoutExtension(keySegments[^1]);
+
+                CheckLanguage(primaryLanguage);
+                if (checkFallbackLanguage)
+                    CheckLanguage(fallbackLanguage);
+
+                void CheckLanguage(AppLanguage language)
+                {
+                    translatedNames.Clear();
+
+                    AppLanguage.EntryList? currentList = language.Entries;
+
+                    bool breakSearch = false;
+                    for (int i = 0; i < keySegments.Length - 1; i++)
+                    {
+                        currentList.Names.TryGetValue(keySegments[i], out var currentListName);
+                        translatedNames.Add(currentListName?.Value as string);
+
+                        if (!currentList.SubLists.TryGetValue(keySegments[i], out currentList))
+                        {
+                            breakSearch = true;
+                            break;
+                        }
+                    }
+
+                    if (breakSearch || currentList == null)
+                        return;
+
+                    currentList.Values.TryGetValue(valueKey, out var lastValueEntry);
+                    translatedNames.Add(lastValueEntry?.Value as string);
+
+                    if (currentList.Values.TryGetValue(valueKey, out var targetValue))
+                    {
+                        (string, string[]) key = (equationKey, keySegments);
+
+                        for (int i = 1; i < keySegments.Length; i++)
+                        {
+                            bool include = false;
+                            if (searchByName)
+                            {
+                                string? publicName = translatedNames[i];
+                                if (publicName != null && publicName.Contains(query, keyComparison))
+                                    include = true;
+                            }
+                            if (!include && searchByKey)
+                            {
+                                if (keySegments[i].Contains(query, keyComparison))
+                                    include = true;
+                            }
+
+                            if (include)
+                            {
+                                included.TryAdd(key, targetValue);
+                                break;
+                            }
+                        }
+
+                        if (searchByPath && specificEquationKey.Contains(query))
+                            included.TryAdd(key, targetValue);
+                    }
+                }
+            }
+
+            var boxGrid = (Grid)box.Parent;
+            var boxMenuItem = (MenuItem)boxGrid.TemplatedParent;
+            var boxMenu = (ContextMenu)boxMenuItem.Parent;
+
+            var containerItem = (MenuItem)LogicalTreeHelper.FindLogicalNode(
+                boxMenu, "ActionItemPickerMenuItem");
+
+            var searchResultViewer = (ScrollViewer)containerItem.Template.FindName(
+                "Action_SearchResultViewer", containerItem);
+            var searchResultMenu = (Menu)searchResultViewer.Content;
+
+            var staticChoiceViewer = (ScrollViewer)containerItem.Template.FindName(
+                "Action_StaticChoiceViewer", containerItem);
+            var staticChoiceMenu = (Menu)searchResultViewer.Content;
+
+            if (string.IsNullOrEmpty(query))
+            {
+                searchResultViewer.IsEnabled = false;
+                staticChoiceViewer.IsEnabled = true;
+
+                searchResultMenu.ItemsSource = null;
+                // TODO: update static choices
+            }
+            else
+            {
+                searchResultViewer.IsEnabled = true;
+                staticChoiceViewer.IsEnabled = false;
+
+                searchResultMenu.ItemsSource = included.Select(
+                    x => new ActionEquationChoice(x.Key.Item1, x.Key.Item2, x.Value));
+            }
+        }
+
+        private void Action_ItemPickerGrid_Loaded(object sender, RoutedEventArgs e)
+        {
+            var grid = (Grid)sender;
+            grid.MaxHeight = Math.Max(0, ActualHeight - 100);
         }
     }
 }

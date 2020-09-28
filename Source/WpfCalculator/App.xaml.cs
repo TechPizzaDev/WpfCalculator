@@ -24,8 +24,9 @@ namespace WpfCalculator
         public const string LanguageProviderKey = "LanguageProvider";
         public const string StateProviderKey = "StateProvider";
 
-        public const string EquationsPath = "Content/Equations";
-        public const string LanguagePath = "Content/Language";
+        public const string ContentPath = "Content";
+        public const string EquationsPath = ContentPath + "/Equations";
+        public const string LanguagePath = ContentPath + "/Language";
 
         public const string FallbackLanguage = "en-US.json";
 
@@ -40,6 +41,9 @@ namespace WpfCalculator
         public static App Instance => (App)Current;
 
         private SplashScreenWindow _splashScreen;
+
+        public Dictionary<string, EquationSet> Equations { get; } =
+            new Dictionary<string, EquationSet>();
 
         public AppLanguageProvider LanguageProvider { get; private set; }
         public AppStateProvider StateProvider { get; private set; }
@@ -218,7 +222,7 @@ namespace WpfCalculator
                     var equationData = EquationSetData.Load(stream);
                     var equationSet = new EquationSet(ExpressionOptions.Default, equationData);
 
-                    // TODO
+                    Equations.Add(pair.Key, equationSet);
                 }
                 catch (Exception ex)
                 {
